@@ -50,7 +50,7 @@ public enum EvmSpecVersion {
   /** Shanghai evm spec version. */
   SHANGHAI(MainnetHardforkId.SHANGHAI, 0x6000, 0xc000),
   /** Cancun evm spec version. */
-  CANCUN(MainnetHardforkId.CANCUN, 0x6000, 0xc000),
+  CANCUN(0, true, "Cancun", "Finalized"),
   /** Prague evm spec version. */
   PRAGUE(MainnetHardforkId.PRAGUE, 0x6000, 0xc000),
   /** Osaka evm spec version. */

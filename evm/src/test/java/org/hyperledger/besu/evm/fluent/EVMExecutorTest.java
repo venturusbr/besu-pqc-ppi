@@ -46,6 +46,46 @@ import org.junit.jupiter.api.Test;
 class EVMExecutorTest {
 
   @Test
+  void currentEVM() {
+    var subject = EVMExecutor.evm();
+    assertThat(subject.getEVMVersion()).isEqualTo(EvmSpecVersion.CANCUN);
+  }
+
+  @ParameterizedTest
+  @EnumSource(EvmSpecVersion.class)
+  void evmByRequest(final EvmSpecVersion version) {
+    var subject = EVMExecutor.evm(version);
+    assertThat(subject.getEVMVersion()).isEqualTo(version);
+  }
+
+  @ParameterizedTest
+  @EnumSource(EvmSpecVersion.class)
+  void evmWithChainIDByRequest(final EvmSpecVersion version) {
+    var subject = EVMExecutor.evm(version, BigInteger.TEN);
+    assertThat(subject.getEVMVersion()).isEqualTo(version);
+    if (EvmSpecVersion.ISTANBUL.compareTo(version) <= 0) {
+      assertThat(subject.getChainId()).map(Bytes::trimLeadingZeros).map(Bytes::toInt).contains(10);
+    } else {
+      assertThat(subject.getChainId()).isEmpty();
+    }
+  }
+
+  @ParameterizedTest
+  @EnumSource(EvmSpecVersion.class)
+  void evmWithChainIDByBytes(final EvmSpecVersion version) {
+    var subject = EVMExecutor.evm(version, Bytes.fromHexString("0xc4a1201d"));
+    assertThat(subject.getEVMVersion()).isEqualTo(version);
+    if (EvmSpecVersion.ISTANBUL.compareTo(version) <= 0) {
+      assertThat(subject.getChainId())
+          .map(Bytes::trimLeadingZeros)
+          .map(Bytes::toInt)
+          .contains(0xc4a1201d);
+    } else {
+      assertThat(subject.getChainId()).isEmpty();
+    }
+  }
+
+  @Test
   void customEVM() {
     var subject =
         new EVMExecutor(
