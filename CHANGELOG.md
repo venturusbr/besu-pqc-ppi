@@ -1208,8 +1208,28 @@ Support for Cancun fork on testnets
 
 ### Bug fixes
 - Hotfix for selfdestruct preimages on bonsai [#6359]((https://github.com/hyperledger/besu/pull/6359)
-- Fix trielog shipping issue during self destruct [#6340]((https://github.com/hyperledger/besu/pull/6340)
 - mitigation for trielog failure [#6315]((https://github.com/hyperledger/besu/pull/6315)
+
+## 23.10.3
+
+### Additions and Improvements
+- Implement debug_traceCall [#5885](https://github.com/hyperledger/besu/pull/5885)
+- Transactions that takes too long to evaluate, during block creation, are dropped from the txpool [#6163](https://github.com/hyperledger/besu/pull/6163)
+- New option `tx-pool-min-gas-price` to set a lower bound when accepting txs to the pool [#6098](https://github.com/hyperledger/besu/pull/6098)
+- Update OpenJDK latest Docker image to use Java 21 [#6189](https://github.com/hyperledger/besu/pull/6189)
+- Allow a transaction selection plugin to specify custom selection results [#6190](https://github.com/hyperledger/besu/pull/6190)
+- Add `rpc-gas-cap` to allow users to set gas limit to the RPC methods used to simulate transactions[#6156](https://github.com/hyperledger/besu/pull/6156)
+- Fix the unavailability of `address` field when returning an `Account` entity on GraphQL in case of unreachable world state [#6198](https://github.com/hyperledger/besu/pull/6198)
+- Update OpenJ9 Docker image to latest version [#6226](https://github.com/hyperledger/besu/pull/6226)
+- Add error messages on authentication failures with username and password [#6212](https://github.com/hyperledger/besu/pull/6212)
+- Add `rocksdb usage` to the `storage` subcommand to allow users and dev to check columns families usage [#6185](https://github.com/hyperledger/besu/pull/6185)
+- Ethereum Classic Spiral network upgrade [#6078](https://github.com/hyperledger/besu/pull/6078)
+- Fix self destruct collision [#6205](https://github.com/hyperledger/besu/pull/6205)
+- Mark deleted storage on cleared [#6305](https://github.com/hyperledger/besu/pull/6305)
+
+### Bug fixes
+- Fix Docker image name clash between Besu and evmtool [#6194](https://github.com/hyperledger/besu/pull/6194)
+- Fix `logIndex` in `eth_getTransactionReceipt` JSON RPC method [#6206](https://github.com/hyperledger/besu/pull/6206)
 
 ### Download Links
 https://hyperledger.jfrog.io/artifactory/besu-binaries/besu/24.1.0/besu-24.1.0.zip / sha256 d36c8aeef70f0a516d4c26d3bc696c3e2a671e515c9e6e9475a31fe759e39f64
