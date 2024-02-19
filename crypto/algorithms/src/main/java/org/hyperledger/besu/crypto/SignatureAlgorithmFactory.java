@@ -15,6 +15,9 @@
 package org.hyperledger.besu.crypto;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.DilithiumSignatureAlgorithm;
+import org.hyperledger.besu.crypto.pqc.falcon.Falcon;
+import org.hyperledger.besu.crypto.pqc.sphincsplus.SphincsPlus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +27,9 @@ public class SignatureAlgorithmFactory {
   private static final Logger LOG = LoggerFactory.getLogger(SignatureAlgorithmFactory.class);
 
   private static SignatureAlgorithm instance = null;
+  private static final DilithiumSignatureAlgorithm pqcInstance = null;
+  private static final SphincsPlus sphincsInstance = null;
+  private static final Falcon falconInstance = null;
 
   private SignatureAlgorithmFactory() {}
 
@@ -86,6 +92,24 @@ public class SignatureAlgorithmFactory {
     return instance != null
         ? instance
         : SignatureAlgorithmType.DEFAULT_SIGNATURE_ALGORITHM_TYPE.get();
+  }
+
+  public static DilithiumSignatureAlgorithm getPQCInstance() {
+    return pqcInstance != null
+        ? pqcInstance
+        : SignatureAlgorithmType.DEFAULT_PQC_SIGNATURE_ALGORITHM_TYPE.get();
+  }
+
+  public static SphincsPlus getSphincsPlusInstance() {
+    return sphincsInstance != null
+        ? sphincsInstance
+        : SignatureAlgorithmType.SPHINCS_PQC_SIGNATURE_ALGORITHM_TYPE.get();
+  }
+
+  public static Falcon getFalconInstance() {
+    return falconInstance != null
+        ? falconInstance
+        : SignatureAlgorithmType.FALCON_PQC_SIGNATURE_ALGORITHM_TYPE.get();
   }
 
   /**

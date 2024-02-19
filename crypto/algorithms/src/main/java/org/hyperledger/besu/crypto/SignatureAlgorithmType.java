@@ -17,6 +17,10 @@ package org.hyperledger.besu.crypto;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Supplier;
+import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.CrystalsDilithium3;
+import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.DilithiumSignatureAlgorithm;
+import org.hyperledger.besu.crypto.pqc.falcon.Falcon;
+import org.hyperledger.besu.crypto.pqc.sphincsplus.SphincsPlus;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -25,6 +29,7 @@ public class SignatureAlgorithmType {
 
   /** The constant DEFAULT_EC_CURVE_NAME. */
   public static final String DEFAULT_EC_CURVE_NAME = "secp256k1";
+  public static final String PQC_LATTICE_BASED_DILITHIUM = "dilithium3";
 
   /** The constant SECP_256_R1_CURVE_NAME. */
   public static final String SECP_256_R1_CURVE_NAME = "secp256r1";
@@ -33,9 +38,27 @@ public class SignatureAlgorithmType {
       ImmutableMap.of(
           DEFAULT_EC_CURVE_NAME, SECP256K1::new, SECP_256_R1_CURVE_NAME, SECP256R1::new);
 
+  private static final ImmutableMap<String, Supplier<DilithiumSignatureAlgorithm>> PQC_SUPPORTED_ALGORITHMS = ImmutableMap
+      .of(PQC_LATTICE_BASED_DILITHIUM, CrystalsDilithium3::new);
+
+  private static final ImmutableMap<String, Supplier<SphincsPlus>> SPHINCS_ALGORITHM = ImmutableMap
+      .of("SPHINCSPlus", SphincsPlus::new);
+
+  private static final ImmutableMap<String, Supplier<Falcon>> FALCON_ALGORITHM = ImmutableMap
+      .of("Falcon", Falcon::new);
+
   /** The constant DEFAULT_SIGNATURE_ALGORITHM_TYPE. */
-  public static final Supplier<SignatureAlgorithm> DEFAULT_SIGNATURE_ALGORITHM_TYPE =
-      SUPPORTED_ALGORITHMS.get(DEFAULT_EC_CURVE_NAME);
+  public static final Supplier<SignatureAlgorithm> DEFAULT_SIGNATURE_ALGORITHM_TYPE = SUPPORTED_ALGORITHMS
+      .get(DEFAULT_EC_CURVE_NAME);
+
+  public static final Supplier<DilithiumSignatureAlgorithm> DEFAULT_PQC_SIGNATURE_ALGORITHM_TYPE = PQC_SUPPORTED_ALGORITHMS
+      .get(PQC_LATTICE_BASED_DILITHIUM);
+
+  public static final Supplier<SphincsPlus> SPHINCS_PQC_SIGNATURE_ALGORITHM_TYPE = SPHINCS_ALGORITHM
+      .get("SPHINCSPlus");
+
+  public static final Supplier<Falcon> FALCON_PQC_SIGNATURE_ALGORITHM_TYPE = FALCON_ALGORITHM
+      .get("Falcon");
 
   private final Supplier<SignatureAlgorithm> instantiator;
 
