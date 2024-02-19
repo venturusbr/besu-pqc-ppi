@@ -102,6 +102,9 @@ import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.KeyPairUtil;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.SignatureAlgorithmType;
+import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3KeyPair;
+import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconKeyPair;
+import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusKeyPair;
 import org.hyperledger.besu.cryptoservices.KeyPairSecurityModule;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.datatypes.Address;
@@ -1593,7 +1596,10 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
   }
 
   private SecurityModule defaultSecurityModule() {
-    return new KeyPairSecurityModule(loadKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile()));
+    return new KeyPairSecurityModule(loadKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile()), 
+    loadPqcKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile()),
+    loadSphincsKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile()),
+    loadFalconKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile()));
   }
 
   // loadKeyPair() is public because it is accessed by subcommands
@@ -1606,6 +1612,16 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
    */
   public KeyPair loadKeyPair(final File nodePrivateKeyFile) {
     return KeyPairUtil.loadKeyPair(resolveNodePrivateKeyFile(nodePrivateKeyFile));
+  }
+
+  public Dilithium3KeyPair loadPqcKeyPair(final File nodePrivateKeyFile) {
+    return KeyPairUtil.loadPQCKeyPair(resolveNodePQCPrivateKeyFile(nodePrivateKeyFile).toPath());
+  }
+  public SphincsPlusKeyPair loadSphincsKeyPair(final File nodePrivateKeyFile) {
+    return KeyPairUtil.loadSphincsKeyPair(resolveNodePQCPrivateKeyFile(nodePrivateKeyFile).toPath());
+  }
+  public FalconKeyPair loadFalconKeyPair(final File nodePrivateKeyFile) {
+    return KeyPairUtil.loadFalconKeyPair(resolveNodePQCPrivateKeyFile(nodePrivateKeyFile).toPath());
   }
 
   private int parse(
@@ -3182,6 +3198,11 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
   private File resolveNodePrivateKeyFile(final File nodePrivateKeyFile) {
     return Optional.ofNullable(nodePrivateKeyFile)
         .orElseGet(() -> KeyPairUtil.getDefaultKeyFile(dataDir()));
+  }
+
+  private File resolveNodePQCPrivateKeyFile(final File nodePrivateKeyFile) {
+    return Optional.ofNullable(nodePrivateKeyFile)
+        .orElseGet(() -> dataDir().toFile());
   }
 
   private String rpcHttpAuthenticationCredentialsFile() {
