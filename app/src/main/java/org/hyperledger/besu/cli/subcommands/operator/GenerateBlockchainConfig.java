@@ -47,7 +47,7 @@ import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.SignatureAlgorithmType;
-import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.DilithiumSignatureAlgorithm;
+import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.AbstractCrystalsDilithium3;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3KeyPair;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3PrivateKey;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3PublicKey;
@@ -89,7 +89,7 @@ class GenerateBlockchainConfig implements Runnable {
   private final Supplier<SignatureAlgorithm> SIGNATURE_ALGORITHM =
       Suppliers.memoize(SignatureAlgorithmFactory::getInstance);
 
-  private final Supplier<DilithiumSignatureAlgorithm> DILITHIUM_SIGNATURE_ALGORITHM =
+  private final Supplier<AbstractCrystalsDilithium3> DILITHIUM_SIGNATURE_ALGORITHM =
       Suppliers.memoize(SignatureAlgorithmFactory::getPQCInstance);
 
   private final Supplier<SphincsPlus> SPHINCS_SIGNATURE_ALGORITHM =

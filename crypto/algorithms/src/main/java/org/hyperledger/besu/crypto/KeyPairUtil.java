@@ -29,11 +29,11 @@ import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.io.Resources;
 import org.apache.tuweni.bytes.Bytes32;
-
-import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.DilithiumSignatureAlgorithm;
+import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.AbstractCrystalsDilithium3;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3KeyPair;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3PrivateKey;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3PublicKey;
+import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.crypto.pqc.falcon.Falcon;
 import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconKeyPair;
 import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconPrivateKey;
@@ -44,20 +44,21 @@ import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusKeyPair;
 import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusPrivateKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Node;
 
 /** The Key pair util. */
 public class KeyPairUtil {
   private static final Logger LOG = LoggerFactory.getLogger(KeyPairUtil.class);
   private static final Supplier<SignatureAlgorithm> SIGNATURE_ALGORITHM =
       Suppliers.memoize(SignatureAlgorithmFactory::getInstance);
-  
-  private static final Supplier<DilithiumSignatureAlgorithm> PQC_SIGNATURE_ALGORITHM = 
+
+  private static final Supplier<AbstractCrystalsDilithium3> PQC_SIGNATURE_ALGORITHM =
       Suppliers.memoize(SignatureAlgorithmFactory::getPQCInstance);
 
-  private static final Supplier<SphincsPlus> SPHINCS_SIGNATURE_ALGORITHM = 
+  private static final Supplier<SphincsPlus> SPHINCS_SIGNATURE_ALGORITHM =
       Suppliers.memoize(SignatureAlgorithmFactory::getSphincsPlusInstance);
 
-  private static final Supplier<Falcon> FALCON_SIGNATURE_ALGORITHM = 
+  private static final Supplier<Falcon> FALCON_SIGNATURE_ALGORITHM =
       Suppliers.memoize(SignatureAlgorithmFactory::getFalconInstance);
 
   /** Default constructor */
@@ -109,7 +110,6 @@ public class KeyPairUtil {
     final KeyPair key;
     LOG.info("SECP privateKey path: " + keyFile);
     if (keyFile.exists()) {
-
       LOG.info("Attempting to load public key from {}", keyFile.getAbsolutePath());
       key = load(keyFile);
       LOG.info(
@@ -139,7 +139,7 @@ public class KeyPairUtil {
       LOG.info(
           "Loaded PQC public key {} from {}", key.getPublicKey().getEncoded().length, publicKeyFile.getAbsolutePath());
     } else {
-      final DilithiumSignatureAlgorithm signatureAlgorithm = PQC_SIGNATURE_ALGORITHM.get();
+      final AbstractCrystalsDilithium3 signatureAlgorithm = PQC_SIGNATURE_ALGORITHM.get();
       key = signatureAlgorithm.generateKeyPair();
       storeKeyFile(key, privateKeyFile.getParentFile().toPath());
 
@@ -307,12 +307,12 @@ public class KeyPairUtil {
   }
 
   public static SphincsPlusKeyPair loadSphincs(final File privateKeyFile, final File publicKeyFile) {
-    return SPHINCS_SIGNATURE_ALGORITHM.get().createSphincsPlusKeyPair(loadSphincsPrivateKeyFromFile(privateKeyFile), 
+    return SPHINCS_SIGNATURE_ALGORITHM.get().createSphincsPlusKeyPair(loadSphincsPrivateKeyFromFile(privateKeyFile),
     loadSphincsPublicKeyFromFile(publicKeyFile));
   }
 
   public static FalconKeyPair loadFalcon(final File privateKeyFile, final File publicKeyFile) {
-    return FALCON_SIGNATURE_ALGORITHM.get().createFalconKeyPair(loadFalconPrivateKeyFromFile(privateKeyFile), 
+    return FALCON_SIGNATURE_ALGORITHM.get().createFalconKeyPair(loadFalconPrivateKeyFromFile(privateKeyFile),
     loadFalconPublicKeyFromFile(publicKeyFile));
   }
 
@@ -392,7 +392,7 @@ public class KeyPairUtil {
       throw new IllegalArgumentException("Supplied file does not contain valid keyPair pair.");
     }
   }
-  
+
   /**
    * Store key pair.
    *

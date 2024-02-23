@@ -15,7 +15,9 @@
 package org.hyperledger.besu.crypto;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.DilithiumSignatureAlgorithm;
+
+import org.hyperledger.besu.crypto.pqc.PqcSignatureAlgorithm;
+import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.AbstractCrystalsDilithium3;
 import org.hyperledger.besu.crypto.pqc.falcon.Falcon;
 import org.hyperledger.besu.crypto.pqc.sphincsplus.SphincsPlus;
 import org.slf4j.Logger;
@@ -27,9 +29,10 @@ public class SignatureAlgorithmFactory {
   private static final Logger LOG = LoggerFactory.getLogger(SignatureAlgorithmFactory.class);
 
   private static SignatureAlgorithm instance = null;
-  private static final DilithiumSignatureAlgorithm pqcInstance = null;
+  private static final AbstractCrystalsDilithium3 pqcInstance = null;
   private static final SphincsPlus sphincsInstance = null;
   private static final Falcon falconInstance = null;
+  private static final PqcSignatureAlgorithm genericPqcInstance = null;
 
   private SignatureAlgorithmFactory() {}
 
@@ -94,7 +97,19 @@ public class SignatureAlgorithmFactory {
         : SignatureAlgorithmType.DEFAULT_SIGNATURE_ALGORITHM_TYPE.get();
   }
 
-  public static DilithiumSignatureAlgorithm getPQCInstance() {
+  /**
+   * getInstance will always return a valid SignatureAlgorithm and never null. This is necessary in
+   * the unit tests be able to use the factory without having to call setInstance first.
+   * @param algorithmName possible string values: "Dilithium", "SPHINCSPlus", "Falcon".
+   * @return PqcSignatureAlgorithm instance
+  */
+  public static PqcSignatureAlgorithm getPqcGenericInstance(String algorithmName) {
+    return genericPqcInstance != null
+        ? genericPqcInstance
+        : SignatureAlgorithmType.getGenericInstanceByName(algorithmName);
+  }
+
+  public static AbstractCrystalsDilithium3 getPQCInstance() {
     return pqcInstance != null
         ? pqcInstance
         : SignatureAlgorithmType.DEFAULT_PQC_SIGNATURE_ALGORITHM_TYPE.get();
