@@ -20,8 +20,8 @@ import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.AbstractCrystalsDilithium3;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.CrystalsDilithiumSignature;
-import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.DilithiumSignatureAlgorithm;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3KeyPair;
 import org.hyperledger.besu.crypto.pqc.falcon.Falcon;
 import org.hyperledger.besu.crypto.pqc.falcon.FalconSignature;
@@ -53,7 +53,7 @@ public class KeyPairSecurityModule implements SecurityModule {
   private final FalconKeyPair falconKeyPair;
   private final PublicKey publicKey;
   private final SignatureAlgorithm signatureAlgorithm = SignatureAlgorithmFactory.getInstance();
-  private final DilithiumSignatureAlgorithm dilithiumSignatureAlgorithm = SignatureAlgorithmFactory.getPQCInstance();
+  private final AbstractCrystalsDilithium3 dilithiumSignatureAlgorithm = SignatureAlgorithmFactory.getPQCInstance();
   private final SphincsPlus sphincsSignatureAlgorithm = SignatureAlgorithmFactory.getSphincsPlusInstance();
   private final Falcon falconSignatureAlgorithm = SignatureAlgorithmFactory.getFalconInstance();
   private final CSVWriter csvWriter;

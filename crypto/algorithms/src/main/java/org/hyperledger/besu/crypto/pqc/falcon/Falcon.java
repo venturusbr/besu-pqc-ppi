@@ -1,16 +1,23 @@
 package org.hyperledger.besu.crypto.pqc.falcon;
 
+import java.security.InvalidKeyException;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.SignatureException;
 
 import org.bouncycastle.pqc.jcajce.spec.FalconParameterSpec;
 import org.hyperledger.besu.crypto.pqc.PqcProvider;
+import org.hyperledger.besu.crypto.pqc.PqcSignatureAlgorithm;
 import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconKeyPair;
 import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconPrivateKey;
 import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconPublicKey;
+import org.hyperledger.besu.nativelib.secp256r1.Signature;
 
-public class Falcon {
+public class Falcon extends PqcSignatureAlgorithm{
 
     protected KeyPairGenerator keyPairGenerator;
 
@@ -18,10 +25,6 @@ public class Falcon {
                 FalconParameterSpec.falcon_512,
                 FalconParameterSpec.falcon_1024
         };
-
-    public Falcon() {
-        PqcProvider.initializeBouncyCastle();
-    }
 
     public FalconKeyPair generateKeyPair() {
         try {
@@ -50,8 +53,9 @@ public class Falcon {
         return FalconPublicKey.create(encoded);
     }
 
-    public FalconSignature sign(final byte[] secpSignatureEncoded, final PrivateKey privateKey) {
-        return FalconSignature.create(secpSignatureEncoded, privateKey);
+    @Override
+    public String getAlgorithmName(){
+        return "Falcon";
     }
     
 }

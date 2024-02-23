@@ -1,7 +1,6 @@
 package org.hyperledger.besu.crypto.pqc;
 
 import java.security.Security;
-
 import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider;
 
 public class PqcProvider {

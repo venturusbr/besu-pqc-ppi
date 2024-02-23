@@ -16,8 +16,14 @@ package org.hyperledger.besu.ethereum.mainnet;
 
 import static org.hyperledger.besu.evm.account.Account.MAX_NONCE;
 
+import org.hyperledger.besu.crypto.KeyPairUtil;
 import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.pqc.PqcSignature;
+import org.hyperledger.besu.crypto.pqc.PqcSignatureAlgorithm;
+import org.hyperledger.besu.crypto.pqc.PqcSignatureFactory;
+import org.hyperledger.besu.crypto.pqc.metrics.CSVWriter;
+import org.hyperledger.besu.crypto.pqc.sphincsplus.SphincsPlusSignature;
 import org.hyperledger.besu.datatypes.Blob;
 import org.hyperledger.besu.datatypes.BlobsWithCommitments;
 import org.hyperledger.besu.datatypes.Hash;
@@ -31,8 +37,11 @@ import org.hyperledger.besu.ethereum.mainnet.feemarket.FeeMarket;
 import org.hyperledger.besu.ethereum.transaction.TransactionInvalidReason;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
+import java.security.PrivateKey;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -45,10 +54,14 @@ import org.bouncycastle.crypto.digests.SHA256Digest;
 /**
  * Validates a transaction based on Frontier protocol runtime requirements.
  *
- * <p>The {@link MainnetTransactionValidator} performs the intrinsic gas cost check on the given
+ * <p>
+ * The {@link MainnetTransactionValidator} performs the intrinsic gas cost check
+ * on the given
  * {@link Transaction}.
  */
 public class MainnetTransactionValidator implements TransactionValidator {
+
+  private static final Logger LOG = LoggerFactory.getLogger(MainnetTransactionValidator.class);
 
   private final GasCalculator gasCalculator;
   private final GasLimitCalculator gasLimitCalculator;
@@ -61,6 +74,8 @@ public class MainnetTransactionValidator implements TransactionValidator {
   private final Set<TransactionType> acceptedTransactionTypes;
 
   private final int maxInitcodeSize;
+
+  private final CSVWriter csvWriter;
 
   public MainnetTransactionValidator(
       final GasCalculator gasCalculator,
@@ -77,6 +92,13 @@ public class MainnetTransactionValidator implements TransactionValidator {
     this.chainId = chainId;
     this.acceptedTransactionTypes = acceptedTransactionTypes;
     this.maxInitcodeSize = maxInitcodeSize;
+    this.csvWriter = CSVWriter.getInstance();
+  }
+
+  private void verifyPqcSignature(Transaction tx, byte[] dataToPqcSign, long classicalMetricStart, long classicalMetricEnd, PrivateKey privateKey, PqcSignatureAlgorithm pqcSignatureAlgorithm){
+    byte[] classicalSignature = tx.getSignature().encodedBytes().toArray();
+    LOG.info("Verify length: dataHash: {}   - byteSignature: {}", tx.getHash().toArray().length, classicalSignature.length);
+    pqcSignatureAlgorithm.verify();
   }
 
   @Override
@@ -84,8 +106,22 @@ public class MainnetTransactionValidator implements TransactionValidator {
       final Transaction transaction,
       final Optional<Wei> baseFee,
       final TransactionValidationParams transactionValidationParams) {
+    long classicalVerifyStart = System.nanoTime();
     final ValidationResult<TransactionInvalidReason> signatureResult =
         validateTransactionSignature(transaction);
+    long classicalVerifyEnd = System.nanoTime();
+    byte[] dataToPqcSign = transaction.getHash().toArray();
+    //Possíveis valores para o nome do algoritmo: "Falcon", "Dilithium", "SPHINCSPlus"
+    // para adicionar mais, mudar o atributo statico PQC_POSSIBLES_ALGORITHM no arquivo 
+    // SignatureAlgorithmType (fazer tbm um getter), e adicionar uma função getter no arquivo 
+    // SignatureAlgorithmFactory
+    PqcSignatureAlgorithm selectedPqcAlgorithm = SignatureAlgorithmFactory.getPqcGenericInstance(null);
+    //TODO: Pegar o KeyPair do algoritmo selecionado e passar para o create
+    //Sugestão: criar outro KeyPair chamando o PQC ou fazer um Singleton para 
+    // byte[] pqcSphincsSignature = PqcSignature.create(dataToPqcSign, , sphincsSignature);
+    byte[] pqcSphincsSignature = PqcSignatureFactory.createSignature(, dataToPqcSign, selectedPqcAlgorithm.getAlgorithmName());
+    verifyPqcSignature(transaction, dataToPqcSign, classicalVerifyStart, classicalVerifyEnd);
+
     if (!signatureResult.isValid()) {
       return signatureResult;
     }
@@ -148,11 +184,10 @@ public class MainnetTransactionValidator implements TransactionValidator {
       // assert transaction.max_fee_per_gas >= transaction.max_priority_fee_per_gas
       if (transaction.getType().supports1559FeeMarket()
           && transaction
-                  .getMaxPriorityFeePerGas()
-                  .get()
-                  .getAsBigInteger()
-                  .compareTo(transaction.getMaxFeePerGas().get().getAsBigInteger())
-              > 0) {
+              .getMaxPriorityFeePerGas()
+              .get()
+              .getAsBigInteger()
+              .compareTo(transaction.getMaxFeePerGas().get().getAsBigInteger()) > 0) {
         return ValidationResult.invalid(
             TransactionInvalidReason.MAX_PRIORITY_FEE_PER_GAS_EXCEEDS_MAX_FEE_PER_GAS,
             "max priority fee per gas cannot be greater than max fee per gas");
@@ -170,10 +205,9 @@ public class MainnetTransactionValidator implements TransactionValidator {
       }
     }
 
-    final long intrinsicGasCost =
-        gasCalculator.transactionIntrinsicGasCost(
-                transaction.getPayload(), transaction.isContractCreation())
-            + (transaction.getAccessList().map(gasCalculator::accessListGasCost).orElse(0L));
+    final long intrinsicGasCost = gasCalculator.transactionIntrinsicGasCost(
+        transaction.getPayload(), transaction.isContractCreation())
+        + (transaction.getAccessList().map(gasCalculator::accessListGasCost).orElse(0L));
     if (Long.compareUnsigned(intrinsicGasCost, transaction.getGasLimit()) > 0) {
       return ValidationResult.invalid(
           TransactionInvalidReason.INTRINSIC_GAS_EXCEEDS_GAS_LIMIT,
@@ -182,8 +216,7 @@ public class MainnetTransactionValidator implements TransactionValidator {
               intrinsicGasCost, transaction.getGasLimit()));
     }
 
-    if (transaction.calculateUpfrontGasCost(transaction.getMaxGasPrice(), Wei.ZERO, 0).bitLength()
-        > 256) {
+    if (transaction.calculateUpfrontGasCost(transaction.getMaxGasPrice(), Wei.ZERO, 0).bitLength() > 256) {
       return ValidationResult.invalid(
           TransactionInvalidReason.UPFRONT_COST_EXCEEDS_UINT256,
           "Upfront gas cost cannot exceed 2^256 Wei");
@@ -191,6 +224,7 @@ public class MainnetTransactionValidator implements TransactionValidator {
 
     return ValidationResult.valid();
   }
+
 
   @Override
   public ValidationResult<TransactionInvalidReason> validateForSender(
@@ -204,11 +238,11 @@ public class MainnetTransactionValidator implements TransactionValidator {
     if (sender != null) {
       senderBalance = sender.getBalance();
       senderNonce = sender.getNonce();
-      if (sender.getCodeHash() != null) codeHash = sender.getCodeHash();
+      if (sender.getCodeHash() != null)
+        codeHash = sender.getCodeHash();
     }
 
-    final Wei upfrontCost =
-        transaction.getUpfrontCost(gasCalculator.blobGasCost(transaction.getBlobCount()));
+    final Wei upfrontCost = transaction.getUpfrontCost(gasCalculator.blobGasCost(transaction.getBlobCount()));
     if (upfrontCost.compareTo(senderBalance) > 0) {
       return ValidationResult.invalid(
           TransactionInvalidReason.UPFRONT_COST_EXCEEDS_BALANCE,
@@ -346,27 +380,23 @@ public class MainnetTransactionValidator implements TransactionValidator {
       }
     }
 
-    final byte[] blobs =
-        Bytes.wrap(blobsWithCommitments.getBlobs().stream().map(Blob::getData).toList())
-            .toArrayUnsafe();
+    final byte[] blobs = Bytes.wrap(blobsWithCommitments.getBlobs().stream().map(Blob::getData).toList())
+        .toArrayUnsafe();
 
-    final byte[] kzgCommitments =
-        Bytes.wrap(
-                blobsWithCommitments.getKzgCommitments().stream()
-                    .map(kc -> (Bytes) kc.getData())
-                    .toList())
-            .toArrayUnsafe();
+    final byte[] kzgCommitments = Bytes.wrap(
+        blobsWithCommitments.getKzgCommitments().stream()
+            .map(kc -> (Bytes) kc.getData())
+            .toList())
+        .toArrayUnsafe();
 
-    final byte[] kzgProofs =
-        Bytes.wrap(
-                blobsWithCommitments.getKzgProofs().stream()
-                    .map(kp -> (Bytes) kp.getData())
-                    .toList())
-            .toArrayUnsafe();
+    final byte[] kzgProofs = Bytes.wrap(
+        blobsWithCommitments.getKzgProofs().stream()
+            .map(kp -> (Bytes) kp.getData())
+            .toList())
+        .toArrayUnsafe();
 
-    final boolean kzgVerification =
-        CKZG4844JNI.verifyBlobKzgProofBatch(
-            blobs, kzgCommitments, kzgProofs, blobsWithCommitments.getBlobs().size());
+    final boolean kzgVerification = CKZG4844JNI.verifyBlobKzgProofBatch(
+        blobs, kzgCommitments, kzgProofs, blobsWithCommitments.getBlobs().size());
 
     if (!kzgVerification) {
       return ValidationResult.invalid(
