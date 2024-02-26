@@ -9,11 +9,16 @@ import java.security.Signature;
 import java.security.SignatureException;
 
 import org.hyperledger.besu.crypto.SecureRandomProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class PqcSignature {
+
+    private static final Logger LOG = LoggerFactory.getLogger(PqcSignature.class);
+
     private byte[] encoded;
 
-    private void setSignature(byte[] signature){
+    private void setSignature(final byte[] signature){
         this.encoded = signature;
     };
     
@@ -29,7 +34,7 @@ public abstract class PqcSignature {
             byte[] signature = sig.sign();
             setSignature(signature);
         } catch (NoSuchProviderException | NoSuchAlgorithmException | InvalidKeyException | SignatureException e) {
-            e.printStackTrace();
+            LOG.info(e.getMessage());
         }
     }
 

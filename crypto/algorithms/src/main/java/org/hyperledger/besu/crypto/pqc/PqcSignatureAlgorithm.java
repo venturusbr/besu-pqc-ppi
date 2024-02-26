@@ -16,7 +16,7 @@ public abstract class PqcSignatureAlgorithm {
         PqcProvider.initializeBouncyCastle();
     }
 
-    public boolean verify(PublicKey publicKey, byte[] dataToSign, byte[] signature) {
+    public boolean verify(final PublicKey publicKey, final byte[] dataToSign, final byte[] signature) {
         try {
             Signature sig = Signature.getInstance(getAlgorithmName(), "BCPQC");
             sig.initVerify(publicKey);

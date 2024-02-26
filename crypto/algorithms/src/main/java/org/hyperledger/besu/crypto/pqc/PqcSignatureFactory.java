@@ -13,7 +13,7 @@ public class PqcSignatureFactory {
     private static final ImmutableMap<String, Supplier<PqcSignature>> PQC_SUPPORTED_SIGNATURE_ALGORITHMS = ImmutableMap
       .of("Dilithium", CrystalsDilithiumSignature::new,"SPHINCSPlus",SphincsPlusSignature::new, "Falcon", FalconSignature::new);
 
-    public static PqcSignature createSignature(PrivateKey privateKey, byte[] dataToSign, String algorithmName){
+    public static PqcSignature createSignature(final PrivateKey privateKey, final byte[] dataToSign, final String algorithmName){
         PqcSignature pqcSignature = PQC_SUPPORTED_SIGNATURE_ALGORITHMS.get(algorithmName).get();
         pqcSignature.create(dataToSign, privateKey);
         return pqcSignature;

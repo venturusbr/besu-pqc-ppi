@@ -33,7 +33,6 @@ import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.AbstractCrystalsDilith
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3KeyPair;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3PrivateKey;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3PublicKey;
-import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.crypto.pqc.falcon.Falcon;
 import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconKeyPair;
 import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconPrivateKey;

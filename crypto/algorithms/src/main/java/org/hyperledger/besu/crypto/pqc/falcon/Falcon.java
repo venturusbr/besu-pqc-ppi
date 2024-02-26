@@ -1,13 +1,7 @@
 package org.hyperledger.besu.crypto.pqc.falcon;
 
-import java.security.InvalidKeyException;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.Signature;
-import java.security.SignatureException;
 
 import org.bouncycastle.pqc.jcajce.spec.FalconParameterSpec;
 import org.hyperledger.besu.crypto.pqc.PqcProvider;
@@ -15,7 +9,6 @@ import org.hyperledger.besu.crypto.pqc.PqcSignatureAlgorithm;
 import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconKeyPair;
 import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconPrivateKey;
 import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconPublicKey;
-import org.hyperledger.besu.nativelib.secp256r1.Signature;
 
 public class Falcon extends PqcSignatureAlgorithm{
 

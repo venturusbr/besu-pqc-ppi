@@ -20,6 +20,9 @@ import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.pqc.PqcSignature;
+import org.hyperledger.besu.crypto.pqc.PqcSignatureAlgorithm;
+import org.hyperledger.besu.crypto.pqc.PqcSignatureFactory;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.AbstractCrystalsDilithium3;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.CrystalsDilithiumSignature;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3KeyPair;
@@ -53,6 +56,7 @@ public class KeyPairSecurityModule implements SecurityModule {
   private final FalconKeyPair falconKeyPair;
   private final PublicKey publicKey;
   private final SignatureAlgorithm signatureAlgorithm = SignatureAlgorithmFactory.getInstance();
+  private final PqcSignatureAlgorithm pqcSignatureAlgorithm = SignatureAlgorithmFactory.getPqcGenericInstance("Dilithium");
   private final AbstractCrystalsDilithium3 dilithiumSignatureAlgorithm = SignatureAlgorithmFactory.getPQCInstance();
   private final SphincsPlus sphincsSignatureAlgorithm = SignatureAlgorithmFactory.getSphincsPlusInstance();
   private final Falcon falconSignatureAlgorithm = SignatureAlgorithmFactory.getFalconInstance();
@@ -92,6 +96,10 @@ public class KeyPairSecurityModule implements SecurityModule {
       byte[] secpSignatureEncoded = signature.encodedBytes().toArray();
       PrivateKey dilithiumPrivateKey = pqcKeyPair.getPrivateKey().getCrystalsDilithiumPrivateKeyFromEncoded();
       long startDilithiumSign = System.nanoTime();
+
+      //colocar o valor capturado pela flag na linha 59
+      final PqcSignature pqcSignature = PqcSignatureFactory.createSignature(dilithiumPrivateKey, secpSignatureEncoded, pqcSignatureAlgorithm.getAlgorithmName());
+      
       final CrystalsDilithiumSignature dilithiumSignature = dilithiumSignatureAlgorithm.sign(secpSignatureEncoded, dilithiumPrivateKey);
       long endDilithiumSign = System.nanoTime();
       
