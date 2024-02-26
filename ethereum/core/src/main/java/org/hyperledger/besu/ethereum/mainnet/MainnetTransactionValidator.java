@@ -112,7 +112,7 @@ public class MainnetTransactionValidator implements TransactionValidator {
     long classicalVerifyEnd = System.nanoTime();
     byte[] dataToPqcSign = transaction.getHash().toArray();
     //Possíveis valores para o nome do algoritmo: "Falcon", "Dilithium", "SPHINCSPlus"
-    // para adicionar mais, mudar o atributo statico PQC_POSSIBLES_ALGORITHM no arquivo 
+    // para adicionar mais, mudar o atributo static PQC_POSSIBLES_ALGORITHM no arquivo 
     // SignatureAlgorithmType (fazer tbm um getter), e adicionar uma função getter no arquivo 
     // SignatureAlgorithmFactory
     PqcSignatureAlgorithm selectedPqcAlgorithm = SignatureAlgorithmFactory.getPqcGenericInstance(null);

@@ -104,6 +104,7 @@ import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.SignatureAlgorithmType;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3KeyPair;
 import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconKeyPair;
+import org.hyperledger.besu.crypto.pqc.keys.PqcKeyPair;
 import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusKeyPair;
 import org.hyperledger.besu.cryptoservices.KeyPairSecurityModule;
 import org.hyperledger.besu.cryptoservices.NodeKey;
@@ -1596,10 +1597,24 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
   }
 
   private SecurityModule defaultSecurityModule() {
-    return new KeyPairSecurityModule(loadKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile()), 
-    loadPqcKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile()),
-    loadSphincsKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile()),
-    loadFalconKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile()));
+    Dilithium3KeyPair dilithiumKp = loadPqcKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile());
+    SphincsPlusKeyPair sphincsKp = loadSphincsKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile());
+    FalconKeyPair falconKp = loadFalconKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile());
+
+    //trocar pela string do algoritmo pego na flag
+    String algorithmName = "dilithium";
+    switch(algorithmName){
+      case "Dilithium" -> PqcKeyPair.setKeys(dilithiumKp.getPrivateKey().getCrystalsDilithiumPrivateKeyFromEncoded(), dilithiumKp.getPublicKey().getCrystalsDilithiumPublicKeyFromEncoded());
+      case "SPHINCSPlus" -> PqcKeyPair.setKeys(sphincsKp.getPrivateKey().getSphincsPlusPrivateKeyFromEncoded(), sphincsKp.getPublicKey().getSphincsPlusPublicKeyFromEncoded());
+      case "Falcon" -> PqcKeyPair.setKeys(falconKp.getPrivateKey().getFalconPrivateKeyFromEncoded(), falconKp.getPublicKey().getFalconPublicKeyFromEncoded());
+    }
+
+    return new KeyPairSecurityModule(
+    loadKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile()), 
+    dilithiumKp, 
+    sphincsKp,
+    falconKp
+    );
   }
 
   // loadKeyPair() is public because it is accessed by subcommands

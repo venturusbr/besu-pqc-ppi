@@ -83,7 +83,7 @@ public class SignatureAlgorithmFactory {
    * @param algorithmName possible string values: "Dilithium", "SPHINCSPlus", "Falcon".
    * @return PqcSignatureAlgorithm instance
   */
-  public static PqcSignatureAlgorithm getPqcGenericInstance(String algorithmName) {
+  public static PqcSignatureAlgorithm getPqcGenericInstance(final String algorithmName) {
     return genericPqcInstance != null
         ? genericPqcInstance
         : SignatureAlgorithmType.getGenericInstanceByName(algorithmName);

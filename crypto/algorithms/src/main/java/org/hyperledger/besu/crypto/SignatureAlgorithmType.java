@@ -92,7 +92,7 @@ public class SignatureAlgorithmType {
     return new SignatureAlgorithmType(DEFAULT_SIGNATURE_ALGORITHM_TYPE);
   }
 
-  public static PqcSignatureAlgorithm getGenericInstanceByName(String algorithmName){
+  public static PqcSignatureAlgorithm getGenericInstanceByName(final String algorithmName){
     return SignatureAlgorithmType.PQC_POSSIBLES_ALGORITHM.get(algorithmName).get();
   }
 
