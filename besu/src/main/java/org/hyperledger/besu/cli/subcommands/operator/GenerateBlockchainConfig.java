@@ -153,6 +153,14 @@ class GenerateBlockchainConfig implements Runnable {
       arity = "1..1")
   private String pqcPublicKeyFileName = "pqc-key.pub";
 
+  @SuppressWarnings({ "FieldCanBeFinal", "FieldMayBeFinal" }) // PicoCLI requires non-final Strings.
+  @Option(
+      names = "--public-algorithm-name", 
+      paramLabel = DefaultCommandValues.MANDATORY_PATH_FORMAT_HELP, 
+      description = "Name of the pqc algorithm. (default: ${DEFAULT-VALUE})", 
+      arity = "1..1")
+  private String pqcAlgorithmName = "dilithium";
+
   @ParentCommand
   private OperatorSubCommand parentCommand; // Picocli injects reference to parent command
 
@@ -259,23 +267,32 @@ class GenerateBlockchainConfig implements Runnable {
       final Address nodeAddress = Util.publicKeyToAddress(secpPublicKeyBytes);
       writeKeypair(secpPublicKeyBytes, secpPrivateKey.getEncodedBytes(), nodeAddress);
 
-      LOG.info("Generating PQC Crystals Dilithium3 keypair for node {}.", node);
-      final Dilithium3KeyPair PQCKeyPair = DILITHIUM_SIGNATURE_ALGORITHM.get().generateKeyPair();
-      Dilithium3PublicKey pqcPublicKey = PQCKeyPair.getPublicKey();
-      Dilithium3PrivateKey pqcPrivateKey = PQCKeyPair.getPrivateKey();
-      writeKeypair(pqcPublicKey, pqcPrivateKey, nodeAddress);
-
-      LOG.info("Generating PQC Sphincs Plus keypair for node {}.", node);
-      final SphincsPlusKeyPair sphincsKeyPair = SPHINCS_SIGNATURE_ALGORITHM.get().generateKeyPair();
-      SphincsPlusPrivateKey sphincsPrivateKey = sphincsKeyPair.getPrivateKey();
-      SphincsPlusPublicKey sphincsPublicKey = sphincsKeyPair.getPublicKey();
-      writeKeypair(sphincsPublicKey, sphincsPrivateKey, nodeAddress);
-
-      LOG.info("Generating PQC Falcon keypair for node {}.", node);
-      final FalconKeyPair falconKeyPair = FALCON_SIGNATURE_ALGORITHM.get().generateKeyPair();
-      FalconPrivateKey falconPrivateKey = falconKeyPair.getPrivateKey();
-      FalconPublicKey falconPublicKey = falconKeyPair.getPublicKey();
-      writeKeypair(falconPublicKey, falconPrivateKey, nodeAddress);
+      switch (pqcAlgorithmName) {
+        case "dilithium":
+          LOG.info("Generating PQC Crystals Dilithium3 keypair for node {}.", node);
+          final Dilithium3KeyPair PQCKeyPair = DILITHIUM_SIGNATURE_ALGORITHM.get().generateKeyPair();
+          Dilithium3PublicKey pqcPublicKey = PQCKeyPair.getPublicKey();
+          Dilithium3PrivateKey pqcPrivateKey = PQCKeyPair.getPrivateKey();
+          writeKeypair(pqcPublicKey, pqcPrivateKey, nodeAddress);
+          break;
+        case "sphincsp":
+          LOG.info("Generating PQC Sphincs Plus keypair for node {}.", node);
+          final SphincsPlusKeyPair sphincsKeyPair = SPHINCS_SIGNATURE_ALGORITHM.get().generateKeyPair();
+          SphincsPlusPrivateKey sphincsPrivateKey = sphincsKeyPair.getPrivateKey();
+          SphincsPlusPublicKey sphincsPublicKey = sphincsKeyPair.getPublicKey();
+          writeKeypair(sphincsPublicKey, sphincsPrivateKey, nodeAddress);
+          break;
+        case "falcon":
+          LOG.info("Generating PQC Falcon keypair for node {}.", node);
+          final FalconKeyPair falconKeyPair = FALCON_SIGNATURE_ALGORITHM.get().generateKeyPair();
+          FalconPrivateKey falconPrivateKey = falconKeyPair.getPrivateKey();
+          FalconPublicKey falconPublicKey = falconKeyPair.getPublicKey();
+          writeKeypair(falconPublicKey, falconPrivateKey, nodeAddress);
+          break;
+        default:
+          LOG.error("PQC algorithm not identified.");
+          throw new IOException();
+      }
 
     } catch (final IOException e) {
       LOG.error("An error occurred while trying to generate node keypair.", e);
@@ -313,18 +330,18 @@ class GenerateBlockchainConfig implements Runnable {
   private void writeKeypair(final SphincsPlusPublicKey publicKey, final SphincsPlusPrivateKey privateKey, final Address nodeAddress)
       throws IOException {
     final Path nodeDirectoryPath = keysDirectory.resolve(nodeAddress.toString());
-    createFileAndWrite(nodeDirectoryPath, "sphincs-key.pub", publicKey.bytesToHex());
+    createFileAndWrite(nodeDirectoryPath, pqcPublicKeyFileName, publicKey.bytesToHex());
     if (privateKey != null) {
-      createFileAndWrite(nodeDirectoryPath, "sphincs-key", privateKey.bytesToHex());
+      createFileAndWrite(nodeDirectoryPath, pqcPrivateKeyFileName, privateKey.bytesToHex());
     }
   }
 
   private void writeKeypair(final FalconPublicKey publicKey, final FalconPrivateKey privateKey, final Address nodeAddress)
     throws IOException {
     final Path nodeDirectoryPath = keysDirectory.resolve(nodeAddress.toString());
-    createFileAndWrite(nodeDirectoryPath, "falcon-key.pub", publicKey.bytesToHex());
+    createFileAndWrite(nodeDirectoryPath, pqcPublicKeyFileName, publicKey.bytesToHex());
     if (privateKey != null) {
-      createFileAndWrite(nodeDirectoryPath, "falcon-key", privateKey.bytesToHex());
+      createFileAndWrite(nodeDirectoryPath, pqcPrivateKeyFileName, privateKey.bytesToHex());
     }
   }
 
