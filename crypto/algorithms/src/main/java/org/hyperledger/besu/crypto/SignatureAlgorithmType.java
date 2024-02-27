@@ -31,7 +31,7 @@ public class SignatureAlgorithmType {
 
   /** The constant DEFAULT_EC_CURVE_NAME. */
   public static final String DEFAULT_EC_CURVE_NAME = "secp256k1";
-  public static final String PQC_LATTICE_BASED_DILITHIUM = "Dilithium";
+  public static final String PQC_LATTICE_BASED_DILITHIUM = "dilithium";
 
   /** The constant SECP_256_R1_CURVE_NAME. */
   public static final String SECP_256_R1_CURVE_NAME = "secp256r1";
@@ -41,7 +41,7 @@ public class SignatureAlgorithmType {
           DEFAULT_EC_CURVE_NAME, SECP256K1::new, SECP_256_R1_CURVE_NAME, SECP256R1::new);
 
   private static final ImmutableMap<String, Supplier<PqcSignatureAlgorithm>> PQC_POSSIBLES_ALGORITHM = ImmutableMap
-  .of(PQC_LATTICE_BASED_DILITHIUM, CrystalsDilithium3::new, "SPHINCSPlus", SphincsPlus::new, "Falcon", Falcon::new);
+  .of(PQC_LATTICE_BASED_DILITHIUM, CrystalsDilithium3::new, "sphincsplus", SphincsPlus::new, "falcon", Falcon::new);
 
   private static final ImmutableMap<String, Supplier<AbstractCrystalsDilithium3>> PQC_SUPPORTED_ALGORITHMS = ImmutableMap
       .of(PQC_LATTICE_BASED_DILITHIUM, CrystalsDilithium3::new);

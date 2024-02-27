@@ -211,11 +211,11 @@ public class KeyPairUtil {
   }
 
   public static SphincsPlusKeyPair loadSphincsKeyPair(final Path directory) {
-    return loadSphincsKeyPair(getDefaultSphincsPrivateKeyFile(directory), getDefaultSphincsPublicKeyFile(directory));
+    return loadSphincsKeyPair(getDefaultPqcPrivateKeyFile(directory), getDefaultPqcPublicKeyFile(directory));
   }
 
   public static FalconKeyPair loadFalconKeyPair(final Path directory) {
-    return loadFalconKeyPair(getDefaultFalconPrivateKeyFile(directory), getDefaultFalconPublicKeyFile(directory));
+    return loadFalconKeyPair(getDefaultPqcPrivateKeyFile(directory), getDefaultPqcPublicKeyFile(directory));
   }
 
   /**
@@ -272,22 +272,6 @@ public class KeyPairUtil {
 
   public static File getDefaultPqcPublicKeyFile(final Path directory) {
     return directory.resolve("pqc-key.pub").toFile();
-  }
-
-  public static File getDefaultSphincsPrivateKeyFile(final Path directory) {
-    return directory.resolve("sphincs-key").toFile();
-  }
-
-  public static File getDefaultSphincsPublicKeyFile(final Path directory) {
-    return directory.resolve("sphincs-key.pub").toFile();
-  }
-
-  public static File getDefaultFalconPrivateKeyFile(final Path directory) {
-    return directory.resolve("falcon-key").toFile();
-  }
-
-  public static File getDefaultFalconPublicKeyFile(final Path directory) {
-    return directory.resolve("falcon-key.pub").toFile();
   }
 
   /**

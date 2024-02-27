@@ -33,6 +33,7 @@ public class SignatureAlgorithmFactory {
   private static final SphincsPlus sphincsInstance = null;
   private static final Falcon falconInstance = null;
   private static final PqcSignatureAlgorithm genericPqcInstance = null;
+  private static String pqcAlgorithmName = null;
 
   private SignatureAlgorithmFactory() {}
 
@@ -100,13 +101,12 @@ public class SignatureAlgorithmFactory {
   /**
    * getInstance will always return a valid SignatureAlgorithm and never null. This is necessary in
    * the unit tests be able to use the factory without having to call setInstance first.
-   * @param algorithmName possible string values: "Dilithium", "SPHINCSPlus", "Falcon".
    * @return PqcSignatureAlgorithm instance
   */
-  public static PqcSignatureAlgorithm getPqcGenericInstance(final String algorithmName) {
+  public static PqcSignatureAlgorithm getPqcGenericInstance() {
     return genericPqcInstance != null
         ? genericPqcInstance
-        : SignatureAlgorithmType.getGenericInstanceByName(algorithmName);
+        : SignatureAlgorithmType.getGenericInstanceByName(pqcAlgorithmName);
   }
 
   public static AbstractCrystalsDilithium3 getPQCInstance() {
@@ -140,5 +140,13 @@ public class SignatureAlgorithmFactory {
   @VisibleForTesting
   public static void resetInstance() {
     instance = null;
+  }
+
+  public static void setpqcAlgorithmName(final String name) {
+    pqcAlgorithmName = name;
+  }
+
+  public static String getPqcAlgorithmName() {
+    return pqcAlgorithmName;
   }
 }

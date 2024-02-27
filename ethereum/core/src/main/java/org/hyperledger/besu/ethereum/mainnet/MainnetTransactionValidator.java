@@ -26,6 +26,7 @@ import org.hyperledger.besu.datatypes.CodeDelegation;
 import org.hyperledger.besu.crypto.pqc.PqcSignature;
 import org.hyperledger.besu.crypto.pqc.PqcSignatureAlgorithm;
 import org.hyperledger.besu.crypto.pqc.PqcSignatureFactory;
+import org.hyperledger.besu.crypto.pqc.keys.PqcKeyPair;
 import org.hyperledger.besu.crypto.pqc.metrics.CSVWriter;
 import org.hyperledger.besu.crypto.pqc.sphincsplus.SphincsPlusSignature;
 import org.hyperledger.besu.datatypes.Blob;
@@ -43,7 +44,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
-import java.security.PrivateKey;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -79,8 +79,6 @@ public class MainnetTransactionValidator implements TransactionValidator {
   private final int maxInitcodeSize;
   private final MainnetBlobsValidator blobsValidator;
 
-  private final CSVWriter csvWriter;
-
   public MainnetTransactionValidator(
       final GasCalculator gasCalculator,
       final GasLimitCalculator gasLimitCalculator,
@@ -97,15 +95,13 @@ public class MainnetTransactionValidator implements TransactionValidator {
     this.chainId = chainId;
     this.acceptedTransactionTypes = acceptedTransactionTypes;
     this.maxInitcodeSize = maxInitcodeSize;
-    this.blobsValidator =
-        new MainnetBlobsValidator(acceptedBlobVersions, gasLimitCalculator, gasCalculator);
-    this.csvWriter = CSVWriter.getInstance();
   }
 
-  private void verifyPqcSignature(Transaction tx, byte[] dataToPqcSign, long classicalMetricStart, long classicalMetricEnd, PrivateKey privateKey, PqcSignatureAlgorithm pqcSignatureAlgorithm){
-    byte[] classicalSignature = tx.getSignature().encodedBytes().toArray();
-    LOG.info("Verify length: dataHash: {}   - byteSignature: {}", tx.getHash().toArray().length, classicalSignature.length);
-    pqcSignatureAlgorithm.verify();
+  private void verifyPqcSignature(final byte[] pqcSignature,final  byte[] dataToPqcSign, final long classicalMetricStart, final long classicalMetricEnd, final PqcSignatureAlgorithm signatureAlgorithm){
+    boolean isValid = signatureAlgorithm.verify(PqcKeyPair.getPubKey(), dataToPqcSign, pqcSignature);
+    LOG.info("Is Pqc Valid? " +isValid);
+    LOG.info("Classical Metric Start " +classicalMetricStart);
+    LOG.info("Classical Metric End " +classicalMetricEnd);
   }
 
   @Override
@@ -119,16 +115,11 @@ public class MainnetTransactionValidator implements TransactionValidator {
         validateTransactionSignature(transaction);
     long classicalVerifyEnd = System.nanoTime();
     byte[] dataToPqcSign = transaction.getHash().toArray();
-    //Possíveis valores para o nome do algoritmo: "Falcon", "Dilithium", "SPHINCSPlus"
-    // para adicionar mais, mudar o atributo static PQC_POSSIBLES_ALGORITHM no arquivo
-    // SignatureAlgorithmType (fazer tbm um getter), e adicionar uma função getter no arquivo
-    // SignatureAlgorithmFactory
-    PqcSignatureAlgorithm selectedPqcAlgorithm = SignatureAlgorithmFactory.getPqcGenericInstance(null);
-    //TODO: Pegar o KeyPair do algoritmo selecionado e passar para o create
-    //Sugestão: criar outro KeyPair chamando o PQC ou fazer um Singleton para
-    // byte[] pqcSphincsSignature = PqcSignature.create(dataToPqcSign, , sphincsSignature);
-    byte[] pqcSphincsSignature = PqcSignatureFactory.createSignature(, dataToPqcSign, selectedPqcAlgorithm.getAlgorithmName());
-    verifyPqcSignature(transaction, dataToPqcSign, classicalVerifyStart, classicalVerifyEnd);
+
+    PqcSignatureAlgorithm selectedPqcAlgorithm = SignatureAlgorithmFactory.getPqcGenericInstance();
+
+    byte[] pqcSignature = PqcSignatureFactory.createSignature(PqcKeyPair.getPrivKey(), dataToPqcSign, selectedPqcAlgorithm.getAlgorithmName()).getEncoded();
+    verifyPqcSignature(pqcSignature, dataToPqcSign, classicalVerifyStart, classicalVerifyEnd, selectedPqcAlgorithm);
 
     if (!signatureResult.isValid()) {
       return signatureResult;
