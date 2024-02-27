@@ -33,7 +33,7 @@ public class SignatureAlgorithmFactory {
   private static final SphincsPlus sphincsInstance = null;
   private static final Falcon falconInstance = null;
   private static final PqcSignatureAlgorithm genericPqcInstance = null;
-  private static String pqcAlgorithmName = null;
+  private static String pqcAlgorithmName = "none";
 
   private SignatureAlgorithmFactory() {}
 

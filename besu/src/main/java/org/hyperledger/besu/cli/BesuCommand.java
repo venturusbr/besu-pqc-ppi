@@ -380,7 +380,7 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
       paramLabel = DefaultCommandValues.MANDATORY_PATH_FORMAT_HELP, 
       description = "Name of the pqc algorithm. (default: ${DEFAULT-VALUE})", 
       arity = "1..1")
-  private String pqcAlgorithmName = "dilithium";
+  private String pqcAlgorithmName = "none";
 
   @Option(
       names = "--identity",
@@ -1611,9 +1611,13 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
   }
 
   private SecurityModule defaultSecurityModule() {
-    SignatureAlgorithmFactory.setpqcAlgorithmName(pqcAlgorithmName);
+    if(!pqcAlgorithmName.equals("none"))
+      SignatureAlgorithmFactory.setpqcAlgorithmName(pqcAlgorithmName);
      
     switch (pqcAlgorithmName) {
+      case "none":
+          System.out.println("Warning: Running Without PQC Algorithm");
+          break;
       case "dilithium":
         Dilithium3KeyPair dilithiumKp = loadPqcKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile());
         PqcKeyPair.setKeys(dilithiumKp.getPrivateKey().getCrystalsDilithiumPrivateKeyFromEncoded(), dilithiumKp.getPublicKey().getCrystalsDilithiumPublicKeyFromEncoded());

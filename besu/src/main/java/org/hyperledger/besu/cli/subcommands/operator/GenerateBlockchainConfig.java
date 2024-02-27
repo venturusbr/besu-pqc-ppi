@@ -159,7 +159,7 @@ class GenerateBlockchainConfig implements Runnable {
       paramLabel = DefaultCommandValues.MANDATORY_PATH_FORMAT_HELP, 
       description = "Name of the pqc algorithm. (default: ${DEFAULT-VALUE})", 
       arity = "1..1")
-  private String pqcAlgorithmName = "dilithium";
+  private String pqcAlgorithmName = "none";
 
   @ParentCommand
   private OperatorSubCommand parentCommand; // Picocli injects reference to parent command
@@ -268,6 +268,9 @@ class GenerateBlockchainConfig implements Runnable {
       writeKeypair(secpPublicKeyBytes, secpPrivateKey.getEncodedBytes(), nodeAddress);
 
       switch (pqcAlgorithmName) {
+        case "none":
+          LOG.info("Warning: No PQC Algorithm Selected");
+          break;
         case "dilithium":
           LOG.info("Generating PQC Crystals Dilithium3 keypair for node {}.", node);
           final Dilithium3KeyPair PQCKeyPair = DILITHIUM_SIGNATURE_ALGORITHM.get().generateKeyPair();

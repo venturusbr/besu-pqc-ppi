@@ -108,12 +108,15 @@ public class MainnetTransactionValidator implements TransactionValidator {
     final ValidationResult<TransactionInvalidReason> signatureResult =
         validateTransactionSignature(transaction);
     long classicalVerifyEnd = System.nanoTime();
-    byte[] dataToPqcSign = transaction.getHash().toArray();
-    
-    PqcSignatureAlgorithm selectedPqcAlgorithm = SignatureAlgorithmFactory.getPqcGenericInstance();
-    
-    byte[] pqcSignature = PqcSignatureFactory.createSignature(PqcKeyPair.getPrivKey(), dataToPqcSign, selectedPqcAlgorithm.getAlgorithmName()).getEncoded();
-    verifyPqcSignature(pqcSignature, dataToPqcSign, classicalVerifyStart, classicalVerifyEnd, selectedPqcAlgorithm);
+
+    if(!SignatureAlgorithmFactory.getPqcAlgorithmName().equals("none")) {
+      byte[] dataToPqcSign = transaction.getHash().toArray();
+      
+      PqcSignatureAlgorithm selectedPqcAlgorithm = SignatureAlgorithmFactory.getPqcGenericInstance();
+      
+      byte[] pqcSignature = PqcSignatureFactory.createSignature(PqcKeyPair.getPrivKey(), dataToPqcSign, selectedPqcAlgorithm.getAlgorithmName()).getEncoded();
+      verifyPqcSignature(pqcSignature, dataToPqcSign, classicalVerifyStart, classicalVerifyEnd, selectedPqcAlgorithm);
+    }
 
     if (!signatureResult.isValid()) {
       return signatureResult;
