@@ -103,9 +103,15 @@ import org.hyperledger.besu.crypto.KeyPairUtil;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.SignatureAlgorithmType;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3KeyPair;
+import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3PrivateKey;
+import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3PublicKey;
 import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconKeyPair;
+import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconPrivateKey;
+import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconPublicKey;
 import org.hyperledger.besu.crypto.pqc.keys.PqcKeyPair;
 import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusKeyPair;
+import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusPrivateKey;
+import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusPublicKey;
 import org.hyperledger.besu.cryptoservices.KeyPairSecurityModule;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.datatypes.Address;
@@ -367,6 +373,14 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
       description =
           "Genesis file. Setting this option makes --network option ignored and requires --network-id to be set.")
   private final File genesisFile = null;
+
+  @SuppressWarnings({ "FieldCanBeFinal", "FieldMayBeFinal" }) // PicoCLI requires non-final Strings.
+  @Option(
+      names = "--pqc-algorithm-name", 
+      paramLabel = DefaultCommandValues.MANDATORY_PATH_FORMAT_HELP, 
+      description = "Name of the pqc algorithm. (default: ${DEFAULT-VALUE})", 
+      arity = "1..1")
+  private String pqcAlgorithmName = "dilithium";
 
   @Option(
       names = "--identity",
@@ -1597,23 +1611,27 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
   }
 
   private SecurityModule defaultSecurityModule() {
-    Dilithium3KeyPair dilithiumKp = loadPqcKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile());
-    SphincsPlusKeyPair sphincsKp = loadSphincsKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile());
-    FalconKeyPair falconKp = loadFalconKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile());
-
-    //trocar pela string do algoritmo pego na flag
-    String algorithmName = "dilithium";
-    switch(algorithmName){
-      case "Dilithium" -> PqcKeyPair.setKeys(dilithiumKp.getPrivateKey().getCrystalsDilithiumPrivateKeyFromEncoded(), dilithiumKp.getPublicKey().getCrystalsDilithiumPublicKeyFromEncoded());
-      case "SPHINCSPlus" -> PqcKeyPair.setKeys(sphincsKp.getPrivateKey().getSphincsPlusPrivateKeyFromEncoded(), sphincsKp.getPublicKey().getSphincsPlusPublicKeyFromEncoded());
-      case "Falcon" -> PqcKeyPair.setKeys(falconKp.getPrivateKey().getFalconPrivateKeyFromEncoded(), falconKp.getPublicKey().getFalconPublicKeyFromEncoded());
+    SignatureAlgorithmFactory.setpqcAlgorithmName(pqcAlgorithmName);
+     
+    switch (pqcAlgorithmName) {
+      case "dilithium":
+        Dilithium3KeyPair dilithiumKp = loadPqcKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile());
+        PqcKeyPair.setKeys(dilithiumKp.getPrivateKey().getCrystalsDilithiumPrivateKeyFromEncoded(), dilithiumKp.getPublicKey().getCrystalsDilithiumPublicKeyFromEncoded());
+        break;
+      case "sphincsplus":
+        SphincsPlusKeyPair sphincsKp =loadSphincsKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile());
+        PqcKeyPair.setKeys(sphincsKp.getPrivateKey().getSphincsPlusPrivateKeyFromEncoded(), sphincsKp.getPublicKey().getSphincsPlusPublicKeyFromEncoded());
+        break;
+      case "falcon":
+        FalconKeyPair falconKp =loadFalconKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile());
+        PqcKeyPair.setKeys(falconKp.getPrivateKey().getFalconPrivateKeyFromEncoded(), falconKp.getPublicKey().getFalconPublicKeyFromEncoded());
+        break;
+      default:
+        throw new IllegalArgumentException("PQC algorithm Name not identified.");
     }
 
     return new KeyPairSecurityModule(
-    loadKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile()), 
-    dilithiumKp, 
-    sphincsKp,
-    falconKp
+      loadKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile())
     );
   }
 
@@ -2217,7 +2235,7 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
         .dataDirectory(dataDir())
         .miningParameters(getMiningParameters())
         .transactionPoolConfiguration(buildTransactionPoolConfiguration())
-        .nodeKey(securityModule())
+        .nodeKey(new NodeKey(securityModule()))
         .metricsSystem(metricsSystem.get())
         .messagePermissioningProviders(permissioningService.getMessagePermissioningProviders())
         .privacyParameters(privacyParameters())

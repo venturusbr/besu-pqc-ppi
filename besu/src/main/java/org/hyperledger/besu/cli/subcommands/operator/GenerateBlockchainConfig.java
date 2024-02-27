@@ -155,7 +155,7 @@ class GenerateBlockchainConfig implements Runnable {
 
   @SuppressWarnings({ "FieldCanBeFinal", "FieldMayBeFinal" }) // PicoCLI requires non-final Strings.
   @Option(
-      names = "--public-algorithm-name", 
+      names = "--pqc-algorithm-name", 
       paramLabel = DefaultCommandValues.MANDATORY_PATH_FORMAT_HELP, 
       description = "Name of the pqc algorithm. (default: ${DEFAULT-VALUE})", 
       arity = "1..1")
@@ -275,7 +275,7 @@ class GenerateBlockchainConfig implements Runnable {
           Dilithium3PrivateKey pqcPrivateKey = PQCKeyPair.getPrivateKey();
           writeKeypair(pqcPublicKey, pqcPrivateKey, nodeAddress);
           break;
-        case "sphincsp":
+        case "sphincsplus":
           LOG.info("Generating PQC Sphincs Plus keypair for node {}.", node);
           final SphincsPlusKeyPair sphincsKeyPair = SPHINCS_SIGNATURE_ALGORITHM.get().generateKeyPair();
           SphincsPlusPrivateKey sphincsPrivateKey = sphincsKeyPair.getPrivateKey();

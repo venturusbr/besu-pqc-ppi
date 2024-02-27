@@ -23,23 +23,13 @@ import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.pqc.PqcSignature;
 import org.hyperledger.besu.crypto.pqc.PqcSignatureAlgorithm;
 import org.hyperledger.besu.crypto.pqc.PqcSignatureFactory;
-import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.AbstractCrystalsDilithium3;
-import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.CrystalsDilithiumSignature;
-import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3KeyPair;
-import org.hyperledger.besu.crypto.pqc.falcon.Falcon;
-import org.hyperledger.besu.crypto.pqc.falcon.FalconSignature;
-import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconKeyPair;
-import org.hyperledger.besu.crypto.pqc.metrics.CSVWriter;
-import org.hyperledger.besu.crypto.pqc.sphincsplus.SphincsPlus;
-import org.hyperledger.besu.crypto.pqc.sphincsplus.SphincsPlusSignature;
-import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusKeyPair;
+import org.hyperledger.besu.crypto.pqc.keys.PqcKeyPair;
 import org.hyperledger.besu.plugin.services.securitymodule.SecurityModule;
 import org.hyperledger.besu.plugin.services.securitymodule.SecurityModuleException;
 import org.hyperledger.besu.plugin.services.securitymodule.data.PublicKey;
 import org.hyperledger.besu.plugin.services.securitymodule.data.Signature;
 
 import java.math.BigInteger;
-import java.security.PrivateKey;
 import java.security.spec.ECPoint;
 
 import org.apache.tuweni.bytes.Bytes;
@@ -51,29 +41,18 @@ import org.apache.tuweni.bytes.Bytes32;
  */
 public class KeyPairSecurityModule implements SecurityModule {
   private final KeyPair keyPair;
-  private final Dilithium3KeyPair pqcKeyPair;
-  private final SphincsPlusKeyPair sphincsKeyPair;
-  private final FalconKeyPair falconKeyPair;
   private final PublicKey publicKey;
   private final SignatureAlgorithm signatureAlgorithm = SignatureAlgorithmFactory.getInstance();
-  private final PqcSignatureAlgorithm pqcSignatureAlgorithm = SignatureAlgorithmFactory.getPqcGenericInstance("Dilithium");
-  private final AbstractCrystalsDilithium3 dilithiumSignatureAlgorithm = SignatureAlgorithmFactory.getPQCInstance();
-  private final SphincsPlus sphincsSignatureAlgorithm = SignatureAlgorithmFactory.getSphincsPlusInstance();
-  private final Falcon falconSignatureAlgorithm = SignatureAlgorithmFactory.getFalconInstance();
-  private final CSVWriter csvWriter;
-
+  private final PqcSignatureAlgorithm pqcSignatureAlgorithm;
   /**
    * Instantiates a new Key pair security module.
    *
    * @param keyPair the key pair
    */
-  public KeyPairSecurityModule(final KeyPair keyPair, final Dilithium3KeyPair pqcKeyPair, final SphincsPlusKeyPair sphincsPair, final FalconKeyPair falconPair) {
+  public KeyPairSecurityModule(final KeyPair keyPair) {
     this.keyPair = keyPair;
-    this.pqcKeyPair = pqcKeyPair;
-    this.sphincsKeyPair = sphincsPair;
-    this.falconKeyPair = falconPair;
     this.publicKey = convertPublicKey(keyPair.getPublicKey());
-    this.csvWriter = CSVWriter.getInstance();
+    this.pqcSignatureAlgorithm = SignatureAlgorithmFactory.getPqcGenericInstance();
   }
 
   private PublicKey convertPublicKey(final SECPPublicKey publicKey) {
@@ -94,37 +73,17 @@ public class KeyPairSecurityModule implements SecurityModule {
       long endSecpSign = System.nanoTime();
       
       byte[] secpSignatureEncoded = signature.encodedBytes().toArray();
-      PrivateKey dilithiumPrivateKey = pqcKeyPair.getPrivateKey().getCrystalsDilithiumPrivateKeyFromEncoded();
-      long startDilithiumSign = System.nanoTime();
-
-      //colocar o valor capturado pela flag na linha 59
-      final PqcSignature pqcSignature = PqcSignatureFactory.createSignature(dilithiumPrivateKey, secpSignatureEncoded, pqcSignatureAlgorithm.getAlgorithmName());
-      
-      final CrystalsDilithiumSignature dilithiumSignature = dilithiumSignatureAlgorithm.sign(secpSignatureEncoded, dilithiumPrivateKey);
-      long endDilithiumSign = System.nanoTime();
-      
-      byte[] secpSignatureEncodedforSphincs = signature.encodedBytes().toArray();
-      PrivateKey sphincsPrivateKey = sphincsKeyPair.getPrivateKey().getSphincsPlusPrivateKeyFromEncoded();
-      long startSphincsSign = System.nanoTime();
-      final SphincsPlusSignature sphincsSignature = sphincsSignatureAlgorithm.sign(secpSignatureEncodedforSphincs, sphincsPrivateKey);
-      long endSphincsSign = System.nanoTime();
-
-      byte[] secpSignatureEncodedforFalcon = signature.encodedBytes().toArray();
-      PrivateKey falconPrivateKey = falconKeyPair.getPrivateKey().getFalconPrivateKeyFromEncoded();
-      long startFalconSign = System.nanoTime();
-      final FalconSignature falconSignature = falconSignatureAlgorithm.sign(secpSignatureEncodedforFalcon, falconPrivateKey);
-      long endFalconSign = System.nanoTime();
+            
+      long startPqcSign = System.nanoTime();
+      final PqcSignature pqcSignature = PqcSignatureFactory.createSignature(PqcKeyPair.getPrivKey(), secpSignatureEncoded, pqcSignatureAlgorithm.getAlgorithmName());
+      long endPqcSign = System.nanoTime();
 
       long secpTime = endSecpSign - startSecpSign;
-      long dilithiumTime = endDilithiumSign - startDilithiumSign;
-      long sphincsTime = endSphincsSign - startSphincsSign;
-      long falconTime = endFalconSign - startFalconSign;
-      
-      long secpAndDilithiumTime = secpTime + dilithiumTime;
-      long secpAndSphincsTime = secpTime + sphincsTime;
-      long secpAndFalconTime = secpTime + falconTime; 
+      long pqcTime = endPqcSign - startPqcSign;
 
-      csvWriter.write(secpTime, secpAndDilithiumTime, dilithiumSignature, secpAndSphincsTime, sphincsSignature, secpAndFalconTime, falconSignature);
+      System.out.println("SECP SIGN TIME: " + secpTime);
+      System.out.println("PQC SIGN TIME: " + pqcTime);
+      System.out.println("PQC SIGNATURE LENGTH" + pqcSignature.getEncoded().length);
 
       return new SignatureImpl(signature);
     } catch (final Exception e) {
