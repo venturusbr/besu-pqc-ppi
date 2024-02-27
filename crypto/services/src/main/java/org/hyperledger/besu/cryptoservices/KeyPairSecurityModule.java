@@ -52,7 +52,9 @@ public class KeyPairSecurityModule implements SecurityModule {
   public KeyPairSecurityModule(final KeyPair keyPair) {
     this.keyPair = keyPair;
     this.publicKey = convertPublicKey(keyPair.getPublicKey());
-    this.pqcSignatureAlgorithm = SignatureAlgorithmFactory.getPqcGenericInstance();
+    this.pqcSignatureAlgorithm = !SignatureAlgorithmFactory.getPqcAlgorithmName().equals("none")
+      ? SignatureAlgorithmFactory.getPqcGenericInstance()
+      : null;
   }
 
   private PublicKey convertPublicKey(final SECPPublicKey publicKey) {
@@ -71,19 +73,21 @@ public class KeyPairSecurityModule implements SecurityModule {
       long startSecpSign = System.nanoTime();
       final SECPSignature signature = signatureAlgorithm.sign(dataHash, keyPair);
       long endSecpSign = System.nanoTime();
-      
-      byte[] secpSignatureEncoded = signature.encodedBytes().toArray();
-            
-      long startPqcSign = System.nanoTime();
-      final PqcSignature pqcSignature = PqcSignatureFactory.createSignature(PqcKeyPair.getPrivKey(), secpSignatureEncoded, pqcSignatureAlgorithm.getAlgorithmName());
-      long endPqcSign = System.nanoTime();
 
-      long secpTime = endSecpSign - startSecpSign;
-      long pqcTime = endPqcSign - startPqcSign;
-
-      System.out.println("SECP SIGN TIME: " + secpTime);
-      System.out.println("PQC SIGN TIME: " + pqcTime);
-      System.out.println("PQC SIGNATURE LENGTH" + pqcSignature.getEncoded().length);
+      if(pqcSignatureAlgorithm != null) {
+        byte[] secpSignatureEncoded = signature.encodedBytes().toArray();
+              
+        long startPqcSign = System.nanoTime();
+        final PqcSignature pqcSignature = PqcSignatureFactory.createSignature(PqcKeyPair.getPrivKey(), secpSignatureEncoded, pqcSignatureAlgorithm.getAlgorithmName());
+        long endPqcSign = System.nanoTime();
+  
+        long secpTime = endSecpSign - startSecpSign;
+        long pqcTime = endPqcSign - startPqcSign;
+  
+        System.out.println("SECP SIGN TIME: " + secpTime);
+        System.out.println("PQC SIGN TIME: " + pqcTime);
+        System.out.println("PQC SIGNATURE LENGTH" + pqcSignature.getEncoded().length);
+      }
 
       return new SignatureImpl(signature);
     } catch (final Exception e) {
