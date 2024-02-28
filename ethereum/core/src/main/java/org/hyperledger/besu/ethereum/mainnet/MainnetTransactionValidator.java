@@ -79,6 +79,8 @@ public class MainnetTransactionValidator implements TransactionValidator {
   private final int maxInitcodeSize;
   private final MainnetBlobsValidator blobsValidator;
 
+  private final CSVWriter csvWriter;
+
   public MainnetTransactionValidator(
       final GasCalculator gasCalculator,
       final GasLimitCalculator gasLimitCalculator,
@@ -95,6 +97,7 @@ public class MainnetTransactionValidator implements TransactionValidator {
     this.chainId = chainId;
     this.acceptedTransactionTypes = acceptedTransactionTypes;
     this.maxInitcodeSize = maxInitcodeSize;
+    this.csvWriter = CSVWriter.getInstance();
   }
 
   private void verifyPqcSignature(final byte[] pqcSignature,final  byte[] dataToPqcSign, final long classicalMetricStart, final long classicalMetricEnd, final PqcSignatureAlgorithm signatureAlgorithm){
