@@ -5,10 +5,10 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.CrystalsDilithiumSignature;
-import org.hyperledger.besu.crypto.pqc.falcon.FalconSignature;
-import org.hyperledger.besu.crypto.pqc.sphincsplus.SphincsPlusSignature;
+import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,17 +17,21 @@ public class CSVWriter {
     private static final Logger LOG = LoggerFactory.getLogger(CSVWriter.class);
     private static CSVWriter instance = null;
 
-    private static final String FILE_PATH = "/usr/app/PQCMetrics.csv";
-    private File file;
+    private static final String HOME_PATH = "/usr/app/";
+    private final String SIGN_FILE_PATH;
     private FileWriter writer;
     private BufferedWriter bufferedWriter;
     private StringBuilder stringBuilder;
+    private ExecutorService executor;
 
     private CSVWriter() {
+        this.stringBuilder = new StringBuilder();
+        SIGN_FILE_PATH = buildPath("sign");
         try {
-            this.file = new File(CSVWriter.FILE_PATH);
-            if (!this.file.exists()) {
-                this.file.createNewFile();
+            File signFile = new File(SIGN_FILE_PATH);
+            this.executor = Executors.newCachedThreadPool();
+            if (signFile.exists()) {
+                signFile.createNewFile();
                 initializeTable();
             } else {
                 initializeWriters();
@@ -37,39 +41,35 @@ public class CSVWriter {
         }
     };
 
+    private String buildPath(String ref) {
+        String path = stringBuilder.append(HOME_PATH + SignatureAlgorithmFactory.getPqcAlgorithmName() + "-" + ref + ".csv")
+                .toString();
+        stringBuilder.setLength(0);
+        return path;
+    }
+
     private void initializeWriters() throws IOException {
-        this.stringBuilder = new StringBuilder();
-        this.writer = new FileWriter(CSVWriter.FILE_PATH, StandardCharsets.ISO_8859_1, true);
+        this.writer = new FileWriter(SIGN_FILE_PATH, StandardCharsets.ISO_8859_1, true);
         this.bufferedWriter = new BufferedWriter(this.writer);
     }
 
     private void initializeTable() throws IOException {
         initializeWriters();
-        this.bufferedWriter.write(
-                "SECP(ns),SECP + DILITHIUM3(ns),DILITHIUM3 SIGNATURE LENGTH(bytes),SECP + SPHINCS(ns),SPHINCS SIGNATURE LENGTH(bytes),SECP + FALCON(ns),FALCON SIGNATURE LENGTH(bytes)\n");
+        String pqcAlgorithmName = SignatureAlgorithmFactory.getPqcAlgorithmName().toUpperCase();
+        String header = stringBuilder.append(pqcAlgorithmName + "(ns)," + pqcAlgorithmName + " + SECP(ns)").toString();
+        this.bufferedWriter.write(header);
         this.bufferedWriter.flush();
+        stringBuilder.setLength(0);
     }
 
-    public void write(final long secpTime, final long dilithium3Time,
-            final CrystalsDilithiumSignature dilithiumSignature, final long sphincsTime,
-            final SphincsPlusSignature sphincsSignature, final long falconTime, final FalconSignature falconSignature) {
-        try {
-            String metricResult = stringBuilder
-                    .append(secpTime + "," + dilithium3Time + "," + dilithiumSignature.getEncoded().length + ","
-                            + sphincsTime + "," + sphincsSignature.getEncoded().length + "," + falconTime + ","
-                            + falconSignature.getEncoded().length + "\n")
-                    .toString();
-
-            bufferedWriter.write(metricResult);
-            bufferedWriter.flush();
-            stringBuilder.setLength(0);
-        } catch (IOException e) {
-            LOG.info(e.getMessage());
-        }
+    public void write(final long secpTime, final long pqcTime) {
+        executor.execute(new Register(secpTime, pqcTime));
     }
+
 
     public static void clean() {
         try {
+            instance.executor.shutdown();
             instance.writer.close();
             instance.bufferedWriter.close();
             instance = null;
@@ -83,5 +83,30 @@ public class CSVWriter {
             instance = new CSVWriter();
         }
         return instance;
+    }
+
+    private class Register implements Runnable {
+        private final Long secpTime;
+        private final Long pqcTime;
+
+        public Register(final Long secpTime, final Long pqcTime) {
+            this.secpTime = secpTime;
+            this.pqcTime = pqcTime;
+        }
+
+        @Override
+        public void run() {
+            try {
+                String metricResult = stringBuilder
+                        .append(pqcTime + "," + (pqcTime + secpTime) + "\n")
+                        .toString();
+
+                bufferedWriter.write(metricResult);
+                bufferedWriter.flush();
+                stringBuilder.setLength(0);
+            } catch (IOException e) {
+                LOG.info(e.getMessage());
+            }
+        }
     }
 }
