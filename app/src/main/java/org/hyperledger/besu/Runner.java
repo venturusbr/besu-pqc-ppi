@@ -21,6 +21,7 @@ import org.hyperledger.besu.cli.options.PluginsConfigurationOptions;
 import org.hyperledger.besu.controller.BesuController;
 import org.hyperledger.besu.crypto.KeyPairUtil;
 import org.hyperledger.besu.crypto.pqc.metrics.CSVWriter;
+import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
 import org.hyperledger.besu.ethereum.api.graphql.GraphQLHttpService;
 import org.hyperledger.besu.ethereum.api.jsonrpc.EngineJsonRpcService;
 import org.hyperledger.besu.ethereum.api.jsonrpc.JsonRpcHttpService;
@@ -308,7 +309,7 @@ public class Runner implements AutoCloseable {
                 "ipcJsonRpc", service.stop().toCompletionStage().toCompletableFuture()));
     waitForServiceToStop("Transaction Pool", besuController.getTransactionPool().setDisabled());
     metrics.ifPresent(service -> waitForServiceToStop("metrics", service.stop()));
-    CSVWriter.clean();
+    MetricWriters.clean();
     ethStatsService.ifPresent(EthStatsService::stop);
     besuController.getMiningCoordinator().stop();
     waitForServiceToStop("Mining Coordinator", besuController.getMiningCoordinator()::awaitStop);

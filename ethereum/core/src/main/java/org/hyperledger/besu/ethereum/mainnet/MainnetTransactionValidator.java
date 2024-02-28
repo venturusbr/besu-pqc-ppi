@@ -18,7 +18,14 @@ import static org.hyperledger.besu.evm.account.Account.MAX_NONCE;
 import static org.hyperledger.besu.evm.internal.Words.clampedAdd;
 import static org.hyperledger.besu.evm.worldstate.CodeDelegationHelper.hasCodeDelegation;
 
-import org.hyperledger.besu.crypto.KeyPairUtil;
+import java.math.BigInteger;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.datatypes.BlobType;
@@ -28,7 +35,7 @@ import org.hyperledger.besu.crypto.pqc.PqcSignatureAlgorithm;
 import org.hyperledger.besu.crypto.pqc.PqcSignatureFactory;
 import org.hyperledger.besu.crypto.pqc.keys.PqcKeyPair;
 import org.hyperledger.besu.crypto.pqc.metrics.CSVWriter;
-import org.hyperledger.besu.crypto.pqc.sphincsplus.SphincsPlusSignature;
+import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
 import org.hyperledger.besu.datatypes.Blob;
 import org.hyperledger.besu.datatypes.BlobsWithCommitments;
 import org.hyperledger.besu.datatypes.Hash;
@@ -43,13 +50,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigInteger;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import ethereum.ckzg4844.CKZG4844JNI;
 
 /**
  * Validates a transaction based on Frontier protocol runtime requirements.
@@ -64,8 +65,6 @@ public class MainnetTransactionValidator implements TransactionValidator {
 
   public static final BigInteger TWO_POW_256 = BigInteger.TWO.pow(256);
 
-  private static final Logger LOG = LoggerFactory.getLogger(MainnetTransactionValidator.class);
-
   private final GasCalculator gasCalculator;
   private final GasLimitCalculator gasLimitCalculator;
   private final FeeMarket feeMarket;
@@ -79,7 +78,9 @@ public class MainnetTransactionValidator implements TransactionValidator {
   private final int maxInitcodeSize;
   private final MainnetBlobsValidator blobsValidator;
 
-  private final CSVWriter csvWriter;
+  private final CSVWriter verifyWriter;
+
+  private final StringBuilder stringBuilder;
 
   public MainnetTransactionValidator(
       final GasCalculator gasCalculator,
@@ -97,14 +98,13 @@ public class MainnetTransactionValidator implements TransactionValidator {
     this.chainId = chainId;
     this.acceptedTransactionTypes = acceptedTransactionTypes;
     this.maxInitcodeSize = maxInitcodeSize;
-    this.csvWriter = CSVWriter.getInstance();
+    this.verifyWriter = MetricWriters.getVerifyInstance();
+    this.stringBuilder = new StringBuilder();
   }
 
-  private void verifyPqcSignature(final byte[] pqcSignature,final  byte[] dataToPqcSign, final long classicalMetricStart, final long classicalMetricEnd, final PqcSignatureAlgorithm signatureAlgorithm){
+  private Boolean verifyPqcSignature(final byte[] pqcSignature, final byte[] dataToPqcSign, final PqcSignatureAlgorithm signatureAlgorithm) {
     boolean isValid = signatureAlgorithm.verify(PqcKeyPair.getPubKey(), dataToPqcSign, pqcSignature);
-    LOG.info("Is Pqc Valid? " +isValid);
-    LOG.info("Classical Metric Start " +classicalMetricStart);
-    LOG.info("Classical Metric End " +classicalMetricEnd);
+    return isValid;
   }
 
   @Override
@@ -114,21 +114,47 @@ public class MainnetTransactionValidator implements TransactionValidator {
       final Optional<Wei> blobFee,
       final TransactionValidationParams transactionValidationParams) {
     long classicalVerifyStart = System.nanoTime();
-    final ValidationResult<TransactionInvalidReason> signatureResult =
-        validateTransactionSignature(transaction);
+    final ValidationResult<TransactionInvalidReason> signatureResult = validateTransactionSignature(transaction);
     long classicalVerifyEnd = System.nanoTime();
 
-    if(!SignatureAlgorithmFactory.getPqcAlgorithmName().equals("none")) {
+    if (!SignatureAlgorithmFactory.getPqcAlgorithmName().equals("none")) {
       byte[] dataToPqcSign = transaction.getHash().toArray();
 
       PqcSignatureAlgorithm selectedPqcAlgorithm = SignatureAlgorithmFactory.getPqcGenericInstance();
 
-      byte[] pqcSignature = PqcSignatureFactory.createSignature(PqcKeyPair.getPrivKey(), dataToPqcSign, selectedPqcAlgorithm.getAlgorithmName()).getEncoded();
-      verifyPqcSignature(pqcSignature, dataToPqcSign, classicalVerifyStart, classicalVerifyEnd, selectedPqcAlgorithm);
+      byte[] pqcSignature = PqcSignatureFactory
+          .createSignature(PqcKeyPair.getPrivKey(), dataToPqcSign, selectedPqcAlgorithm.getAlgorithmName())
+          .getEncoded();
+
+      long pqcTimeStart = System.nanoTime();
+      Boolean isValid = verifyPqcSignature(pqcSignature, dataToPqcSign,selectedPqcAlgorithm);
+      long pqcTimeEnd = System.nanoTime();
+
+      long pqcTime = pqcTimeEnd - pqcTimeStart;
+      long secpTime = classicalVerifyEnd - classicalVerifyStart;
+      String data = stringBuilder.append(pqcTime + "," + (pqcTime + secpTime) + "," + (isValid ? "yes" : "no"))
+          .toString();
+      verifyWriter.write(data);
+
+      stringBuilder.setLength(0);
     }
 
     if (!signatureResult.isValid()) {
       return signatureResult;
+    }
+
+    if (transaction.getType().supportsBlob()) {
+      final ValidationResult<TransactionInvalidReason> blobTransactionResult = validateBlobTransaction(transaction);
+      if (!blobTransactionResult.isValid()) {
+        return blobTransactionResult;
+      }
+
+      if (transaction.getBlobsWithCommitments().isPresent()) {
+        final ValidationResult<TransactionInvalidReason> blobsResult = validateTransactionsBlobs(transaction);
+        if (!blobsResult.isValid()) {
+          return blobsResult;
+        }
+      }
     }
 
     final TransactionType transactionType = transaction.getType();
@@ -314,7 +340,6 @@ public class MainnetTransactionValidator implements TransactionValidator {
 
     return ValidationResult.valid();
   }
-
 
   @Override
   public ValidationResult<TransactionInvalidReason> validateForSender(
