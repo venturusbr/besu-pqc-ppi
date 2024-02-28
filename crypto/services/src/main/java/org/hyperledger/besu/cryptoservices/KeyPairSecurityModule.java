@@ -24,6 +24,8 @@ import org.hyperledger.besu.crypto.pqc.PqcSignature;
 import org.hyperledger.besu.crypto.pqc.PqcSignatureAlgorithm;
 import org.hyperledger.besu.crypto.pqc.PqcSignatureFactory;
 import org.hyperledger.besu.crypto.pqc.keys.PqcKeyPair;
+import org.hyperledger.besu.crypto.pqc.metrics.CSVWriter;
+import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
 import org.hyperledger.besu.plugin.services.securitymodule.SecurityModule;
 import org.hyperledger.besu.plugin.services.securitymodule.SecurityModuleException;
 import org.hyperledger.besu.plugin.services.securitymodule.data.PublicKey;
@@ -44,6 +46,8 @@ public class KeyPairSecurityModule implements SecurityModule {
   private final PublicKey publicKey;
   private final SignatureAlgorithm signatureAlgorithm = SignatureAlgorithmFactory.getInstance();
   private final PqcSignatureAlgorithm pqcSignatureAlgorithm;
+  private final CSVWriter signWriter;
+  private final StringBuilder stringBuilder;
   /**
    * Instantiates a new Key pair security module.
    *
@@ -55,6 +59,8 @@ public class KeyPairSecurityModule implements SecurityModule {
     this.pqcSignatureAlgorithm = !SignatureAlgorithmFactory.getPqcAlgorithmName().equals("none")
       ? SignatureAlgorithmFactory.getPqcGenericInstance()
       : null;
+    this.signWriter = MetricWriters.getSignInstance();
+    this.stringBuilder = new StringBuilder();
   }
 
   private PublicKey convertPublicKey(final SECPPublicKey publicKey) {
@@ -87,6 +93,11 @@ public class KeyPairSecurityModule implements SecurityModule {
         System.out.println("SECP SIGN TIME: " + secpTime);
         System.out.println("PQC SIGN TIME: " + pqcTime);
         System.out.println("PQC SIGNATURE LENGTH" + pqcSignature.getEncoded().length);
+
+        String data = stringBuilder.append(pqcTime + "," + (pqcTime + secpTime)).toString();
+        signWriter.write(data);
+
+        stringBuilder.setLength(0);
       }
 
       return new SignatureImpl(signature);

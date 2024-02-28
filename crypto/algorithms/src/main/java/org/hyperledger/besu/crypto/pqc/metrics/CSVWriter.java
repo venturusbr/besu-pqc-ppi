@@ -15,24 +15,24 @@ import org.slf4j.LoggerFactory;
 public class CSVWriter {
 
     private static final Logger LOG = LoggerFactory.getLogger(CSVWriter.class);
-    private static CSVWriter instance = null;
 
     private static final String HOME_PATH = "/usr/app/";
-    private final String SIGN_FILE_PATH;
+    private final StringBuilder stringBuilder;
+    private final String FILE_PATH;
+
     private FileWriter writer;
     private BufferedWriter bufferedWriter;
-    private StringBuilder stringBuilder;
     private ExecutorService executor;
 
-    private CSVWriter() {
+    public CSVWriter(final String header, final String filePath) {
         this.stringBuilder = new StringBuilder();
-        SIGN_FILE_PATH = buildPath("sign");
+        FILE_PATH = buildPath(filePath);
         try {
-            File signFile = new File(SIGN_FILE_PATH);
+            File signFile = new File(FILE_PATH);
             this.executor = Executors.newCachedThreadPool();
             if (signFile.exists()) {
                 signFile.createNewFile();
-                initializeTable();
+                initializeTable(header);
             } else {
                 initializeWriters();
             }
@@ -41,67 +41,51 @@ public class CSVWriter {
         }
     };
 
-    private String buildPath(String ref) {
-        String path = stringBuilder.append(HOME_PATH + SignatureAlgorithmFactory.getPqcAlgorithmName() + "-" + ref + ".csv")
+    private String buildPath(final String ref) {
+        String path = stringBuilder
+                .append(HOME_PATH + SignatureAlgorithmFactory.getPqcAlgorithmName() + "-" + ref + "-metrics.csv")
                 .toString();
         stringBuilder.setLength(0);
         return path;
     }
 
     private void initializeWriters() throws IOException {
-        this.writer = new FileWriter(SIGN_FILE_PATH, StandardCharsets.ISO_8859_1, true);
+        this.writer = new FileWriter(FILE_PATH, StandardCharsets.ISO_8859_1, true);
         this.bufferedWriter = new BufferedWriter(this.writer);
     }
 
-    private void initializeTable() throws IOException {
+    private void initializeTable(final String header) throws IOException {
         initializeWriters();
-        String pqcAlgorithmName = SignatureAlgorithmFactory.getPqcAlgorithmName().toUpperCase();
-        String header = stringBuilder.append(pqcAlgorithmName + "(ns)," + pqcAlgorithmName + " + SECP(ns)").toString();
         this.bufferedWriter.write(header);
         this.bufferedWriter.flush();
         stringBuilder.setLength(0);
     }
 
-    public void write(final long secpTime, final long pqcTime) {
-        executor.execute(new Register(secpTime, pqcTime));
+    public void write(final String data) {
+        executor.execute(new Register(data));
     }
 
-
-    public static void clean() {
+    public void clean() {
         try {
-            instance.executor.shutdown();
-            instance.writer.close();
-            instance.bufferedWriter.close();
-            instance = null;
+            executor.shutdown();
+            writer.close();
+            bufferedWriter.close();
         } catch (IOException e) {
             LOG.info(e.getMessage());
         }
     }
 
-    public static CSVWriter getInstance() {
-        if (instance == null) {
-            instance = new CSVWriter();
-        }
-        return instance;
-    }
-
     private class Register implements Runnable {
-        private final Long secpTime;
-        private final Long pqcTime;
+        private final String data;
 
-        public Register(final Long secpTime, final Long pqcTime) {
-            this.secpTime = secpTime;
-            this.pqcTime = pqcTime;
+        public Register(final String data) {
+            this.data = data;
         }
 
         @Override
         public void run() {
             try {
-                String metricResult = stringBuilder
-                        .append(pqcTime + "," + (pqcTime + secpTime) + "\n")
-                        .toString();
-
-                bufferedWriter.write(metricResult);
+                bufferedWriter.write(data);
                 bufferedWriter.flush();
                 stringBuilder.setLength(0);
             } catch (IOException e) {
