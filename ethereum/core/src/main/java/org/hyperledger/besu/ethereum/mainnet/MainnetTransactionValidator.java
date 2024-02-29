@@ -123,7 +123,7 @@ public class MainnetTransactionValidator implements TransactionValidator {
 
       long pqcTime = pqcTimeEnd - pqcTimeStart;
       long secpTime = classicalVerifyEnd - classicalVerifyStart;
-      String data = stringBuilder.append(pqcTime + "," + (pqcTime + secpTime) + "," + (isValid ? "yes" : "no"))
+      String data = stringBuilder.append(pqcTime + "," + (pqcTime + secpTime) + "," + (isValid ? "yes" : "no") + "\n")
           .toString();
       verifyWriter.write(data);
 
