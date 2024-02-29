@@ -56,7 +56,6 @@ public class CSVWriter {
 
     private void initializeTable(final String header) throws IOException {
         initializeWriters();
-        System.out.println("HEADER: "+header);
         this.bufferedWriter.write(header);
         this.bufferedWriter.flush();
         stringBuilder.setLength(0);
