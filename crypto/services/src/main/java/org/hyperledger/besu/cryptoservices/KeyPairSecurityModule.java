@@ -84,17 +84,13 @@ public class KeyPairSecurityModule implements SecurityModule {
         byte[] secpSignatureEncoded = signature.encodedBytes().toArray();
               
         long startPqcSign = System.nanoTime();
-        final PqcSignature pqcSignature = PqcSignatureFactory.createSignature(PqcKeyPair.getPrivKey(), secpSignatureEncoded, pqcSignatureAlgorithm.getAlgorithmName());
+        PqcSignatureFactory.createSignature(PqcKeyPair.getPrivKey(), secpSignatureEncoded, pqcSignatureAlgorithm.getAlgorithmName());
         long endPqcSign = System.nanoTime();
   
         long secpTime = endSecpSign - startSecpSign;
         long pqcTime = endPqcSign - startPqcSign;
-  
-        System.out.println("SECP SIGN TIME: " + secpTime);
-        System.out.println("PQC SIGN TIME: " + pqcTime);
-        System.out.println("PQC SIGNATURE LENGTH" + pqcSignature.getEncoded().length);
 
-        String data = stringBuilder.append(pqcTime + "," + (pqcTime + secpTime)).toString();
+        String data = stringBuilder.append(pqcTime + "," + (pqcTime + secpTime)+ "\n").toString();
         signWriter.write(data);
 
         stringBuilder.setLength(0);
