@@ -7,13 +7,22 @@ import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
 import org.hyperledger.besu.crypto.pqc.PqcProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class PqcSignatureAlgorithm {
+    private static final Logger LOG = LoggerFactory.getLogger(PqcSignatureAlgorithm.class);
 
     public abstract String getAlgorithmName();
 
+    protected abstract String formatAlgorithmAndParamterTitle();
+
     public PqcSignatureAlgorithm(){
         PqcProvider.initializeBouncyCastle();
+    }
+
+    public void generateKeyPairLog(){
+        LOG.info("Generating PQC {} keypair for node.", formatAlgorithmAndParamterTitle());
     }
 
     public boolean verify(final PublicKey publicKey, final byte[] dataToSign, final byte[] signature) {
