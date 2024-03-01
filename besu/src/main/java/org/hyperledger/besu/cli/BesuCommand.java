@@ -382,6 +382,14 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
       arity = "1..1")
   private String pqcAlgorithmName = "none";
 
+  @SuppressWarnings({ "FieldCanBeFinal", "FieldMayBeFinal" }) // PicoCLI requires non-final Strings.
+  @Option(
+      names = "--pqc-parameter-spec", 
+      paramLabel = "<String>", 
+      description = "Name of the pqc parameter spec. (default: ${DEFAULT-VALUE})", 
+      arity = "1..1")
+  private String pqcParameterSpec = "none";
+
   @Option(
       names = "--identity",
       paramLabel = "<String>",
@@ -1613,6 +1621,7 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
   private SecurityModule defaultSecurityModule() {
     if(!pqcAlgorithmName.equals("none"))
       SignatureAlgorithmFactory.setpqcAlgorithmName(pqcAlgorithmName);
+      SignatureAlgorithmFactory.setPqcParameterSpecIndex(pqcParameterSpec);
      
     switch (pqcAlgorithmName) {
       case "none":
