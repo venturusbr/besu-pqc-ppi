@@ -27,8 +27,11 @@ public class Falcon extends PqcSignatureAlgorithm{
             e.printStackTrace();
             return null;
         }
+        FalconParameterSpec parameter = FALCON_PARAMETER_SPECS[SignatureAlgorithmFactory.getPqcParameterSpecIndex()];
 
-        FalconKeyPair keyPair = FalconKeyPair.generate(keyPairGenerator, FALCON_PARAMETER_SPECS[SignatureAlgorithmFactory.getPqcParameterSpecIndex()]);
+        generateKeyPairLog();
+
+        FalconKeyPair keyPair = FalconKeyPair.generate(keyPairGenerator, parameter);
 
         return keyPair;
     }
@@ -51,5 +54,15 @@ public class Falcon extends PqcSignatureAlgorithm{
     public String getAlgorithmName(){
         return "Falcon";
     }
-    
+
+    @Override
+    protected String formatAlgorithmAndParamterTitle(){
+        String parameterName =
+        switch (SignatureAlgorithmFactory.getPqcParameterSpecIndex()) {
+            case 0 -> "_512";
+            case 1 -> "_1024";
+            default -> "_512";
+        };
+        return getAlgorithmName() + parameterName;
+    }
 }

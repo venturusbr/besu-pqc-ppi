@@ -281,21 +281,18 @@ class GenerateBlockchainConfig implements Runnable {
           LOG.info("Warning: No PQC Algorithm Selected");
           break;
         case "dilithium":
-          LOG.info("Generating PQC Crystals Dilithium3 keypair for node {}.", node);
           final Dilithium3KeyPair PQCKeyPair = DILITHIUM_SIGNATURE_ALGORITHM.get().generateKeyPair();
           Dilithium3PublicKey pqcPublicKey = PQCKeyPair.getPublicKey();
           Dilithium3PrivateKey pqcPrivateKey = PQCKeyPair.getPrivateKey();
           writeKeypair(pqcPublicKey, pqcPrivateKey, nodeAddress);
           break;
         case "sphincsplus":
-          LOG.info("Generating PQC Sphincs Plus keypair for node {}.", node);
           final SphincsPlusKeyPair sphincsKeyPair = SPHINCS_SIGNATURE_ALGORITHM.get().generateKeyPair();
           SphincsPlusPrivateKey sphincsPrivateKey = sphincsKeyPair.getPrivateKey();
           SphincsPlusPublicKey sphincsPublicKey = sphincsKeyPair.getPublicKey();
           writeKeypair(sphincsPublicKey, sphincsPrivateKey, nodeAddress);
           break;
         case "falcon":
-          LOG.info("Generating PQC Falcon keypair for node {}.", node);
           final FalconKeyPair falconKeyPair = FALCON_SIGNATURE_ALGORITHM.get().generateKeyPair();
           FalconPrivateKey falconPrivateKey = falconKeyPair.getPrivateKey();
           FalconPublicKey falconPublicKey = falconKeyPair.getPublicKey();
