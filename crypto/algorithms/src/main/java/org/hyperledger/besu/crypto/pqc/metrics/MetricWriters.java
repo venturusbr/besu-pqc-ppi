@@ -13,7 +13,7 @@ public class MetricWriters {
 
     public static String buildSignHeader(){
         String pqcAlgorithmName = SignatureAlgorithmFactory.getPqcAlgorithmName().toUpperCase();
-        String header = pqcAlgorithmName + "(ns)," + pqcAlgorithmName + " + SECP(ns)\n";
+        String header = pqcAlgorithmName + "(ns)," + pqcAlgorithmName + " + SECP(ns)," + "SIGNATURE_LENGTH(bytes)\n";
         return header;
     }
 

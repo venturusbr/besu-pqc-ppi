@@ -164,6 +164,14 @@ class GenerateBlockchainConfig implements Runnable {
       arity = "1..1")
   private String pqcAlgorithmName = "none";
 
+  @SuppressWarnings({ "FieldCanBeFinal", "FieldMayBeFinal" }) // PicoCLI requires non-final Strings.
+  @Option(
+      names = "--pqc-parameter-spec", 
+      paramLabel = "<String>", 
+      description = "Name of the pqc parameter spec. (default: ${DEFAULT-VALUE})", 
+      arity = "1..1")
+  private String pqcParameterSpec = "none";
+
   @ParentCommand
   private OperatorSubCommand parentCommand; // Picocli injects reference to parent command
 
@@ -261,6 +269,7 @@ class GenerateBlockchainConfig implements Runnable {
   private void generateNodeKeypair(final int node) {
     try {
       LOG.info("Generating SECP keypair for node {}.", node);
+      SignatureAlgorithmFactory.setPqcParameterSpecIndex(pqcParameterSpec);
       final KeyPair keyPair = SIGNATURE_ALGORITHM.get().generateKeyPair();
       SECPPrivateKey secpPrivateKey = keyPair.getPrivateKey();
       SECPPublicKey secpPublicKey = keyPair.getPublicKey();

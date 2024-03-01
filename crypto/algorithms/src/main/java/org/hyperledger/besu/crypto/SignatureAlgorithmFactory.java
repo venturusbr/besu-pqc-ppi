@@ -33,6 +33,7 @@ public class SignatureAlgorithmFactory {
   private static final SphincsPlus sphincsInstance = null;
   private static final Falcon falconInstance = null;
   private static final PqcSignatureAlgorithm genericPqcInstance = null;
+  private static Integer pqcParameterSpecIndex = null;
   private static String pqcAlgorithmName = "none";
 
   private SignatureAlgorithmFactory() {}
@@ -148,5 +149,18 @@ public class SignatureAlgorithmFactory {
 
   public static String getPqcAlgorithmName() {
     return pqcAlgorithmName;
+  }
+ 
+  public static void setPqcParameterSpecIndex(final String index) {
+    if(!index.equals("none")){
+      Integer parameterIndex = Integer.valueOf(index);
+      pqcParameterSpecIndex = parameterIndex;
+    } else {
+      pqcParameterSpecIndex = 0;
+    }
+  }
+
+  public static Integer getPqcParameterSpecIndex() {
+    return pqcParameterSpecIndex;
   }
 }

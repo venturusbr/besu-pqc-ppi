@@ -4,6 +4,7 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 
 import org.bouncycastle.pqc.jcajce.spec.DilithiumParameterSpec;
+import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.pqc.PqcSignatureAlgorithm;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3KeyPair;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3PrivateKey;
@@ -11,7 +12,11 @@ import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3PublicK
 
 public abstract class AbstractCrystalsDilithium3 extends PqcSignatureAlgorithm {
 
-    private final DilithiumParameterSpec DILITHIUM_PARAMETER_SPEC = DilithiumParameterSpec.dilithium3;
+    private final DilithiumParameterSpec[] DILITHIUM_PARAMETER_SPEC = {
+            DilithiumParameterSpec.dilithium2,
+            DilithiumParameterSpec.dilithium3,
+            DilithiumParameterSpec.dilithium5
+    };
 
     protected KeyPairGenerator keyPairGenerator;
 
@@ -23,8 +28,7 @@ public abstract class AbstractCrystalsDilithium3 extends PqcSignatureAlgorithm {
             return null;
         }
 
-        Dilithium3KeyPair keyPair = Dilithium3KeyPair.generateCrystalsDilithiumPair(keyPairGenerator,
-                DILITHIUM_PARAMETER_SPEC);
+        Dilithium3KeyPair keyPair = Dilithium3KeyPair.generateCrystalsDilithiumPair(keyPairGenerator, DILITHIUM_PARAMETER_SPEC[SignatureAlgorithmFactory.getPqcParameterSpecIndex()]);
 
         return keyPair;
     }

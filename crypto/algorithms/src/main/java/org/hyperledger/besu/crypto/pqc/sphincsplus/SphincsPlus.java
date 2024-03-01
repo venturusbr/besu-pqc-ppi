@@ -4,6 +4,7 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 
 import org.bouncycastle.pqc.jcajce.spec.SPHINCSPlusParameterSpec;
+import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.pqc.PqcProvider;
 import org.hyperledger.besu.crypto.pqc.PqcSignatureAlgorithm;
 import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusKeyPair;
@@ -12,7 +13,7 @@ import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusPublicKey;
 
 public class SphincsPlus extends PqcSignatureAlgorithm{
 
-    SPHINCSPlusParameterSpec[] sphincsPlusParameterSpecs = {
+    private final SPHINCSPlusParameterSpec[] SPHINCS_PLUS_PARAMETER_SPECS = {
                 SPHINCSPlusParameterSpec.sha2_128f,
                 SPHINCSPlusParameterSpec.sha2_128f_simple,
                 SPHINCSPlusParameterSpec.sha2_128s,
@@ -53,7 +54,7 @@ public class SphincsPlus extends PqcSignatureAlgorithm{
             return null;
         }
 
-        SphincsPlusKeyPair keyPair = SphincsPlusKeyPair.generate(keyPairGenerator, sphincsPlusParameterSpecs[8]);
+        SphincsPlusKeyPair keyPair = SphincsPlusKeyPair.generate(keyPairGenerator, SPHINCS_PLUS_PARAMETER_SPECS[SignatureAlgorithmFactory.getPqcParameterSpecIndex()]);
 
         return keyPair;
     }

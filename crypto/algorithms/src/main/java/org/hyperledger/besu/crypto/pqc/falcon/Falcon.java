@@ -4,6 +4,7 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 
 import org.bouncycastle.pqc.jcajce.spec.FalconParameterSpec;
+import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.pqc.PqcProvider;
 import org.hyperledger.besu.crypto.pqc.PqcSignatureAlgorithm;
 import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconKeyPair;
@@ -14,7 +15,7 @@ public class Falcon extends PqcSignatureAlgorithm{
 
     protected KeyPairGenerator keyPairGenerator;
 
-    FalconParameterSpec[] falconParameterSpecs = {
+    private final FalconParameterSpec[] FALCON_PARAMETER_SPECS = {
                 FalconParameterSpec.falcon_512,
                 FalconParameterSpec.falcon_1024
         };
@@ -27,7 +28,7 @@ public class Falcon extends PqcSignatureAlgorithm{
             return null;
         }
 
-        FalconKeyPair keyPair = FalconKeyPair.generate(keyPairGenerator, falconParameterSpecs[1]);
+        FalconKeyPair keyPair = FalconKeyPair.generate(keyPairGenerator, FALCON_PARAMETER_SPECS[SignatureAlgorithmFactory.getPqcParameterSpecIndex()]);
 
         return keyPair;
     }
