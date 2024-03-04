@@ -73,6 +73,22 @@ public class KeyPairSecurityModule implements SecurityModule {
     }
   }
 
+  public void signWithPqc(final long startSecpSign, final long endSecpSign, final SECPSignature signature, final String finality){
+    byte[] secpSignatureEncoded = signature.encodedBytes().toArray();
+              
+    long startPqcSign = System.nanoTime();
+    PqcSignature pqcSignature = PqcSignatureFactory.createSignature(PqcKeyPair.getPrivKey(), secpSignatureEncoded, pqcSignatureAlgorithm.getAlgorithmName());
+    long endPqcSign = System.nanoTime();
+
+    long secpTime = endSecpSign - startSecpSign;
+    long pqcTime = endPqcSign - startPqcSign;
+
+    String data = stringBuilder.append(pqcTime + "," + (pqcTime + secpTime) + "," + pqcSignature.getEncoded().length + "," + secpSignatureEncoded.length + "," + finality + "\n").toString();
+    signWriter.write(data);
+
+    stringBuilder.setLength(0);
+  }
+
   @Override
   public Signature sign(final Bytes32 dataHash) throws SecurityModuleException {
     try {
@@ -81,19 +97,24 @@ public class KeyPairSecurityModule implements SecurityModule {
       long endSecpSign = System.nanoTime();
 
       if(pqcSignatureAlgorithm != null) {
-        byte[] secpSignatureEncoded = signature.encodedBytes().toArray();
-              
-        long startPqcSign = System.nanoTime();
-        PqcSignature pqcSignature = PqcSignatureFactory.createSignature(PqcKeyPair.getPrivKey(), secpSignatureEncoded, pqcSignatureAlgorithm.getAlgorithmName());
-        long endPqcSign = System.nanoTime();
-  
-        long secpTime = endSecpSign - startSecpSign;
-        long pqcTime = endPqcSign - startPqcSign;
+        signWithPqc(startSecpSign, endSecpSign, signature, "");
+      }
 
-        String data = stringBuilder.append(pqcTime + "," + (pqcTime + secpTime) + "," + pqcSignature.getEncoded().length + "\n").toString();
-        signWriter.write(data);
+      return new SignatureImpl(signature);
+    } catch (final Exception e) {
+      throw new SecurityModuleException("Unexpected error while signing: " + e.getMessage(), e);
+    }
+  }
 
-        stringBuilder.setLength(0);
+  @Override
+  public Signature sign(final Bytes32 dataHash, final String finality) throws SecurityModuleException {
+    try {
+      long startSecpSign = System.nanoTime();
+      final SECPSignature signature = signatureAlgorithm.sign(dataHash, keyPair);
+      long endSecpSign = System.nanoTime();
+
+      if(pqcSignatureAlgorithm != null) {
+        signWithPqc(startSecpSign, endSecpSign, signature, finality);
       }
 
       return new SignatureImpl(signature);

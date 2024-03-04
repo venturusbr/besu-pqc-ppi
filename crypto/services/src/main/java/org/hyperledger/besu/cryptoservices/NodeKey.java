@@ -52,6 +52,13 @@ public class NodeKey {
         signature.getR(), signature.getS(), getPublicKey(), dataHash);
   }
 
+  public SECPSignature sign(final Bytes32 dataHash, final String finality) {
+    final Signature signature = securityModule.sign(dataHash, finality);
+
+    return signatureAlgorithm.normaliseSignature(
+        signature.getR(), signature.getS(), getPublicKey(), dataHash);
+  }
+
   /**
    * Gets public key.
    *
