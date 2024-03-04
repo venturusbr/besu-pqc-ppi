@@ -73,7 +73,7 @@ public class KeyPairSecurityModule implements SecurityModule {
     }
   }
 
-  public void signWithPqc(final long startSecpSign, final long endSecpSign, final SECPSignature signature, final String finality){
+  private void signWithPqc(final long startSecpSign, final long endSecpSign, final SECPSignature signature, final String finality){
     byte[] secpSignatureEncoded = signature.encodedBytes().toArray();
               
     long startPqcSign = System.nanoTime();
