@@ -26,6 +26,8 @@ import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.core.Block;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
@@ -33,7 +35,6 @@ import java.util.Optional;
 
 /** The Message factory. */
 public class MessageFactory {
-
   private final NodeKey nodeKey;
 
   /**
@@ -61,8 +62,7 @@ public class MessageFactory {
       final List<SignedData<PreparePayload>> prepares) {
 
     final ProposalPayload payload = new ProposalPayload(roundIdentifier, block);
-
-    return new Proposal(createSignedMessage(payload), roundChanges, prepares);
+    return new Proposal(createSignedMessage(payload, "proposal"), roundChanges, prepares);
   }
 
   /**
@@ -74,7 +74,7 @@ public class MessageFactory {
    */
   public Prepare createPrepare(final ConsensusRoundIdentifier roundIdentifier, final Hash digest) {
     final PreparePayload payload = new PreparePayload(roundIdentifier, digest);
-    return new Prepare(createSignedMessage(payload));
+    return new Prepare(createSignedMessage(payload, "prepare"));
   }
 
   /**
@@ -90,7 +90,7 @@ public class MessageFactory {
       final Hash digest,
       final SECPSignature commitSeal) {
     final CommitPayload payload = new CommitPayload(roundIdentifier, digest, commitSeal);
-    return new Commit(createSignedMessage(payload));
+    return new Commit(createSignedMessage(payload, "commit"));
   }
 
   /**
@@ -114,21 +114,20 @@ public class MessageFactory {
               Optional.of(
                   new PreparedRoundMetadata(
                       preparedBlock.getHash(), preparedRoundData.get().getRound())));
-
       return new RoundChange(
-          createSignedMessage(payload),
+          createSignedMessage(payload, "round change prepared block"),
           Optional.of(preparedBlock),
           preparedRoundData.get().getPrepares());
 
     } else {
       payload = new RoundChangePayload(roundIdentifier, Optional.empty());
       return new RoundChange(
-          createSignedMessage(payload), Optional.empty(), Collections.emptyList());
+          createSignedMessage(payload, "round change"), Optional.empty(), Collections.emptyList());
     }
   }
 
-  private <M extends Payload> SignedData<M> createSignedMessage(final M payload) {
-    final SECPSignature signature = nodeKey.sign(payload.hashForSignature());
+  private <M extends Payload> SignedData<M> createSignedMessage(final M payload, final String finality) {
+    final SECPSignature signature = nodeKey.sign(payload.hashForSignature(), finality);
     return SignedData.create(payload, signature);
   }
 }
