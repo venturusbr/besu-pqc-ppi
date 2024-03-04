@@ -15,7 +15,7 @@ public abstract class PqcSignatureAlgorithm {
 
     public abstract String getAlgorithmName();
 
-    protected abstract String formatAlgorithmAndParamterTitle();
+    public abstract String formatAlgorithmAndParamterTitle();
 
     public PqcSignatureAlgorithm(){
         PqcProvider.initializeBouncyCastle();
