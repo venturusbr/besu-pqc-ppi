@@ -81,7 +81,7 @@ public class SphincsPlus extends PqcSignatureAlgorithm{
         return "SPHINCSPlus";
     }
     @Override
-    protected String formatAlgorithmAndParamterTitle(){
+    public String formatAlgorithmAndParamterTitle(){
         String parameterName =
         switch (SignatureAlgorithmFactory.getPqcParameterSpecIndex()) {
             case 0 -> "_sha2_128f";

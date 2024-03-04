@@ -1,6 +1,7 @@
 package org.hyperledger.besu.crypto.pqc.metrics;
 
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.pqc.PqcSignatureAlgorithm;
 
 public class MetricWriters {
     private static CSVWriter signInstance = null;
@@ -12,14 +13,14 @@ public class MetricWriters {
     }
 
     public static String buildSignHeader(){
-        String pqcAlgorithmName = SignatureAlgorithmFactory.getPqcAlgorithmName().toUpperCase();
-        String header = pqcAlgorithmName + "(ns)," + pqcAlgorithmName + " + SECP(ns)," + "PQC_SIGNATURE_LENGTH(bytes)," + "SECP_SIGNATURE_LENGTH(bytes)," + "FINALITY\n";
+        String pqcAlgorithmNameAndParameter = SignatureAlgorithmFactory.getPqcGenericInstance().formatAlgorithmAndParamterTitle().toUpperCase();
+        String header = pqcAlgorithmNameAndParameter + "(ns)," + pqcAlgorithmNameAndParameter + " + SECP(ns)," + "PQC_SIGNATURE_LENGTH(bytes)," + "SECP_SIGNATURE_LENGTH(bytes)," + "FINALITY\n";
         return header;
     }
 
     public static String buildVerifyHeader(){
-        String pqcAlgorithmName = SignatureAlgorithmFactory.getPqcAlgorithmName().toUpperCase();
-        String header = pqcAlgorithmName + "(ns)," + pqcAlgorithmName + " + SECP(ns)," + "isPqcValid\n";
+        String pqcAlgorithmNameAndParameter = SignatureAlgorithmFactory.getPqcGenericInstance().formatAlgorithmAndParamterTitle().toUpperCase();
+        String header = pqcAlgorithmNameAndParameter + "(ns)," + pqcAlgorithmNameAndParameter + " + SECP(ns)," + "isPqcValid\n";
         return header;
     }
 
