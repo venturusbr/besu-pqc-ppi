@@ -55,6 +55,8 @@ import org.hyperledger.besu.crypto.pqc.falcon.Falcon;
 import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconKeyPair;
 import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconPrivateKey;
 import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconPublicKey;
+import org.hyperledger.besu.crypto.pqc.metrics.CSVWriter;
+import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
 import org.hyperledger.besu.crypto.pqc.sphincsplus.SphincsPlus;
 import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusKeyPair;
 import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusPrivateKey;
@@ -269,11 +271,14 @@ class GenerateBlockchainConfig implements Runnable {
     try {
       LOG.info("Generating SECP keypair for node {}.", node);
       SignatureAlgorithmFactory.setPqcParameterSpecIndex(pqcParameterSpec);
+      SignatureAlgorithmFactory.setpqcAlgorithmName(pqcAlgorithmName);
       final KeyPair keyPair = SIGNATURE_ALGORITHM.get().generateKeyPair();
       SECPPrivateKey secpPrivateKey = keyPair.getPrivateKey();
       SECPPublicKey secpPublicKey = keyPair.getPublicKey();
       Bytes secpPublicKeyBytes = secpPublicKey.getEncodedBytes();
       final Address nodeAddress = Util.publicKeyToAddress(secpPublicKeyBytes);
+      MetricWriters.getSignInstance();
+      MetricWriters.getVerifyInstance();
       writeKeypair(secpPublicKeyBytes, secpPrivateKey.getEncodedBytes(), nodeAddress);
 
       switch (pqcAlgorithmName) {

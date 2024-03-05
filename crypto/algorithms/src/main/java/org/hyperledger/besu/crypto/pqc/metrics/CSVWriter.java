@@ -43,7 +43,7 @@ public class CSVWriter {
 
     private String buildPath(final String ref) {
         String path = stringBuilder
-                .append(HOME_PATH + SignatureAlgorithmFactory.getPqcGenericInstance().formatAlgorithmAndParamterTitle().toLowerCase()
+                .append(HOME_PATH + SignatureAlgorithmFactory.getPqcGenericInstance().formatAlgorithmAndParameterTitle().toLowerCase()
                         + "-" + ref + "-metrics.csv")
                 .toString();
         stringBuilder.setLength(0);

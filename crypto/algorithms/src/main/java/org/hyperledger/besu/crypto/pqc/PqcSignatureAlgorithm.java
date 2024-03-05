@@ -15,14 +15,14 @@ public abstract class PqcSignatureAlgorithm {
 
     public abstract String getAlgorithmName();
 
-    public abstract String formatAlgorithmAndParamterTitle();
+    public abstract String formatAlgorithmAndParameterTitle();
 
     public PqcSignatureAlgorithm(){
         PqcProvider.initializeBouncyCastle();
     }
 
     public void generateKeyPairLog(){
-        LOG.info("Generating PQC {} keypair for node.", formatAlgorithmAndParamterTitle());
+        LOG.info("Generating PQC {} keypair for node.", formatAlgorithmAndParameterTitle());
     }
 
     public boolean verify(final PublicKey publicKey, final byte[] dataToSign, final byte[] signature) {
