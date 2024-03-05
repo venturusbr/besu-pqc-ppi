@@ -13,13 +13,13 @@ public class MetricWriters {
     }
 
     public static String buildSignHeader(){
-        String pqcAlgorithmNameAndParameter = SignatureAlgorithmFactory.getPqcGenericInstance().formatAlgorithmAndParamterTitle().toUpperCase();
+        String pqcAlgorithmNameAndParameter = SignatureAlgorithmFactory.getPqcGenericInstance().formatAlgorithmAndParameterTitle().toUpperCase();
         String header = pqcAlgorithmNameAndParameter + "(ns)," + pqcAlgorithmNameAndParameter + " + SECP(ns)," + "PQC_SIGNATURE_LENGTH(bytes)," + "SECP_SIGNATURE_LENGTH(bytes)," + "FINALITY\n";
         return header;
     }
 
     public static String buildVerifyHeader(){
-        String pqcAlgorithmNameAndParameter = SignatureAlgorithmFactory.getPqcGenericInstance().formatAlgorithmAndParamterTitle().toUpperCase();
+        String pqcAlgorithmNameAndParameter = SignatureAlgorithmFactory.getPqcGenericInstance().formatAlgorithmAndParameterTitle().toUpperCase();
         String header = pqcAlgorithmNameAndParameter + "(ns)," + pqcAlgorithmNameAndParameter + " + SECP(ns)," + "isPqcValid\n";
         return header;
     }

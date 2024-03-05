@@ -9,7 +9,7 @@ public class CrystalsDilithium3 extends AbstractCrystalsDilithium3{
     }
 
     @Override
-    public String formatAlgorithmAndParamterTitle(){
+    public String formatAlgorithmAndParameterTitle(){
         String parameterName =
         switch (SignatureAlgorithmFactory.getPqcParameterSpecIndex()) {
             case 0 -> "2";

@@ -56,7 +56,7 @@ public class Falcon extends PqcSignatureAlgorithm{
     }
 
     @Override
-    public String formatAlgorithmAndParamterTitle(){
+    public String formatAlgorithmAndParameterTitle(){
         String parameterName =
         switch (SignatureAlgorithmFactory.getPqcParameterSpecIndex()) {
             case 0 -> "_512";
