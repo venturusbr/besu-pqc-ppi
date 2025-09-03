@@ -6,10 +6,11 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.format.DSAPrivateKey;
 import org.hyperledger.besu.crypto.key.format.DSAPublicKey;
-import org.hyperledger.besu.crypto.key.format.HybridDSAPrivateKey;
-import org.hyperledger.besu.crypto.key.format.HybridDSAPublicKey;
+import org.hyperledger.besu.crypto.key.format.CompositeDSAPrivateKey;
+import org.hyperledger.besu.crypto.key.format.CompositeDSAPublicKey;
 
 public class NodeKeyPair {
     private final PrivateKey privateKey;
@@ -31,42 +32,21 @@ public class NodeKeyPair {
     }
 
     public static NodeKeyPair create(Bytes privateKeyBytes, Bytes publicKeyBytes, String algorithmName){
-       PrivateKey sk = new DSAPrivateKey(algorithmName, "single", privateKeyBytes);
+       PrivateKey sk = new DSAPrivateKey(algorithmName, "RAW", privateKeyBytes);
 
-       PublicKey pk = new DSAPublicKey(algorithmName, "single", publicKeyBytes);
+       PublicKey pk = new DSAPublicKey(algorithmName, "RAW", publicKeyBytes);
 
        return new NodeKeyPair(sk, pk);
     }
 
     public static NodeKeyPair createHybrid(
-        Bytes privateKeyBytes,
-        Bytes publicKeyBytes,
-        String firstAlgorithmName,
-        String secondAlgorithmName,
-        KeyExtractor keyExtractor,
-        int firstSkLength,
-        int secondSkLength,
-        int firstPkLength,
-        int secondPkLength) {
-
-        PrivateKey firstSk = keyExtractor.extractPrivateKeyAtOffset(privateKeyBytes, 0, firstSkLength, firstAlgorithmName, "single");
-        PrivateKey secondSk = keyExtractor.extractPrivateKeyAtOffset(privateKeyBytes, firstSkLength, secondSkLength, firstAlgorithmName, "single");
-
-        PublicKey firstPk = keyExtractor.extractPublicKeyAtOffset(publicKeyBytes, 0, firstPkLength, secondAlgorithmName, "single");
-        PublicKey secondPk = keyExtractor.extractPublicKeyAtOffset(publicKeyBytes, firstPkLength, secondPkLength, secondAlgorithmName, "single");
-
-        PrivateKey sk = new HybridDSAPrivateKey(firstSk, secondSk);
-        PublicKey pk = new HybridDSAPublicKey(firstPk, secondPk);
+        PrivateKey firstSk,
+        PrivateKey secondSk,
+        PublicKey firstPk,
+        PublicKey secondPk) {
+        PrivateKey sk = new CompositeDSAPrivateKey(firstSk, secondSk);
+        PublicKey pk = new CompositeDSAPublicKey(firstPk, secondPk);
 
         return new NodeKeyPair(sk, pk);
     }
-
-    // private static PrivateKey extractPrivateKeyAtOffset(Bytes skBytes, Integer fromIndex, Integer toIndex, String format){
-    //     Bytes slicedSk = skBytes.slice(fromIndex, toIndex - fromIndex);
-    //     return new DSAPrivateKey(getAlgorithmName(), format, slicedSk);
-    // }
-
-    // private static PublicKey extractPublicKeyAtOffset(){
-
-    // }
 }

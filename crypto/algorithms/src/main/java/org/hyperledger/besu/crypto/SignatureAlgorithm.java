@@ -23,7 +23,7 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.math.ec.ECPoint;
 
 /** The interface Signature algorithm. */
-public interface SignatureAlgorithm {
+public interface SignatureAlgorithm extends DigitalSignatureAlgorithm{
   /** The constant ALGORITHM. */
   // needs to be known at compile time otherwise triggers InsecureCryptoUsage error
   String ALGORITHM = "ECDSA";

@@ -3,7 +3,6 @@ package org.hyperledger.besu.crypto.signature;
 import org.apache.tuweni.bytes.Bytes;
 
 public interface Signature {
-    Bytes encodedBytes();
-
-    Boolean isHybrid();
+    String getAlgorithm();
+    Bytes getEncodedBytes();
 }

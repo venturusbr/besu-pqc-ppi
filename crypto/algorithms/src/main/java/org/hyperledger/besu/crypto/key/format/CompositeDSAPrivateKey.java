@@ -4,12 +4,12 @@ import java.security.PrivateKey;
 
 import org.apache.tuweni.bytes.Bytes;
 
-public class HybridDSAPrivateKey implements PrivateKey{
+public class CompositeDSAPrivateKey implements PrivateKey{
     private final PrivateKey firstKey;
     private final PrivateKey secondKey;
     private final Bytes encoded;
 
-    public HybridDSAPrivateKey(final PrivateKey firstKey, final PrivateKey secondKey){
+    public CompositeDSAPrivateKey(final PrivateKey firstKey, final PrivateKey secondKey){
         this.encoded = Bytes.concatenate(
             Bytes.wrap(firstKey.getEncoded()),
             Bytes.wrap(secondKey.getEncoded())

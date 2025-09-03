@@ -5,40 +5,34 @@ import java.security.PublicKey;
 
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
+import org.hyperledger.besu.crypto.HybridDigitalSignatureAlgorithm;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.NodeKeyPair;
 import org.hyperledger.besu.crypto.key.format.DSAPrivateKey;
 import org.hyperledger.besu.crypto.key.format.DSAPublicKey;
-import org.hyperledger.besu.crypto.key.format.HybridDSAPrivateKey;
+import org.hyperledger.besu.crypto.key.format.CompositeDSAPrivateKey;
+import org.hyperledger.besu.crypto.key.format.CompositeDSAPublicKey;
+import org.hyperledger.besu.crypto.signature.CompositeSignature;
 import org.hyperledger.besu.crypto.signature.Signature;
-import org.hyperledger.besu.crypto.signature.DSASignature;
+import org.hyperledger.besu.crypto.signature.SingleSignature;
 import org.hyperledger.besu.crypto.signature.SignatureFactory;
+import org.hyperledger.besu.crypto.signature.CompositeSignature;
 
-public class HybridStrongNestingConcatenation implements DigitalSignatureAlgorithm{
+public class HybridStrongNestingConcatenation implements HybridDigitalSignatureAlgorithm{
 
     DigitalSignatureAlgorithm delegateFirstAlgorithm;
     DigitalSignatureAlgorithm delegateSecondAlgorithm;
+    DSAParametersSet parametersSet;
 
-    HybridStrongNestingConcatenation(DigitalSignatureAlgorithm firstAlgorithm, DigitalSignatureAlgorithm secondAlgorithm){
+    public HybridStrongNestingConcatenation(DigitalSignatureAlgorithm firstAlgorithm, DigitalSignatureAlgorithm secondAlgorithm, DSAParametersSet parametersSet){
         this.delegateFirstAlgorithm = firstAlgorithm;
         this.delegateSecondAlgorithm = secondAlgorithm;
-    }
-
-    @Override
-    public String getAlgorithmName() {
-        return "HybridStrongNestingConcatenation";
-    }
-
-    @Override
-    public String getParameterSet() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getParameterSet'");
+        this.parametersSet = parametersSet;
     }
 
     @Override
     public Signature sign(Bytes data, PrivateKey sk) {
-        HybridDSAPrivateKey hybridPrivateKey = (HybridDSAPrivateKey) sk;
-
-        // PrivateKey secondSk = extractPrivateKeyFromBytes(hybridPrivateKeyBytes, delegateFirstAlgorithm.privateKeyLength(), delegateFirstAlgorithm.privateKeyLength() + delegateSecondAlgorithm.privateKeyLength(), null);
+        CompositeDSAPrivateKey hybridPrivateKey = (CompositeDSAPrivateKey) sk;
 
         Signature firstSignature = delegateFirstAlgorithm.sign(data, hybridPrivateKey.getFirstKey());
         Signature secondSignature = delegateSecondAlgorithm.sign(Bytes.concatenate(data, firstSignature.encodedBytes()), hybridPrivateKey.getSecondKey());
@@ -46,64 +40,41 @@ public class HybridStrongNestingConcatenation implements DigitalSignatureAlgorit
         return SignatureFactory.createStrongNestedConcSignature(firstSignature, secondSignature);
     }
 
+    // TODO: SignatureExtractor
     @Override
     public Boolean verify(Bytes data, Signature signature, PublicKey pk) {
-        Bytes hybridPublicKeyBytes = Bytes.wrap(pk.getEncoded());
+        CompositeDSAPublicKey hybridPublicKey = (CompositeDSAPublicKey) pk;
 
-        PublicKey firstPk = extractPublicKeyFromBytes(hybridPublicKeyBytes, 0, delegateFirstAlgorithm.publicKeyLength(), null);
+        CompositeSignature compositeSignature = (CompositeSignature) signature;
 
-        PublicKey secondPk = extractPublicKeyFromBytes(hybridPublicKeyBytes, delegateFirstAlgorithm.publicKeyLength(), delegateFirstAlgorithm.publicKeyLength() + delegateSecondAlgorithm.publicKeyLength(), null);
+        Signature firstSignature = compositeSignature.getFirstSignature();
+        Signature secondSignature = compositeSignature.getSecondSignature();
+        // Signature firstSignature = extractSignatureFromBytes(signature.encodedBytes(), 0, delegateFirstAlgorithm.signatureLength());
+        // Signature secondSignature = extractSignatureFromBytes(signature.encodedBytes(), delegateFirstAlgorithm.signatureLength(), delegateFirstAlgorithm.signatureLength() + delegateSecondAlgorithm.signatureLength());
 
-        Signature firstSignature = extractSignatureFromBytes(signature.encodedBytes(), 0, delegateFirstAlgorithm.signatureLength());
-        Signature secondSignature = extractSignatureFromBytes(signature.encodedBytes(), delegateFirstAlgorithm.signatureLength(), delegateFirstAlgorithm.signatureLength() + delegateSecondAlgorithm.signatureLength());
+        Bytes dataWithFirstSignature = Bytes.wrap(data, firstSignature.getEncodedBytes()); 
 
-        Bytes dataWithFirstSignature = Bytes.wrap(data, firstSignature.encodedBytes()); 
-
-        return delegateFirstAlgorithm.verify(data, firstSignature, firstPk) && delegateSecondAlgorithm.verify(dataWithFirstSignature, secondSignature, secondPk);
+        return delegateFirstAlgorithm.verify(data, firstSignature, hybridPublicKey.getFirstKey()) && delegateSecondAlgorithm.verify(dataWithFirstSignature, secondSignature, hybridPublicKey.getSecondKey());
     }
 
     @Override
     public NodeKeyPair generateKeyPair() {
-        
+        //TODO
+        return null;
     }
 
     @Override
-    public Integer signatureLength() {
-        return delegateFirstAlgorithm.signatureLength() + delegateSecondAlgorithm.signatureLength();
+    public DSAParametersSet getDsaParametersSet() {
+        return parametersSet;
     }
 
     @Override
-    public Integer privateKeyLength(){
-        return delegateFirstAlgorithm.privateKeyLength() + delegateSecondAlgorithm.privateKeyLength();
+    public DigitalSignatureAlgorithm getFirstAlgorithm(){
+        return delegateFirstAlgorithm;
     }
 
-    @Override
-    public Integer publicKeyLength() {
-        return delegateFirstAlgorithm.publicKeyLength() + delegateSecondAlgorithm.publicKeyLength();
+    @Override 
+    public DigitalSignatureAlgorithm getSecondAlgorithm(){
+        return delegateSecondAlgorithm;
     }
-
-    @Override
-    public Boolean supportsPKR() {
-        return false;
-    }
-
-    @Override
-    public Boolean isHybrid(){
-        return true;
-    }
-
-    // private PrivateKey extractPrivateKeyFromBytes(Bytes skBytes, Integer fromIndex, Integer toIndex, String format){
-    //     Bytes slicedSk = skBytes.slice(fromIndex, toIndex - fromIndex);
-    //     return new DSAPrivateKey(getAlgorithmName(), format, slicedSk);
-    // }
-
-    // private PublicKey extractPublicKeyFromBytes(Bytes compositePkBytes, Integer fromIndex, Integer toIndex, String format){
-    //     Bytes slicedPk = compositePkBytes.slice(fromIndex, toIndex - fromIndex);
-    //     return new DSAPublicKey(getAlgorithmName(), format, slicedPk);
-    // }
-
-    // private Signature extractSignatureFromBytes(Bytes compositeSignatureBytes, Integer fromIndex, Integer toIndex){
-    //     Bytes slicedSignature = compositeSignatureBytes.slice(fromIndex, toIndex - fromIndex);
-    //     return new DSASignature(slicedSignature, false);
-    // }
 }
