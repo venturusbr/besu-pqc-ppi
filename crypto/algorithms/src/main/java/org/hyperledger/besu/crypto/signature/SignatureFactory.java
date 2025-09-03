@@ -10,7 +10,7 @@ public class SignatureFactory {
 
         Bytes hybridSignatureBytes = Bytes.concatenate(firstSignatureBytes, secondSignatureBytes);
 
-        DSASignature hybridSignature = new DSASignature(hybridSignatureBytes, true);
+        SingleSignature hybridSignature = new SingleSignature(hybridSignatureBytes, true);
 
         checkArgument(firstSignatureBytes.size() + secondSignatureBytes.size() == hybridSignature.encodedBytes().size(), "encoded HybridSignature must be the same size as the sum of the first and second signatures");
 

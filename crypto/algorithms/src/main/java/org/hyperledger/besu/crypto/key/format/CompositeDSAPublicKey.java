@@ -4,12 +4,12 @@ import java.security.PublicKey;
 
 import org.apache.tuweni.bytes.Bytes;
 
-public class HybridDSAPublicKey implements PublicKey{
+public class CompositeDSAPublicKey implements PublicKey{
     private final PublicKey firstKey;
     private final PublicKey secondKey;
     private final Bytes encoded;
 
-    public HybridDSAPublicKey(final PublicKey firstKey, final PublicKey secondKey){
+    public CompositeDSAPublicKey(final PublicKey firstKey, final PublicKey secondKey){
         this.encoded = Bytes.concatenate(
             Bytes.wrap(firstKey.getEncoded()),
             Bytes.wrap(secondKey.getEncoded())
