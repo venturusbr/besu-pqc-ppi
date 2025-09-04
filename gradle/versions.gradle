@@ -152,7 +152,7 @@ dependencyManagement {
 
     dependency 'org.awaitility:awaitility:4.2.0'
 
-    dependencySet(group: 'org.bouncycastle', version: '1.76') {
+    dependencySet(group: 'org.bouncycastle', version: '1.81') {
       entry'bcpkix-jdk18on'
       entry'bcprov-jdk18on'
     }
