@@ -4,35 +4,34 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 
 import org.apache.tuweni.bytes.Bytes;
-
+import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.HybridDigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.config.DigitalSignatureAlgorithmConfiguration;
 
 public class KeyManager {
     private final KeyExtractor keyExtractor;
-    private final DigitalSignatureAlgorithmConfiguration dsaConfig;
     private NodeKeyPair nodeKeyPair;
 
-    public KeyManager(DigitalSignatureAlgorithmConfiguration dsaConfig) {
+    public KeyManager() {
         this.keyExtractor = new KeyExtractor();
-        this.dsaConfig = dsaConfig;
     }
 
     public void buildNodeKeyPair(
             Bytes privateKeyBytes,
-            Bytes publicKeyBytes) {
-        Boolean isHybrid = dsaConfig.getActiveDSA() instanceof HybridDigitalSignatureAlgorithm;
+            Bytes publicKeyBytes,
+            DigitalSignatureAlgorithm activeDsa) {
+        Boolean isHybrid = activeDsa instanceof HybridDigitalSignatureAlgorithm;
         if (isHybrid) {
-            buildHybridNodeKeyPair(privateKeyBytes, publicKeyBytes);
+            buildHybridNodeKeyPair(privateKeyBytes, publicKeyBytes, activeDsa);
             return;
         }
         this.nodeKeyPair = NodeKeyPair.create(privateKeyBytes, publicKeyBytes,
-        dsaConfig.getActiveDSA().getDsaParametersSet().getName());
+        activeDsa.getDsaParametersSet().getName());
     }
 
-    private void buildHybridNodeKeyPair(Bytes privateKeyBytes, Bytes publicKeyBytes){
-        HybridDigitalSignatureAlgorithm hybridDSA = (HybridDigitalSignatureAlgorithm) dsaConfig.getActiveDSA();
+    private void buildHybridNodeKeyPair(Bytes privateKeyBytes, Bytes publicKeyBytes, DigitalSignatureAlgorithm activeDsa){
+        HybridDigitalSignatureAlgorithm hybridDSA = (HybridDigitalSignatureAlgorithm) activeDsa;
         DSAParametersSet firstAlgorithmParams = hybridDSA.getFirstAlgorithm().getDsaParametersSet();
         DSAParametersSet secondAlgorithmParams = hybridDSA.getSecondAlgorithm().getDsaParametersSet();
 
