@@ -1,18 +1,12 @@
 package org.hyperledger.besu.crypto.signature;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import org.apache.tuweni.bytes.Bytes;
+import static com.google.common.base.Preconditions.*;
 
 public class SignatureFactory {
-    public static Signature createStrongNestedConcSignature(Signature first, Signature second){
-        Bytes firstSignatureBytes = first.encodedBytes();
-        Bytes secondSignatureBytes = second.encodedBytes();
+    public static CompositeSignature createCompositeStrongNestedConcSignature(SingleSignature first, SingleSignature second){
+        CompositeSignature hybridSignature = new CompositeSignature(first, second);
 
-        Bytes hybridSignatureBytes = Bytes.concatenate(firstSignatureBytes, secondSignatureBytes);
-
-        SingleSignature hybridSignature = new SingleSignature(hybridSignatureBytes, true);
-
-        checkArgument(firstSignatureBytes.size() + secondSignatureBytes.size() == hybridSignature.encodedBytes().size(), "encoded HybridSignature must be the same size as the sum of the first and second signatures");
+        checkArgument(first.getEncodedBytes().size() + second.getEncodedBytes().size() == hybridSignature.getEncodedBytes().size(), "encoded HybridSignature must be the same size as the sum of the first and second signatures");
 
         return hybridSignature;
     }

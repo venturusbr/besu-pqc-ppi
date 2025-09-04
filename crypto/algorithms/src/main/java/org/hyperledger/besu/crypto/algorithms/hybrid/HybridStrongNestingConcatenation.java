@@ -1,5 +1,6 @@
 package org.hyperledger.besu.crypto.algorithms.hybrid;
 
+import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
@@ -24,42 +25,44 @@ public class HybridStrongNestingConcatenation implements HybridDigitalSignatureA
     DigitalSignatureAlgorithm delegateSecondAlgorithm;
     DSAParametersSet parametersSet;
 
-    public HybridStrongNestingConcatenation(DigitalSignatureAlgorithm firstAlgorithm, DigitalSignatureAlgorithm secondAlgorithm, DSAParametersSet parametersSet){
+    public HybridStrongNestingConcatenation(final DigitalSignatureAlgorithm firstAlgorithm, final DigitalSignatureAlgorithm secondAlgorithm, final DSAParametersSet parametersSet){
         this.delegateFirstAlgorithm = firstAlgorithm;
         this.delegateSecondAlgorithm = secondAlgorithm;
         this.parametersSet = parametersSet;
     }
 
     @Override
-    public Signature sign(Bytes data, PrivateKey sk) {
+    public Signature sign(final Bytes data, final PrivateKey sk) {
         CompositeDSAPrivateKey hybridPrivateKey = (CompositeDSAPrivateKey) sk;
 
         Signature firstSignature = delegateFirstAlgorithm.sign(data, hybridPrivateKey.getFirstKey());
-        Signature secondSignature = delegateSecondAlgorithm.sign(Bytes.concatenate(data, firstSignature.encodedBytes()), hybridPrivateKey.getSecondKey());
+        Signature secondSignature = delegateSecondAlgorithm.sign(Bytes.concatenate(data, firstSignature.getEncodedBytes()), hybridPrivateKey.getSecondKey());
 
-        return SignatureFactory.createStrongNestedConcSignature(firstSignature, secondSignature);
+        return SignatureFactory.createCompositeStrongNestedConcSignature((SingleSignature) firstSignature, (SingleSignature) secondSignature);
     }
 
     // TODO: SignatureExtractor
     @Override
-    public Boolean verify(Bytes data, Signature signature, PublicKey pk) {
+    public Boolean verify(final Bytes data, final Signature signature, final PublicKey pk) {
         CompositeDSAPublicKey hybridPublicKey = (CompositeDSAPublicKey) pk;
 
         CompositeSignature compositeSignature = (CompositeSignature) signature;
 
         Signature firstSignature = compositeSignature.getFirstSignature();
         Signature secondSignature = compositeSignature.getSecondSignature();
-        // Signature firstSignature = extractSignatureFromBytes(signature.encodedBytes(), 0, delegateFirstAlgorithm.signatureLength());
-        // Signature secondSignature = extractSignatureFromBytes(signature.encodedBytes(), delegateFirstAlgorithm.signatureLength(), delegateFirstAlgorithm.signatureLength() + delegateSecondAlgorithm.signatureLength());
 
-        Bytes dataWithFirstSignature = Bytes.wrap(data, firstSignature.getEncodedBytes()); 
+        Bytes dataWithFirstSignature = Bytes.concatenate(data, firstSignature.getEncodedBytes()); 
 
         return delegateFirstAlgorithm.verify(data, firstSignature, hybridPublicKey.getFirstKey()) && delegateSecondAlgorithm.verify(dataWithFirstSignature, secondSignature, hybridPublicKey.getSecondKey());
     }
 
     @Override
     public NodeKeyPair generateKeyPair() {
-        //TODO
+        // TODO
+        // NodeKeyPair firstKeyPair = delegateFirstAlgorithm.generateKeyPair();
+        // NodeKeyPair secondKeyPair = delegateSecondAlgorithm.generateKeyPair();
+
+
         return null;
     }
 

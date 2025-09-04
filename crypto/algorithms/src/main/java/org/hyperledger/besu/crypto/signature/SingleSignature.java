@@ -18,7 +18,7 @@ public class SingleSignature implements Signature{
     }
 
     @Override
-    public Bytes encodedBytes(){
+    public Bytes getEncodedBytes(){
         return encoded;
     }
 }
