@@ -7,7 +7,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.HybridDigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
-import org.hyperledger.besu.crypto.config.DigitalSignatureAlgorithmConfiguration;
 
 public class KeyManager {
     private final KeyExtractor keyExtractor;
@@ -26,7 +25,7 @@ public class KeyManager {
             buildHybridNodeKeyPair(privateKeyBytes, publicKeyBytes, activeDsa);
             return;
         }
-        this.nodeKeyPair = NodeKeyPair.create(privateKeyBytes, publicKeyBytes,
+        this.nodeKeyPair = NodeKeyPairFactory.create(privateKeyBytes, publicKeyBytes,
         activeDsa.getDsaParametersSet().getName());
     }
 
@@ -42,7 +41,7 @@ public class KeyManager {
 
         PublicKey secondPk = keyExtractor.extractPublicKeyAtOffset(publicKeyBytes, firstAlgorithmParams.getPublicKeyLength(), secondAlgorithmParams.getPublicKeyLength(), secondAlgorithmParams.getName(), "RAW");
 
-        NodeKeyPair keyPair = NodeKeyPair.createHybrid(
+        NodeKeyPair keyPair = NodeKeyPairFactory.createHybrid(
                 firstSk,
                 secondSk,
                 firstPk,

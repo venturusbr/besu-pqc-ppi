@@ -1,11 +1,11 @@
 package org.hyperledger.besu.crypto.algorithms.parameters;
 
 public enum DSAParametersSet {
-    SECP256K1("secp256k1", 32, 64, 65),
+    SECP256K1("SECP256K1", 32, 64, 65),
     MLDSA44("MLDSA44", 2626, 1334, 2420),
     MLDSA65("MLDSA65", 4098, 1974, 3309),
     MLDSA87("MLDSA87", 4962, 2614, 4627),
-    SECP256K1MLDSA44("SECP256k1-MLDSA44", 2658, 1398, 2485)
+    SECP256K1MLDSA44("SECP256K1-MLDSA44", 2658, 1398, 2485)
     ;
 
     private final String name;

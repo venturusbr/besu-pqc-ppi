@@ -9,8 +9,8 @@ public class CompositeSignature implements Signature{
 
     public CompositeSignature(final SingleSignature firstSignature, final SingleSignature secondSignature){
         this.encoded = Bytes.concatenate(
-            Bytes.wrap(firstSignature.getEncodedBytes()),
-            Bytes.wrap(secondSignature.getEncodedBytes())
+            Bytes.wrap(firstSignature.encodedBytes()),
+            Bytes.wrap(secondSignature.encodedBytes())
         );
         this.firstSignature = firstSignature;
         this.secondSignature = secondSignature;
@@ -30,7 +30,7 @@ public class CompositeSignature implements Signature{
     }
 
     @Override
-    public Bytes getEncodedBytes() {
+    public Bytes encodedBytes() {
         return encoded;
     }
     

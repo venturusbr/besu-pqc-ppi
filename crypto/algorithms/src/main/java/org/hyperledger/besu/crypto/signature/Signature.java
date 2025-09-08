@@ -4,5 +4,5 @@ import org.apache.tuweni.bytes.Bytes;
 
 public interface Signature {
     String getAlgorithm();
-    Bytes getEncodedBytes();
+    Bytes encodedBytes();
 }
