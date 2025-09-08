@@ -6,7 +6,6 @@ import java.security.NoSuchProviderException;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
-import org.hyperledger.besu.crypto.pqc.PqcProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
