@@ -19,7 +19,7 @@ public class SupportedAlgorithms {
         DSA_ALGORITHMS.put(DSAParametersSet.SECP256K1MLDSA44.getName(), new HybridStrongNestingConcatenation(new SECP256K1(), new MLDSA(DSAParametersSet.MLDSA44), DSAParametersSet.SECP256K1MLDSA44));
     }
 
-    public DigitalSignatureAlgorithm getDSA(String algorithmName){
+    public DigitalSignatureAlgorithm getDSA(final String algorithmName){
         return DSA_ALGORITHMS.get(algorithmName);
     }
 }

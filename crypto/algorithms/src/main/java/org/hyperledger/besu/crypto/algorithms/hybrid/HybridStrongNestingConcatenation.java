@@ -8,8 +8,8 @@ import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.HybridDigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.NodeKeyPair;
-import org.hyperledger.besu.crypto.key.format.CompositeDSAPrivateKey;
-import org.hyperledger.besu.crypto.key.format.CompositeDSAPublicKey;
+import org.hyperledger.besu.crypto.key.types.CompositeDSAPrivateKey;
+import org.hyperledger.besu.crypto.key.types.CompositeDSAPublicKey;
 import org.hyperledger.besu.crypto.signature.CompositeSignature;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.SingleSignature;
@@ -53,7 +53,7 @@ public class HybridStrongNestingConcatenation implements HybridDigitalSignatureA
     }
 
     @Override
-    public NodeKeyPair generateKeyPair() {
+    public NodeKeyPair generateNodeKeyPair() {
         // TODO
         // NodeKeyPair firstKeyPair = delegateFirstAlgorithm.generateKeyPair();
         // NodeKeyPair secondKeyPair = delegateSecondAlgorithm.generateKeyPair();

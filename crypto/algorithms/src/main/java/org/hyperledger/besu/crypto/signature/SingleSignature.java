@@ -7,7 +7,7 @@ public class SingleSignature implements Signature{
     private final String algorithmName;
     private final Bytes encoded;
 
-    public SingleSignature(Bytes signatureBytes, String algorithmName){
+    public SingleSignature(final Bytes signatureBytes, final String algorithmName){
         this.encoded = signatureBytes;
         this.algorithmName = algorithmName;
     }

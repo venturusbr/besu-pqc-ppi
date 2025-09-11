@@ -2,7 +2,6 @@ package org.hyperledger.besu.crypto.algorithms;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.SecureRandom;
 import java.security.Security;
 import java.util.HashMap;
 import java.util.Map;
@@ -20,17 +19,21 @@ import org.bouncycastle.pqc.crypto.mldsa.MLDSAPublicKeyParameters;
 import org.bouncycastle.pqc.crypto.mldsa.MLDSASigner;
 import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider;
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
+import org.hyperledger.besu.crypto.SecureRandomProvider;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.NodeKeyPair;
 import org.hyperledger.besu.crypto.key.NodeKeyPairFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.SignatureFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MLDSA implements DigitalSignatureAlgorithm{
     private static final Map<String, MLDSAParameters> RENAMING_TO_LIB = new HashMap<>();
-    private DSAParametersSet mldsaParameters;
-    private MLDSASigner signerAndVerifier;
-    private MLDSAParameters selectedBCParameter;
+    private final DSAParametersSet mldsaParameters;
+    private final MLDSASigner signerAndVerifier;
+    private final MLDSAParameters selectedBCParameter;
+    private static final Logger LOG = LoggerFactory.getLogger(MLDSA.class);
 
     static {
         RENAMING_TO_LIB.put(DSAParametersSet.MLDSA44.getName(), MLDSAParameters.ml_dsa_44);
@@ -55,7 +58,7 @@ public class MLDSA implements DigitalSignatureAlgorithm{
         try {
             signature = signerAndVerifier.generateSignature();
         } catch (DataLengthException | CryptoException e) {
-            e.printStackTrace();
+            LOG.error("Error while signing MLDSA", e);
         }
         return SignatureFactory.createSingleSignatureFromBytes(signature, sk.getAlgorithm());
     }
@@ -70,9 +73,9 @@ public class MLDSA implements DigitalSignatureAlgorithm{
     }
 
     @Override
-    public NodeKeyPair generateKeyPair() {
+    public NodeKeyPair generateNodeKeyPair() {
         MLDSAKeyPairGenerator mldsaKpGenerator = new MLDSAKeyPairGenerator();
-        KeyGenerationParameters genParams = new MLDSAKeyGenerationParameters(new SecureRandom(), selectedBCParameter);
+        KeyGenerationParameters genParams = new MLDSAKeyGenerationParameters(SecureRandomProvider.createSecureRandom(), selectedBCParameter);
 
         mldsaKpGenerator.init(genParams);
         AsymmetricCipherKeyPair mldsaKp = mldsaKpGenerator.generateKeyPair();

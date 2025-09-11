@@ -3,24 +3,19 @@ package org.hyperledger.besu.crypto.signature;
 import org.apache.tuweni.bytes.Bytes;
 
 public class CompositeSignature implements Signature{
-    private final SingleSignature firstSignature;
-    private final SingleSignature secondSignature;
-    private final Bytes encoded;
+    private final Signature firstSignature;
+    private final Signature secondSignature;
 
-    public CompositeSignature(final SingleSignature firstSignature, final SingleSignature secondSignature){
-        this.encoded = Bytes.concatenate(
-            Bytes.wrap(firstSignature.encodedBytes()),
-            Bytes.wrap(secondSignature.encodedBytes())
-        );
+    public CompositeSignature(final Signature firstSignature, final Signature secondSignature){
         this.firstSignature = firstSignature;
         this.secondSignature = secondSignature;
     }
 
-    public SingleSignature getFirstSignature(){
+    public Signature getFirstSignature(){
         return firstSignature;
     }
 
-    public SingleSignature getSecondSignature(){
+    public Signature getSecondSignature(){
         return secondSignature;
     }
 
@@ -31,7 +26,10 @@ public class CompositeSignature implements Signature{
 
     @Override
     public Bytes encodedBytes() {
-        return encoded;
+        return Bytes.concatenate(
+            Bytes.wrap(firstSignature.encodedBytes()),
+            Bytes.wrap(secondSignature.encodedBytes())
+        );
     }
     
 }

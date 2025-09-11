@@ -13,7 +13,7 @@ public class DigitalSignatureAlgorithmConfiguration {
         this.activeDSA = null;
     }
 
-    public void setActiveDSA(String algorithmName) throws InvalidAlgorithmParameterException{
+    public void setActiveDSA(final String algorithmName) throws InvalidAlgorithmParameterException{
         DigitalSignatureAlgorithm maybeDsa = supportedAlgorithms.getDSA(algorithmName);
 
         if(maybeDsa == null){

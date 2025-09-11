@@ -14,11 +14,15 @@
  */
 package org.hyperledger.besu.crypto;
 
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.signature.SignatureFactory;
 import org.hyperledger.besu.nativelib.secp256r1.LibSECP256R1;
 import org.hyperledger.besu.nativelib.secp256r1.Signature;
 import org.hyperledger.besu.nativelib.secp256r1.besuNativeEC.BesuNativeEC;
 
 import java.math.BigInteger;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.Optional;
 
 import org.apache.tuweni.bytes.Bytes;
@@ -33,16 +37,17 @@ import org.slf4j.LoggerFactory;
 public class SECP256R1 extends AbstractSECP256 {
 
   private static final Logger LOG = LoggerFactory.getLogger(SECP256R1.class);
-
   /** The constant CURVE_NAME. */
   public static final String CURVE_NAME = "secp256r1";
 
+  private final DSAParametersSet secpParameters;
   private boolean useNative;
   private final LibSECP256R1 libSECP256R1 = new LibSECP256R1();
 
   /** Instantiates a new SECP256R1. */
   public SECP256R1() {
     super(CURVE_NAME, SecP256R1Curve.q);
+    this.secpParameters = DSAParametersSet.SECP256R1;
     try {
       useNative = BesuNativeEC.ENABLED;
     } catch (UnsatisfiedLinkError ule) {
@@ -115,6 +120,20 @@ public class SECP256R1 extends AbstractSECP256 {
   }
 
   @Override
+  public org.hyperledger.besu.crypto.signature.Signature sign(final Bytes data, final PrivateKey sk){
+    KeyPair kpSecp = super.createKeyPair(super.createPrivateKey(Bytes32.wrap(sk.getEncoded())));
+
+    SECPSignature secpSignature = sign(Bytes32.wrap(data), kpSecp);
+    
+    return SignatureFactory.createSingleSignatureFromBytes(secpSignature.encodedBytes().toArrayUnsafe(), sk.getAlgorithm());
+  }
+
+  @Override
+  public DSAParametersSet getDsaParametersSet(){
+    return secpParameters;
+  }
+
+  @Override
   public boolean verify(final Bytes data, final SECPSignature signature, final SECPPublicKey pub) {
     if (useNative) {
       return verifyNative(data, signature, pub, false);
@@ -131,6 +150,13 @@ public class SECP256R1 extends AbstractSECP256 {
     } else {
       return super.verify(data, signature, pub);
     }
+  }
+
+  @Override
+  public Boolean verify(final Bytes data, final org.hyperledger.besu.crypto.signature.Signature signature, final PublicKey pk){
+    SECPSignature secpSignature = (SECPSignature) signature;
+    SECPPublicKey secpPk = (SECPPublicKey) pk;
+    return verify(data, secpSignature, secpPk);
   }
 
   @Override
