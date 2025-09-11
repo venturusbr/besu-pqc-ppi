@@ -37,10 +37,14 @@ import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.crypto.signers.DSAKCalculator;
 import org.bouncycastle.crypto.signers.ECDSASigner;
+import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
+import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.KeyPairGeneratorSpi;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.math.ec.ECAlgorithms;
 import org.bouncycastle.math.ec.ECPoint;
+import org.hyperledger.besu.crypto.key.NodeKeyPair;
+import org.hyperledger.besu.crypto.key.NodeKeyPairFactory;
 
 /** The Abstract secp256. */
 public abstract class AbstractSECP256 implements SignatureAlgorithm {
@@ -203,6 +207,12 @@ public abstract class AbstractSECP256 implements SignatureAlgorithm {
   @Override
   public KeyPair generateKeyPair() {
     return KeyPair.generate(keyPairGenerator, ALGORITHM);
+  }
+
+  @Override
+  public NodeKeyPair generateNodeKeyPair(){
+    KeyPair kp = generateKeyPair();
+    return NodeKeyPairFactory.create(kp.getPrivateKey().getEncodedBytes(), kp.getPublicKey().getEncodedBytes(), ALGORITHM);
   }
 
   @Override

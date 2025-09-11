@@ -13,7 +13,7 @@ public interface DigitalSignatureAlgorithm {
 
     Boolean verify(final Bytes data, final Signature signature, final PublicKey pk);
 
-    NodeKeyPair generateKeyPair();
+    NodeKeyPair generateNodeKeyPair();
 
     DSAParametersSet getDsaParametersSet();
 }

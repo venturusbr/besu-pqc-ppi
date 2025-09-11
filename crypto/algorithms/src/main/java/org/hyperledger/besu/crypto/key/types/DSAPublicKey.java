@@ -1,27 +1,30 @@
-package org.hyperledger.besu.crypto.key.format;
+package org.hyperledger.besu.crypto.key.types;
 
 import org.apache.tuweni.bytes.Bytes;
 
-public class DSAPrivateKey implements java.security.PrivateKey{
+public class DSAPublicKey implements java.security.PublicKey{
     private final String algorithmName;
     private final String format;
     private final Bytes encoded;
 
-    public DSAPrivateKey(final String algorithmName, final String format, final Bytes encoded){
+    public DSAPublicKey(final String algorithmName, final String format, final Bytes encoded){
         this.algorithmName = algorithmName;
         this.format = format;
         this.encoded = encoded;
     }
 
-    public String getAlgorithm() {
+    @Override
+    public String getAlgorithm(){
         return algorithmName;
     }
 
-    public String getFormat() {
+    @Override
+    public String getFormat(){
         return format;
     }
-
-    public byte[] getEncoded() {
+    
+    @Override
+    public byte[] getEncoded(){
         return encoded.toArrayUnsafe();
     }
 }

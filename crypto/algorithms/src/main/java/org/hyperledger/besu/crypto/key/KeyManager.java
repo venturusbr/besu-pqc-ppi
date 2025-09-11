@@ -17,9 +17,9 @@ public class KeyManager {
     }
 
     public void buildNodeKeyPair(
-            Bytes privateKeyBytes,
-            Bytes publicKeyBytes,
-            DigitalSignatureAlgorithm activeDsa) {
+            final Bytes privateKeyBytes,
+            final Bytes publicKeyBytes,
+            final DigitalSignatureAlgorithm activeDsa) {
         Boolean isHybrid = activeDsa instanceof HybridDigitalSignatureAlgorithm;
         if (isHybrid) {
             buildHybridNodeKeyPair(privateKeyBytes, publicKeyBytes, activeDsa);
@@ -29,7 +29,7 @@ public class KeyManager {
         activeDsa.getDsaParametersSet().getName());
     }
 
-    private void buildHybridNodeKeyPair(Bytes privateKeyBytes, Bytes publicKeyBytes, DigitalSignatureAlgorithm activeDsa){
+    private void buildHybridNodeKeyPair(final Bytes privateKeyBytes, final Bytes publicKeyBytes, final DigitalSignatureAlgorithm activeDsa){
         HybridDigitalSignatureAlgorithm hybridDSA = (HybridDigitalSignatureAlgorithm) activeDsa;
         DSAParametersSet firstAlgorithmParams = hybridDSA.getFirstAlgorithm().getDsaParametersSet();
         DSAParametersSet secondAlgorithmParams = hybridDSA.getSecondAlgorithm().getDsaParametersSet();

@@ -16,6 +16,9 @@ package org.hyperledger.besu.crypto;
 
 import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.SECP256K1_EC_UNCOMPRESSED;
 
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.signature.Signature;
+import org.hyperledger.besu.crypto.signature.SignatureFactory;
 import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1;
 import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.secp256k1_ecdsa_recoverable_signature;
 import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.secp256k1_ecdsa_signature;
@@ -23,6 +26,8 @@ import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.secp256k1_pubkey;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.Optional;
 
 import com.sun.jna.ptr.IntByReference;
@@ -33,6 +38,7 @@ import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.signers.DSAKCalculator;
 import org.bouncycastle.crypto.signers.HMacDSAKCalculator;
 import org.bouncycastle.math.ec.custom.sec.SecP256K1Curve;
+import org.checkerframework.checker.units.qual.s;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +54,7 @@ import org.slf4j.LoggerFactory;
 public class SECP256K1 extends AbstractSECP256 {
 
   private static final Logger LOG = LoggerFactory.getLogger(SECP256K1.class);
-
+  private final DSAParametersSet secpParameters;
   private boolean useNative;
 
   /** The constant CURVE_NAME. */
@@ -57,7 +63,7 @@ public class SECP256K1 extends AbstractSECP256 {
   /** Instantiates a new SECP256K1. */
   public SECP256K1() {
     super(CURVE_NAME, SecP256K1Curve.q);
-
+    this.secpParameters = DSAParametersSet.SECP256K1;
     // use the native library implementation, if it is available
     maybeEnableNative();
   }
@@ -109,10 +115,24 @@ public class SECP256K1 extends AbstractSECP256 {
     }
   }
 
+  @Override
+  public Signature sign(final Bytes data, final PrivateKey sk){
+    KeyPair kpSecp = super.createKeyPair(super.createPrivateKey(Bytes32.wrap(sk.getEncoded())));
+
+    SECPSignature secpSignature = sign(Bytes32.wrap(data), kpSecp);
+
+    return secpSignature;
+  }
+
+  @Override
+  public DSAParametersSet getDsaParametersSet(){
+    return secpParameters;
+  }
+
   /**
    * Verifies the given ECDSA signature against the message bytes using the public key bytes.
    *
-   * <p>When using native ECDSA verification, data must be 32 bytes, and no element may be larger
+   * <p>When using native ECDSA verification, data must be 32 bytes, and no element mauseNativey be larger
    * than 520 bytes.
    *
    * @param data Hash of the data to verify.
@@ -127,6 +147,13 @@ public class SECP256K1 extends AbstractSECP256 {
     } else {
       return super.verify(data, signature, pub);
     }
+  }
+
+  @Override
+  public Boolean verify(final Bytes data, final Signature signature, final PublicKey pk){
+    SECPSignature secpSignature = (SECPSignature) signature;
+    SECPPublicKey secpPk = (SECPPublicKey) pk;
+    return verify(data, secpSignature, secpPk);
   }
 
   @Override
