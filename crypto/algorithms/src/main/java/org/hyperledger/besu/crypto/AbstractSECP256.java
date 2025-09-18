@@ -19,6 +19,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
 import java.security.Security;
 import java.security.spec.ECGenParameterSpec;
 import java.util.Arrays;
@@ -44,7 +45,8 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.math.ec.ECAlgorithms;
 import org.bouncycastle.math.ec.ECPoint;
 import org.hyperledger.besu.crypto.key.NodeKeyPair;
-import org.hyperledger.besu.crypto.key.NodeKeyPairFactory;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.key.NodeKeyFactory;
 
 /** The Abstract secp256. */
 public abstract class AbstractSECP256 implements SignatureAlgorithm {
@@ -212,7 +214,7 @@ public abstract class AbstractSECP256 implements SignatureAlgorithm {
   @Override
   public NodeKeyPair generateNodeKeyPair(){
     KeyPair kp = generateKeyPair();
-    return NodeKeyPairFactory.create(kp.getPrivateKey().getEncodedBytes(), kp.getPublicKey().getEncodedBytes(), ALGORITHM);
+    return NodeKeyFactory.createNodeSECP256KeyPair(Bytes.wrap(kp.getPrivateKey().getEncoded()), Bytes.wrap(kp.getPublicKey().getEncoded()), ALGORITHM);
   }
 
   @Override
