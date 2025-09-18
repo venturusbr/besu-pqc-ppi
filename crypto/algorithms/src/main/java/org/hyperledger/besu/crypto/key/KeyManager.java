@@ -25,8 +25,8 @@ public class KeyManager {
             buildHybridNodeKeyPair(privateKeyBytes, publicKeyBytes, activeDsa);
             return;
         }
-        this.nodeKeyPair = NodeKeyPairFactory.create(privateKeyBytes, publicKeyBytes,
-        activeDsa.getDsaParametersSet().getName());
+        this.nodeKeyPair = NodeKeyFactory.createNodeKp(privateKeyBytes, publicKeyBytes,
+        activeDsa.getDsaParametersSet());
     }
 
     private void buildHybridNodeKeyPair(final Bytes privateKeyBytes, final Bytes publicKeyBytes, final DigitalSignatureAlgorithm activeDsa){
@@ -41,7 +41,7 @@ public class KeyManager {
 
         PublicKey secondPk = keyExtractor.extractPublicKeyAtOffset(publicKeyBytes, firstAlgorithmParams.getPublicKeyLength(), secondAlgorithmParams.getPublicKeyLength(), secondAlgorithmParams.getName(), "RAW");
 
-        NodeKeyPair keyPair = NodeKeyPairFactory.createHybrid(
+        NodeKeyPair keyPair = NodeKeyFactory.createHybridNodeKp(
                 firstSk,
                 secondSk,
                 firstPk,

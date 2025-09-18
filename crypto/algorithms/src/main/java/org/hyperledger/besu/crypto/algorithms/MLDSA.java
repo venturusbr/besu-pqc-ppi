@@ -22,7 +22,7 @@ import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.SecureRandomProvider;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.NodeKeyPair;
-import org.hyperledger.besu.crypto.key.NodeKeyPairFactory;
+import org.hyperledger.besu.crypto.key.NodeKeyFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.SignatureFactory;
 import org.slf4j.Logger;
@@ -86,7 +86,7 @@ public class MLDSA implements DigitalSignatureAlgorithm{
         Bytes rawSk = Bytes.wrap(sk.getEncoded());
         Bytes rawPk = Bytes.wrap(pk.getEncoded());
 
-        NodeKeyPair kp = NodeKeyPairFactory.create(rawSk, rawPk, mldsaParameters.getName());
+        NodeKeyPair kp = NodeKeyFactory.createNodeKp(rawSk, rawPk, mldsaParameters);
 
         return kp;
     }
@@ -96,15 +96,7 @@ public class MLDSA implements DigitalSignatureAlgorithm{
         return mldsaParameters;
     }
 
-    // private Bytes deserializeMLDSAPrivateKey(final PrivateKey sk) throws IOException{
-    //     AsymmetricKeyParameter skParams = PrivateKeyFactory.createKey(sk.getEncoded());
-    //     byte[] rawSk = ((MLDSAPrivateKeyParameters) skParams).getEncoded();
-    //     return Bytes.wrap(rawSk);
-    // }
-
-    // private Bytes deserializeMLDSAPublicKey(final PublicKey pk) throws IOException{
-    //     AsymmetricKeyParameter pkParam = PublicKeyFactory.createKey(pk.getEncoded());
-    //     byte[] rawPk = ((MLDSAPublicKeyParameters) pkParam).getEncoded(); 
-    //     return Bytes.wrap(rawPk);
-    // }
+    public static MLDSAParameters getBCMLDSAParametersByDSAParameterName(final String DSAParameterName){
+        return RENAMING_TO_LIB.get(DSAParameterName);
+    }
 }

@@ -17,6 +17,7 @@ package org.hyperledger.besu.crypto;
 import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.SECP256K1_EC_UNCOMPRESSED;
 
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.key.NodeKeyFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.SignatureFactory;
 import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1;
