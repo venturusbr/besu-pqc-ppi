@@ -1,24 +1,23 @@
 package org.hyperledger.besu.crypto.key.types;
 
-import java.security.PublicKey;
+import java.security.PrivateKey;
 
 import org.apache.tuweni.bytes.Bytes;
 
-public class CompositeDSAPublicKey implements PublicKey{
-    private final PublicKey firstKey;
-    private final PublicKey secondKey;
+public class CompositePrivateKey implements PrivateKey{
+    private final PrivateKey firstKey;
+    private final PrivateKey secondKey;
 
-    public CompositeDSAPublicKey(final PublicKey firstKey, final PublicKey secondKey){
-
+    public CompositePrivateKey(final PrivateKey firstKey, final PrivateKey secondKey){
         this.firstKey = firstKey;
         this.secondKey = secondKey;
     }
-    
-    public PublicKey getFirstKey(){
+
+    public PrivateKey getFirstKey(){
         return firstKey;
     }
 
-    public PublicKey getSecondKey(){
+    public PrivateKey getSecondKey(){
         return secondKey;
     }
 
@@ -38,5 +37,9 @@ public class CompositeDSAPublicKey implements PublicKey{
             Bytes.wrap(firstKey.getEncoded()),
             Bytes.wrap(secondKey.getEncoded())
         ).toArrayUnsafe();
+    }
+
+    public static CompositePrivateKey create(final PrivateKey firstSk, final PrivateKey secondSk){
+        return new CompositePrivateKey(firstSk, secondSk);
     }
 }

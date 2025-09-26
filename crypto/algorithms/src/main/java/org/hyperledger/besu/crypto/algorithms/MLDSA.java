@@ -22,6 +22,7 @@ import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.SecureRandomProvider;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.NodeKeyPair;
+import org.hyperledger.besu.crypto.key.KeyManager;
 import org.hyperledger.besu.crypto.key.NodeKeyFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.SignatureFactory;
@@ -73,20 +74,20 @@ public class MLDSA implements DigitalSignatureAlgorithm{
     }
 
     @Override
-    public NodeKeyPair generateNodeKeyPair() {
+    public NodeKeyPair generateNodeKeyPair(final KeyManager keyManager) {
         MLDSAKeyPairGenerator mldsaKpGenerator = new MLDSAKeyPairGenerator();
         KeyGenerationParameters genParams = new MLDSAKeyGenerationParameters(SecureRandomProvider.createSecureRandom(), selectedBCParameter);
 
         mldsaKpGenerator.init(genParams);
         AsymmetricCipherKeyPair mldsaKp = mldsaKpGenerator.generateKeyPair();
 
-        MLDSAPrivateKeyParameters sk = (MLDSAPrivateKeyParameters) mldsaKp.getPrivate();
-        MLDSAPublicKeyParameters pk = (MLDSAPublicKeyParameters) mldsaKp.getPublic();
+        MLDSAPrivateKeyParameters skParams = (MLDSAPrivateKeyParameters) mldsaKp.getPrivate();
+        MLDSAPublicKeyParameters pkParams = (MLDSAPublicKeyParameters) mldsaKp.getPublic();
+        
+        Bytes rawSk = Bytes.wrap(skParams.getEncoded());
+        Bytes rawPk = Bytes.wrap(pkParams.getEncoded());
 
-        Bytes rawSk = Bytes.wrap(sk.getEncoded());
-        Bytes rawPk = Bytes.wrap(pk.getEncoded());
-
-        NodeKeyPair kp = NodeKeyFactory.createNodeKp(rawSk, rawPk, mldsaParameters);
+        NodeKeyPair kp = keyManager.buildNodeKeyPair(rawSk, rawPk, mldsaParameters);
 
         return kp;
     }

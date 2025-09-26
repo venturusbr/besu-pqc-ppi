@@ -3,6 +3,8 @@ package org.hyperledger.besu.crypto;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.crypto.algorithms.MLDSA;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.key.KeyManager;
+import org.hyperledger.besu.crypto.key.NodeKeyFactory;
 import org.hyperledger.besu.crypto.key.NodeKeyPair;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -23,7 +25,7 @@ public class MLDSATest {
     @EnumSource(value = DSAParametersSet.class, names = {"MLDSA44", "MLDSA65", "MLDSA87"})
     void testGenerateNodeKeyPair(final DSAParametersSet params) {
         MLDSA mldsa = new MLDSA(params);
-        NodeKeyPair keyPair = mldsa.generateNodeKeyPair();
+        NodeKeyPair keyPair = mldsa.generateNodeKeyPair(new KeyManager(null));
 
         assertNotNull(keyPair);
         assertNotNull(keyPair.getPrivateKey());
@@ -34,36 +36,36 @@ public class MLDSATest {
     @EnumSource(value = DSAParametersSet.class, names = {"MLDSA44", "MLDSA65", "MLDSA87"})
     void testSignAndVerify(final DSAParametersSet params) {
         MLDSA mldsa = new MLDSA(params);
-        NodeKeyPair keyPair = mldsa.generateNodeKeyPair();
+        NodeKeyPair keyPair = mldsa.generateNodeKeyPair(new KeyManager(null));
 
         PrivateKey sk = keyPair.getPrivateKey();
         PublicKey pk = keyPair.getPublicKey();
 
-        Bytes message = Bytes.wrap("mensagem de teste".getBytes(UTF_8));
+        Bytes message = Bytes.wrap("test message".getBytes(UTF_8));
 
         Signature signature = mldsa.sign(message, sk);
         assertNotNull(signature);
 
         boolean isValid = mldsa.verify(message, signature, pk);
-        assertTrue(isValid, "Assinatura deveria ser válida");
+        assertTrue(isValid, "Signature should be valid");
     }
 
     @ParameterizedTest
     @EnumSource(value = DSAParametersSet.class, names = {"MLDSA44", "MLDSA65", "MLDSA87"})
     void testVerifyFailsForModifiedMessage(final DSAParametersSet params) {
         MLDSA mldsa = new MLDSA(params);
-        NodeKeyPair keyPair = mldsa.generateNodeKeyPair();
+        NodeKeyPair keyPair = mldsa.generateNodeKeyPair(new KeyManager(null));
 
         PrivateKey sk = keyPair.getPrivateKey();
         PublicKey pk = keyPair.getPublicKey();
 
-        Bytes message = Bytes.wrap("mensagem original".getBytes(UTF_8));
-        Bytes modified = Bytes.wrap("mensagem alterada".getBytes(UTF_8));
+        Bytes message = Bytes.wrap("test message".getBytes(UTF_8));
+        Bytes modified = Bytes.wrap("modified message".getBytes(UTF_8));
 
         Signature signature = mldsa.sign(message, sk);
 
         boolean isValid = mldsa.verify(modified, signature, pk);
-        assertFalse(isValid, "Assinatura não deve ser válida para mensagem alterada");
+        assertFalse(isValid, "Signature shouldn't be valid for a modified message");
     }
 
     @ParameterizedTest
