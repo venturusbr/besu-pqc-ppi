@@ -9,7 +9,6 @@ import org.hyperledger.besu.crypto.algorithms.MLDSA;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 
 public class MLDSAPrivateKey implements PrivateKey{
-    private static final Integer SEED_LENGTH = 32;
     private final String algorithmName;
     private final Bytes encoded;
     private final String format;
@@ -36,7 +35,7 @@ public class MLDSAPrivateKey implements PrivateKey{
     }
 
     public static MLDSAPrivateKey create(final Bytes skBytes, final DSAParametersSet dsaParametersSet){
-        if(skBytes.size() == SEED_LENGTH){
+        if(skBytes.size() == dsaParametersSet.getSeedLength()){
             return createFromSeed(skBytes.toArrayUnsafe(), dsaParametersSet);
         }
         return new MLDSAPrivateKey(dsaParametersSet.getName(), skBytes, "RAW");

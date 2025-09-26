@@ -1,19 +1,23 @@
 package org.hyperledger.besu.crypto.providers;
 
+import java.security.PrivateKey;
 import java.security.PublicKey;
 
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.crypto.config.DigitalSignatureAlgorithmConfiguration;
+import org.hyperledger.besu.crypto.config.KeyConfiguration;
+import org.hyperledger.besu.crypto.key.KeyExtractor;
 import org.hyperledger.besu.crypto.key.KeyManager;
+import org.hyperledger.besu.crypto.key.NodeKeyFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
 
 public class DigitalSignatureAlgorithmProvider implements DSAProvider{
-    DigitalSignatureAlgorithmConfiguration config;
-    KeyManager keyManager;
+    private final DigitalSignatureAlgorithmConfiguration config;
+    private final KeyManager keyManager;
 
-    public DigitalSignatureAlgorithmProvider(final DigitalSignatureAlgorithmConfiguration digitalSignatureAlgorithmConfig, final KeyManager keyManager){
+    public DigitalSignatureAlgorithmProvider(final DigitalSignatureAlgorithmConfiguration digitalSignatureAlgorithmConfig, final KeyConfiguration keyConfiguration){
         this.config = digitalSignatureAlgorithmConfig;
-        this.keyManager = keyManager;
+        this.keyManager = new KeyManager(keyConfiguration);
     }
 
     @Override
@@ -28,7 +32,7 @@ public class DigitalSignatureAlgorithmProvider implements DSAProvider{
 
     @Override
     public void loadNodeKeyPair(){
-        // TODO
-        // keyManager.buildNodeKeyPair(privateKeyBytes, publicKeyBytes, config.getActiveDSA());
+        PrivateKey sk = keyManager.loadPrivateKeyFromFile(config.getActiveDSA().getDsaParametersSet());
+        keyManager.loadNodeKeyPairByPrivateKey(sk, config.getActiveDSA());
     }
 }

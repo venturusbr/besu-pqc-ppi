@@ -1,5 +1,6 @@
 package org.hyperledger.besu.crypto.key.types;
 
+import java.security.PrivateKey;
 import java.security.PublicKey;
 
 import org.apache.tuweni.bytes.Bytes;
@@ -35,15 +36,14 @@ public class MLDSAPublicKey implements PublicKey{
         return encoded.toArrayUnsafe();
     }
 
-    public static PublicKey deriveMLDSAPkFromSk(final Bytes skBytes, final DSAParametersSet dsaParametersSet){
-        MLDSAParameters mldsaParams = MLDSA.getBCMLDSAParametersByDSAParameterName(dsaParametersSet.getName());
-        MLDSAPrivateKeyParameters skParams = new MLDSAPrivateKeyParameters(mldsaParams, skBytes.toArrayUnsafe());
-        MLDSAPublicKeyParameters pkParams = skParams.getPublicKeyParameters();
-
-        return create(Bytes.wrap(pkParams.getEncoded()), dsaParametersSet);
+    public static MLDSAPublicKey create(final Bytes pkBytes, final DSAParametersSet dsaParametersSet){
+        return new MLDSAPublicKey(dsaParametersSet.getName(), pkBytes, "RAW");
     }
 
-    public static PublicKey create(final Bytes pkBytes, final DSAParametersSet dsaParametersSet){
-        return new MLDSAPublicKey(dsaParametersSet.getName(), pkBytes, "RAW");
+    public static MLDSAPublicKey create(final PrivateKey sk, final DSAParametersSet dsaParametersSet){
+        MLDSAParameters mldsaParams = MLDSA.getBCMLDSAParametersByDSAParameterName(dsaParametersSet.getName());
+        MLDSAPrivateKeyParameters skParams = new MLDSAPrivateKeyParameters(mldsaParams, sk.getEncoded());
+        MLDSAPublicKeyParameters pkParams = skParams.getPublicKeyParameters();
+        return create(Bytes.wrap(pkParams.getEncoded()), dsaParametersSet);
     }
 }

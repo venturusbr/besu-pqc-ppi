@@ -7,9 +7,10 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.HybridDigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.key.KeyManager;
 import org.hyperledger.besu.crypto.key.NodeKeyPair;
-import org.hyperledger.besu.crypto.key.types.CompositeDSAPrivateKey;
-import org.hyperledger.besu.crypto.key.types.CompositeDSAPublicKey;
+import org.hyperledger.besu.crypto.key.types.CompositePrivateKey;
+import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
 import org.hyperledger.besu.crypto.signature.CompositeSignature;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.SingleSignature;
@@ -29,7 +30,7 @@ public class HybridStrongNestingConcatenation implements HybridDigitalSignatureA
 
     @Override
     public Signature sign(final Bytes data, final PrivateKey sk) {
-        CompositeDSAPrivateKey hybridPrivateKey = (CompositeDSAPrivateKey) sk;
+        CompositePrivateKey hybridPrivateKey = (CompositePrivateKey) sk;
 
         Signature firstSignature = delegateFirstAlgorithm.sign(data, hybridPrivateKey.getFirstKey());
         Signature secondSignature = delegateSecondAlgorithm.sign(Bytes.concatenate(data, firstSignature.encodedBytes()), hybridPrivateKey.getSecondKey());
@@ -40,7 +41,7 @@ public class HybridStrongNestingConcatenation implements HybridDigitalSignatureA
     // TODO: SignatureExtractor
     @Override
     public Boolean verify(final Bytes data, final Signature signature, final PublicKey pk) {
-        CompositeDSAPublicKey hybridPublicKey = (CompositeDSAPublicKey) pk;
+        CompositePublicKey hybridPublicKey = (CompositePublicKey) pk;
 
         CompositeSignature compositeSignature = (CompositeSignature) signature;
 
@@ -53,7 +54,7 @@ public class HybridStrongNestingConcatenation implements HybridDigitalSignatureA
     }
 
     @Override
-    public NodeKeyPair generateNodeKeyPair() {
+    public NodeKeyPair generateNodeKeyPair(final KeyManager keyManager) {
         // TODO
         // NodeKeyPair firstKeyPair = delegateFirstAlgorithm.generateKeyPair();
         // NodeKeyPair secondKeyPair = delegateSecondAlgorithm.generateKeyPair();
