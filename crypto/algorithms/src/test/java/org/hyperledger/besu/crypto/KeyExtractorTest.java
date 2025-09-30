@@ -28,13 +28,13 @@ public class KeyExtractorTest {
     static void setUp(){
         try {
             keyExtractor = new KeyExtractor();
-            expectedPrivateKeyMLDSA44 = TestKeyLoader.loadPrivateKey("/org/hyperledger/besu/crypto/validMLDSA44PrivateKey.txt", DSAParametersSet.MLDSA44);
+            expectedPrivateKeyMLDSA44 = TestKeyLoader.loadPrivateKey("/org/hyperledger/besu/crypto/validMLDSA44PrivateKey.txt", DSAParametersSet.MLDSA44, PrivateKeyRepresentation.EXPANDED, null);
 
-            expectedPrivateKeyMLDSA65 = TestKeyLoader.loadPrivateKey("/org/hyperledger/besu/crypto/validMLDSA65PrivateKey.txt", DSAParametersSet.MLDSA65);
+            expectedPrivateKeyMLDSA65 = TestKeyLoader.loadPrivateKey("/org/hyperledger/besu/crypto/validMLDSA65PrivateKey.txt", DSAParametersSet.MLDSA65, PrivateKeyRepresentation.EXPANDED, null);
 
-            expectedPrivateKeyMLDSA87 = TestKeyLoader.loadPrivateKey("/org/hyperledger/besu/crypto/validMLDSA87PrivateKey.txt", DSAParametersSet.MLDSA87);
+            expectedPrivateKeyMLDSA87 = TestKeyLoader.loadPrivateKey("/org/hyperledger/besu/crypto/validMLDSA87PrivateKey.txt", DSAParametersSet.MLDSA87, PrivateKeyRepresentation.EXPANDED, null);
 
-            expectedPrivateKeySECP256K1 = TestKeyLoader.loadPrivateKey("/org/hyperledger/besu/crypto/validPrivateKey.txt", DSAParametersSet.SECP256K1);
+            expectedPrivateKeySECP256K1 = TestKeyLoader.loadPrivateKey("/org/hyperledger/besu/crypto/validPrivateKey.txt", DSAParametersSet.SECP256K1, PrivateKeyRepresentation.EXPANDED, null);
 
             seedString = TestKeyLoader.loadSeed("/org/hyperledger/besu/crypto/validMLDSASeed.txt");
         } catch (URISyntaxException | IOException e) {
@@ -49,12 +49,10 @@ public class KeyExtractorTest {
 
         Bytes hybridSecpMLDSAKeyBytes = Bytes.fromHexString(getPrivateKeySECP256K1MLDSAseed());
 
-        Bytes skMldsa = keyExtractor.extractPrivateKeyBytesAtOffset(hybridSecpMLDSAKeyBytes, secpParams.getPrivateKeyLength() + 1, mldsaParams, PrivateKeyRepresentation.SEED);
+        Bytes seedMldsa = keyExtractor.extractPrivateKeyBytesAtOffset(hybridSecpMLDSAKeyBytes, secpParams.getPrivateKeyLength(), mldsaParams, PrivateKeyRepresentation.SEED);
 
-        String actualSeed = TestKeyLoader.bytesToHex(skMldsa.toArrayUnsafe());
+        String actualSeed = TestKeyLoader.bytesToHex(seedMldsa.toArrayUnsafe());
 
-        System.err.println("Actual: " + actualSeed + "length: " + actualSeed.length());
-        System.err.println("Expected: " + expectedPrivateKeyMLDSA44 + "length: " + expectedPrivateKeyMLDSA44.getEncoded().length);
         assertEquals(seedString, actualSeed);
     }
 
@@ -69,8 +67,6 @@ public class KeyExtractorTest {
 
                 String mldsa44Key = extractSecondKey(hybridSecpMLDSAKeyBytes, secpParametersSet, params, PrivateKeyRepresentation.EXPANDED);
         
-                System.err.println("Actual: " + mldsa44Key);
-                System.err.println("Expected: " + expectedPrivateKeyMLDSA44);
                 assertEquals(TestKeyLoader.bytesToHex(expectedPrivateKeyMLDSA44.getEncoded()), mldsa44Key);
                 break;
             case MLDSA65:
@@ -78,8 +74,6 @@ public class KeyExtractorTest {
 
                 String mldsa65Key = extractSecondKey(hybridSecpMLDSAKeyBytes, secpParametersSet, params, PrivateKeyRepresentation.EXPANDED);
         
-                System.err.println("Actual: " + mldsa65Key);
-                System.err.println("Expected: " + expectedPrivateKeyMLDSA65);
                 assertEquals(TestKeyLoader.bytesToHex(expectedPrivateKeyMLDSA65.getEncoded()), mldsa65Key);
                 break;
             case MLDSA87:
@@ -87,8 +81,6 @@ public class KeyExtractorTest {
 
                 String mldsa87Key = extractSecondKey(hybridSecpMLDSAKeyBytes, secpParametersSet, params, PrivateKeyRepresentation.EXPANDED);
         
-                System.err.println("Actual: " + mldsa87Key);
-                System.err.println("Expected: " + expectedPrivateKeyMLDSA87);
                 assertEquals(TestKeyLoader.bytesToHex(expectedPrivateKeyMLDSA87.getEncoded()), mldsa87Key);
                 break;
             default:
@@ -97,8 +89,8 @@ public class KeyExtractorTest {
         }
     }
 
-    private String extractSecondKey(final Bytes hybridKey, final DSAParametersSet firstParams, final DSAParametersSet secondParams, PrivateKeyRepresentation skRep){
-        Bytes secondSk = keyExtractor.extractPrivateKeyBytesAtOffset(hybridKey, firstParams.getPrivateKeyLength() + 1, secondParams, skRep);
+    private String extractSecondKey(final Bytes hybridKey, final DSAParametersSet firstParams, final DSAParametersSet secondParams, final PrivateKeyRepresentation skRep){
+        Bytes secondSk = keyExtractor.extractPrivateKeyBytesAtOffset(hybridKey, firstParams.getPrivateKeyLength(), secondParams, skRep);
         return TestKeyLoader.bytesToHex(secondSk.toArrayUnsafe());
     }
 

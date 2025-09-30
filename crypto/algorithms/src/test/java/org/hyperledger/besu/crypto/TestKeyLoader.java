@@ -11,15 +11,21 @@ import java.util.List;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.config.KeyConfiguration;
 import org.hyperledger.besu.crypto.key.KeyManager;
+import org.hyperledger.besu.crypto.key.PrivateKeyRepresentation;
 
 public final class TestKeyLoader {
-    private static final KeyManager keyManager = new KeyManager(new KeyConfiguration(null, null, null));
+    public static PrivateKey loadPrivateKey(final String resourcePath, final DSAParametersSet params, final PrivateKeyRepresentation skFirstRep, final PrivateKeyRepresentation skSecondRep ) throws URISyntaxException {
+        File skFile = new File(TestKeyLoader.class.getResource(resourcePath).toURI());
 
-    public static PrivateKey loadPrivateKey(final String resourcePath, final DSAParametersSet params) throws URISyntaxException {
-        return keyManager.loadPrivateKeyFromFile(
-            new File(TestKeyLoader.class.getResource(resourcePath).toURI()),
-            params
+        KeyConfiguration keyConfig = new KeyConfiguration(
+            skFirstRep,
+            skSecondRep,
+            skFile
         );
+
+        KeyManager keyManager = new KeyManager(keyConfig);
+
+        return keyManager.loadPrivateKeyFromFile(params);
     }
 
     public static String loadSeed(final String resourcePath) throws IOException, URISyntaxException {
