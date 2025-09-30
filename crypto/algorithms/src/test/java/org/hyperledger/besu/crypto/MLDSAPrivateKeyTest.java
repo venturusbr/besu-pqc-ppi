@@ -27,11 +27,11 @@ class MLDSAPrivateKeyTest {
     @BeforeAll
     static void setUp(){
         try {
-            expectedPrivateKeyMLDSA44 = TestKeyLoader.loadPrivateKey("/org/hyperledger/besu/crypto/validMLDSA44PrivateKey.txt", DSAParametersSet.MLDSA44);
+            expectedPrivateKeyMLDSA44 = TestKeyLoader.loadPrivateKey("/org/hyperledger/besu/crypto/validMLDSA44PrivateKey.txt", DSAParametersSet.MLDSA44, null, null);
 
-            expectedPrivateKeyMLDSA65 = TestKeyLoader.loadPrivateKey("/org/hyperledger/besu/crypto/validMLDSA65PrivateKey.txt", DSAParametersSet.MLDSA65);
+            expectedPrivateKeyMLDSA65 = TestKeyLoader.loadPrivateKey("/org/hyperledger/besu/crypto/validMLDSA65PrivateKey.txt", DSAParametersSet.MLDSA65, null, null);
 
-            expectedPrivateKeyMLDSA87 = TestKeyLoader.loadPrivateKey("/org/hyperledger/besu/crypto/validMLDSA87PrivateKey.txt", DSAParametersSet.MLDSA87);
+            expectedPrivateKeyMLDSA87 = TestKeyLoader.loadPrivateKey("/org/hyperledger/besu/crypto/validMLDSA87PrivateKey.txt", DSAParametersSet.MLDSA87, null, null);
 
             seedString = TestKeyLoader.loadSeed("/org/hyperledger/besu/crypto/validMLDSASeed.txt");
         } catch (URISyntaxException | IOException e) {
