@@ -15,7 +15,8 @@ public enum DSAParametersSet {
     private final Integer signatureLength;
     private final Integer seedLength;
 
-    DSAParametersSet(String name, Integer privateKeyLength,  Integer publicKeyLength, Integer signatureLength, Integer seedLength){
+    DSAParametersSet(final String name, final Integer privateKeyLength, final Integer publicKeyLength,
+            final Integer signatureLength, final Integer seedLength) {
         this.name = name;
         this.publicKeyLength = publicKeyLength;
         this.privateKeyLength = privateKeyLength;
@@ -30,7 +31,7 @@ public enum DSAParametersSet {
     public Integer getPublicKeyLength(){
         return publicKeyLength;
     }
-    
+
     public Integer getPrivateKeyLength(){
         return privateKeyLength;
     }
