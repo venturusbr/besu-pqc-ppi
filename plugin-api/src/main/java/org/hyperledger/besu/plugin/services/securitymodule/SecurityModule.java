@@ -37,6 +37,8 @@ public interface SecurityModule {
    */
   Signature sign(Bytes32 dataHash) throws SecurityModuleException;
 
+  Signature sign(Bytes32 dataHash, String finality) throws SecurityModuleException;
+
   /**
    * The public key associated with this security module.
    *

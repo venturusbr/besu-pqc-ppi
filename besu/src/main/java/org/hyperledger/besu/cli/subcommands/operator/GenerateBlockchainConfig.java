@@ -17,6 +17,22 @@ package org.hyperledger.besu.cli.subcommands.operator;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.IntStream;
+
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.bouncycastle.pqc.jcajce.interfaces.SPHINCSPlusPublicKey;
+
 import org.hyperledger.besu.cli.DefaultCommandValues;
 import org.hyperledger.besu.cli.util.VersionProvider;
 import org.hyperledger.besu.config.GenesisConfigFile;
@@ -31,20 +47,26 @@ import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.SignatureAlgorithmType;
+import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.AbstractCrystalsDilithium3;
+import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3KeyPair;
+import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3PrivateKey;
+import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3PublicKey;
+import org.hyperledger.besu.crypto.pqc.falcon.Falcon;
+import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconKeyPair;
+import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconPrivateKey;
+import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconPublicKey;
+import org.hyperledger.besu.crypto.pqc.metrics.CSVWriter;
+import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
+import org.hyperledger.besu.crypto.pqc.sphincsplus.SphincsPlus;
+import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusKeyPair;
+import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusPrivateKey;
+import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusPublicKey;
+
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.core.Util;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.IntStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
@@ -52,16 +74,14 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.io.Resources;
-import org.apache.tuweni.bytes.Bytes;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
 
 @Command(
     name = "generate-blockchain-config",
-    description = "Generates node keypairs and genesis file with RLP encoded extra data.",
+    description = "Generate node keypairs and genesis file with RLP encoded extra data.",
     mixinStandardHelpOptions = true,
     versionProvider = VersionProvider.class)
 class GenerateBlockchainConfig implements Runnable {
@@ -69,6 +89,15 @@ class GenerateBlockchainConfig implements Runnable {
 
   private final Supplier<SignatureAlgorithm> SIGNATURE_ALGORITHM =
       Suppliers.memoize(SignatureAlgorithmFactory::getInstance);
+  
+  private final Supplier<AbstractCrystalsDilithium3> DILITHIUM_SIGNATURE_ALGORITHM = 
+      Suppliers.memoize(SignatureAlgorithmFactory::getPQCInstance);
+
+  private final Supplier<SphincsPlus> SPHINCS_SIGNATURE_ALGORITHM =
+      Suppliers.memoize(SignatureAlgorithmFactory::getSphincsPlusInstance);
+
+  private final Supplier<Falcon> FALCON_SIGNATURE_ALGORITHM =
+      Suppliers.memoize(SignatureAlgorithmFactory::getFalconInstance);
 
   @Option(
       required = true,
@@ -110,6 +139,38 @@ class GenerateBlockchainConfig implements Runnable {
       arity = "1..1")
   private String publicKeyFileName = "key.pub";
 
+  @SuppressWarnings({ "FieldCanBeFinal", "FieldMayBeFinal" }) // PicoCLI requires non-final Strings.
+  @Option(
+      names = "--private-pqc-key-file-name", 
+      paramLabel = DefaultCommandValues.MANDATORY_PATH_FORMAT_HELP, 
+      description = "Name of the pqc private key file. (default: ${DEFAULT-VALUE})", 
+      arity = "1..1")
+  private String pqcPrivateKeyFileName = "pqc-key";
+
+  @SuppressWarnings({ "FieldCanBeFinal", "FieldMayBeFinal" }) // PicoCLI requires non-final Strings.
+  @Option(
+      names = "--public-pqc-key-file-name", 
+      paramLabel = DefaultCommandValues.MANDATORY_PATH_FORMAT_HELP, 
+      description = "Name of the pqc public key file. (default: ${DEFAULT-VALUE})", 
+      arity = "1..1")
+  private String pqcPublicKeyFileName = "pqc-key.pub";
+
+  @SuppressWarnings({ "FieldCanBeFinal", "FieldMayBeFinal" }) // PicoCLI requires non-final Strings.
+  @Option(
+      names = "--pqc-algorithm-name", 
+      paramLabel = DefaultCommandValues.MANDATORY_PATH_FORMAT_HELP, 
+      description = "Name of the pqc algorithm. (default: ${DEFAULT-VALUE})", 
+      arity = "1..1")
+  private String pqcAlgorithmName = "none";
+
+  @SuppressWarnings({ "FieldCanBeFinal", "FieldMayBeFinal" }) // PicoCLI requires non-final Strings.
+  @Option(
+      names = "--pqc-parameter-spec", 
+      paramLabel = "<String>", 
+      description = "Name of the pqc parameter spec. (default: ${DEFAULT-VALUE})", 
+      arity = "1..1")
+  private String pqcParameterSpec = "none";
+
   @ParentCommand
   private OperatorSubCommand parentCommand; // Picocli injects reference to parent command
 
@@ -130,7 +191,7 @@ class GenerateBlockchainConfig implements Runnable {
   private void checkPreconditions() {
     checkNotNull(parentCommand);
     checkNotNull(parentCommand.parentCommand);
-    if (isAnyDuplicate(genesisFileName, publicKeyFileName, privateKeyFileName)) {
+    if (isAnyDuplicate(genesisFileName, publicKeyFileName, privateKeyFileName, pqcPublicKeyFileName, pqcPrivateKeyFileName)) {
       throw new IllegalArgumentException("Output file paths must be unique.");
     }
   }
@@ -185,7 +246,9 @@ class GenerateBlockchainConfig implements Runnable {
                 .toString());
       }
 
-      writeKeypair(publicKey, null);
+      final Bytes secpPublicKeyBytes = publicKey.getEncodedBytes();
+
+      writeKeypair(secpPublicKeyBytes, null, Util.publicKeyToAddress(secpPublicKeyBytes));
       LOG.info("Public key imported from configuration.({})", publicKey.toString());
     } catch (final IOException e) {
       LOG.error("An error occurred while trying to import node public key.", e);
@@ -196,7 +259,7 @@ class GenerateBlockchainConfig implements Runnable {
   private void generateNodesKeys() {
     final int nodesCount = JsonUtil.getInt(nodesConfig, "count", 0);
     LOG.info("Generating {} nodes keys.", nodesCount);
-    IntStream.range(0, nodesCount).forEach(this::generateNodeKeypair);
+    IntStream.range(1, nodesCount + 1).forEach(this::generateNodeKeypair);
   }
 
   /**
@@ -206,9 +269,44 @@ class GenerateBlockchainConfig implements Runnable {
    */
   private void generateNodeKeypair(final int node) {
     try {
-      LOG.info("Generating keypair for node {}.", node);
+      LOG.info("Generating SECP keypair for node {}.", node);
+      SignatureAlgorithmFactory.setPqcParameterSpecIndex(pqcParameterSpec);
+      SignatureAlgorithmFactory.setpqcAlgorithmName(pqcAlgorithmName);
       final KeyPair keyPair = SIGNATURE_ALGORITHM.get().generateKeyPair();
-      writeKeypair(keyPair.getPublicKey(), keyPair.getPrivateKey());
+      SECPPrivateKey secpPrivateKey = keyPair.getPrivateKey();
+      SECPPublicKey secpPublicKey = keyPair.getPublicKey();
+      Bytes secpPublicKeyBytes = secpPublicKey.getEncodedBytes();
+      final Address nodeAddress = Util.publicKeyToAddress(secpPublicKeyBytes);
+      MetricWriters.getSignInstance();
+      MetricWriters.getVerifyInstance();
+      writeKeypair(secpPublicKeyBytes, secpPrivateKey.getEncodedBytes(), nodeAddress);
+
+      switch (pqcAlgorithmName) {
+        case "none":
+          LOG.info("Warning: No PQC Algorithm Selected");
+          break;
+        case "dilithium":
+          final Dilithium3KeyPair PQCKeyPair = DILITHIUM_SIGNATURE_ALGORITHM.get().generateKeyPair();
+          Dilithium3PublicKey pqcPublicKey = PQCKeyPair.getPublicKey();
+          Dilithium3PrivateKey pqcPrivateKey = PQCKeyPair.getPrivateKey();
+          writeKeypair(pqcPublicKey, pqcPrivateKey, nodeAddress);
+          break;
+        case "sphincsplus":
+          final SphincsPlusKeyPair sphincsKeyPair = SPHINCS_SIGNATURE_ALGORITHM.get().generateKeyPair();
+          SphincsPlusPrivateKey sphincsPrivateKey = sphincsKeyPair.getPrivateKey();
+          SphincsPlusPublicKey sphincsPublicKey = sphincsKeyPair.getPublicKey();
+          writeKeypair(sphincsPublicKey, sphincsPrivateKey, nodeAddress);
+          break;
+        case "falcon":
+          final FalconKeyPair falconKeyPair = FALCON_SIGNATURE_ALGORITHM.get().generateKeyPair();
+          FalconPrivateKey falconPrivateKey = falconKeyPair.getPrivateKey();
+          FalconPublicKey falconPublicKey = falconKeyPair.getPublicKey();
+          writeKeypair(falconPublicKey, falconPrivateKey, nodeAddress);
+          break;
+        default:
+          LOG.error("PQC algorithm not identified.");
+          throw new IOException();
+      }
 
     } catch (final IOException e) {
       LOG.error("An error occurred while trying to generate node keypair.", e);
@@ -223,15 +321,41 @@ class GenerateBlockchainConfig implements Runnable {
    * @param privateKey The private key. No file is created if privateKey is NULL.
    * @throws IOException If the file cannot be written or accessed.
    */
-  private void writeKeypair(final SECPPublicKey publicKey, final SECPPrivateKey privateKey)
+  private void writeKeypair(final Bytes publicKey, final Bytes32 privateKey, final Address nodeAddress)
       throws IOException {
-    final Address nodeAddress = Util.publicKeyToAddress(publicKey);
     addressesForGenesisExtraData.add(nodeAddress);
     final Path nodeDirectoryPath = keysDirectory.resolve(nodeAddress.toString());
     Files.createDirectory(nodeDirectoryPath);
     createFileAndWrite(nodeDirectoryPath, publicKeyFileName, publicKey.toString());
     if (privateKey != null) {
       createFileAndWrite(nodeDirectoryPath, privateKeyFileName, privateKey.toString());
+    }
+  }
+
+  private void writeKeypair(final Dilithium3PublicKey publicKey, final Dilithium3PrivateKey privateKey, final Address nodeAddress)
+      throws IOException {
+    final Path nodeDirectoryPath = keysDirectory.resolve(nodeAddress.toString());
+    createFileAndWrite(nodeDirectoryPath, pqcPublicKeyFileName, publicKey.bytesToHex());
+    if (privateKey != null) {
+      createFileAndWrite(nodeDirectoryPath, pqcPrivateKeyFileName, privateKey.bytesToHex());
+    }
+  }
+
+  private void writeKeypair(final SphincsPlusPublicKey publicKey, final SphincsPlusPrivateKey privateKey, final Address nodeAddress)
+      throws IOException {
+    final Path nodeDirectoryPath = keysDirectory.resolve(nodeAddress.toString());
+    createFileAndWrite(nodeDirectoryPath, pqcPublicKeyFileName, publicKey.bytesToHex());
+    if (privateKey != null) {
+      createFileAndWrite(nodeDirectoryPath, pqcPrivateKeyFileName, privateKey.bytesToHex());
+    }
+  }
+
+  private void writeKeypair(final FalconPublicKey publicKey, final FalconPrivateKey privateKey, final Address nodeAddress)
+    throws IOException {
+    final Path nodeDirectoryPath = keysDirectory.resolve(nodeAddress.toString());
+    createFileAndWrite(nodeDirectoryPath, pqcPublicKeyFileName, publicKey.bytesToHex());
+    if (privateKey != null) {
+      createFileAndWrite(nodeDirectoryPath, pqcPrivateKeyFileName, privateKey.bytesToHex());
     }
   }
 

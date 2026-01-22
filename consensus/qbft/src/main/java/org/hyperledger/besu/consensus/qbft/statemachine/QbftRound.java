@@ -362,7 +362,7 @@ public class QbftRound {
     final Hash commitHash =
         new BftBlockHashing(bftExtraDataCodec)
             .calculateDataHashForCommittedSeal(proposedHeader, extraData);
-    return nodeKey.sign(commitHash);
+    return nodeKey.sign(commitHash, "seal");
   }
 
   private Block createCommitBlock(final Block block) {

@@ -25,12 +25,15 @@ import com.google.common.base.Suppliers;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.signature.Signature;
 
 /** The Secp signature. */
-public class SECPSignature {
+public class SECPSignature implements Signature{
 
   /** The constant BYTES_REQUIRED. */
   public static final int BYTES_REQUIRED = 65;
+  private final String algorithmName;
   /**
    * The recovery id to reconstruct the public key used to create the signature.
    *
@@ -57,6 +60,7 @@ public class SECPSignature {
     this.r = r;
     this.s = s;
     this.recId = recId;
+    this.algorithmName = DSAParametersSet.SECP256K1.getName();
   }
 
   /**
@@ -119,8 +123,14 @@ public class SECPSignature {
    *
    * @return the bytes
    */
+  @Override
   public Bytes encodedBytes() {
     return encoded.get();
+  }
+
+  @Override
+  public String getAlgorithm(){
+    return algorithmName;
   }
 
   private Bytes _encodedBytes() {
@@ -171,6 +181,10 @@ public class SECPSignature {
    */
   public BigInteger getS() {
     return s;
+  }
+
+  public Boolean isHybrid(){
+    return false;
   }
 
   @Override

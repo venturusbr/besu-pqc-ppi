@@ -16,13 +16,25 @@ package org.hyperledger.besu.ethereum.mainnet;
 
 import static org.hyperledger.besu.evm.account.Account.MAX_NONCE;
 
+import java.math.BigInteger;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.pqc.PqcSignatureAlgorithm;
+import org.hyperledger.besu.crypto.pqc.PqcSignatureFactory;
+import org.hyperledger.besu.crypto.pqc.keys.PqcKeyPair;
+import org.hyperledger.besu.crypto.pqc.metrics.CSVWriter;
+import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
 import org.hyperledger.besu.datatypes.Blob;
 import org.hyperledger.besu.datatypes.BlobsWithCommitments;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.KZGCommitment;
-import org.hyperledger.besu.datatypes.KZGProof;
 import org.hyperledger.besu.datatypes.TransactionType;
 import org.hyperledger.besu.datatypes.VersionedHash;
 import org.hyperledger.besu.datatypes.Wei;
@@ -32,26 +44,20 @@ import org.hyperledger.besu.ethereum.mainnet.feemarket.FeeMarket;
 import org.hyperledger.besu.ethereum.transaction.TransactionInvalidReason;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-
-import java.math.BigInteger;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import ethereum.ckzg4844.CKZG4844JNI;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.bouncycastle.crypto.digests.SHA256Digest;
 
 /**
  * Validates a transaction based on Frontier protocol runtime requirements.
  *
- * <p>The {@link MainnetTransactionValidator} performs the intrinsic gas cost check on the given
+ * <p>
+ * The {@link MainnetTransactionValidator} performs the intrinsic gas cost check
+ * on the given
  * {@link Transaction}.
  */
 public class MainnetTransactionValidator implements TransactionValidator {
-
-  private static final byte BLOB_COMMITMENT_VERSION_KZG = 0x01;
 
   private final GasCalculator gasCalculator;
   private final GasLimitCalculator gasLimitCalculator;
@@ -64,6 +70,10 @@ public class MainnetTransactionValidator implements TransactionValidator {
   private final Set<TransactionType> acceptedTransactionTypes;
 
   private final int maxInitcodeSize;
+
+  private final CSVWriter verifyWriter;
+
+  private final StringBuilder stringBuilder;
 
   public MainnetTransactionValidator(
       final GasCalculator gasCalculator,
@@ -80,6 +90,13 @@ public class MainnetTransactionValidator implements TransactionValidator {
     this.chainId = chainId;
     this.acceptedTransactionTypes = acceptedTransactionTypes;
     this.maxInitcodeSize = maxInitcodeSize;
+    this.verifyWriter = MetricWriters.getVerifyInstance();
+    this.stringBuilder = new StringBuilder();
+  }
+
+  private Boolean verifyPqcSignature(final byte[] pqcSignature, final byte[] dataToPqcSign, final PqcSignatureAlgorithm signatureAlgorithm) {
+    boolean isValid = signatureAlgorithm.verify(PqcKeyPair.getPubKey(), dataToPqcSign, pqcSignature);
+    return isValid;
   }
 
   @Override
@@ -87,22 +104,44 @@ public class MainnetTransactionValidator implements TransactionValidator {
       final Transaction transaction,
       final Optional<Wei> baseFee,
       final TransactionValidationParams transactionValidationParams) {
-    final ValidationResult<TransactionInvalidReason> signatureResult =
-        validateTransactionSignature(transaction);
+    long classicalVerifyStart = System.nanoTime();
+    final ValidationResult<TransactionInvalidReason> signatureResult = validateTransactionSignature(transaction);
+    long classicalVerifyEnd = System.nanoTime();
+
+    if (!SignatureAlgorithmFactory.getPqcAlgorithmName().equals("none")) {
+      byte[] dataToPqcSign = transaction.getHash().toArray();
+
+      PqcSignatureAlgorithm selectedPqcAlgorithm = SignatureAlgorithmFactory.getPqcGenericInstance();
+
+      byte[] pqcSignature = PqcSignatureFactory
+          .createSignature(PqcKeyPair.getPrivKey(), dataToPqcSign, selectedPqcAlgorithm.getAlgorithmName())
+          .getEncoded();
+
+      long pqcTimeStart = System.nanoTime();
+      Boolean isValid = verifyPqcSignature(pqcSignature, dataToPqcSign,selectedPqcAlgorithm);
+      long pqcTimeEnd = System.nanoTime();
+
+      long pqcTime = pqcTimeEnd - pqcTimeStart;
+      long secpTime = classicalVerifyEnd - classicalVerifyStart;
+      String data = stringBuilder.append(pqcTime + "," + (pqcTime + secpTime) + "," + (isValid ? "yes" : "no") + "\n")
+          .toString();
+      verifyWriter.write(data);
+
+      stringBuilder.setLength(0);
+    }
+
     if (!signatureResult.isValid()) {
       return signatureResult;
     }
 
     if (transaction.getType().supportsBlob()) {
-      final ValidationResult<TransactionInvalidReason> blobTransactionResult =
-          validateBlobTransaction(transaction);
+      final ValidationResult<TransactionInvalidReason> blobTransactionResult = validateBlobTransaction(transaction);
       if (!blobTransactionResult.isValid()) {
         return blobTransactionResult;
       }
 
       if (transaction.getBlobsWithCommitments().isPresent()) {
-        final ValidationResult<TransactionInvalidReason> blobsResult =
-            validateTransactionsBlobs(transaction);
+        final ValidationResult<TransactionInvalidReason> blobsResult = validateTransactionsBlobs(transaction);
         if (!blobsResult.isValid()) {
           return blobsResult;
         }
@@ -151,11 +190,10 @@ public class MainnetTransactionValidator implements TransactionValidator {
       // assert transaction.max_fee_per_gas >= transaction.max_priority_fee_per_gas
       if (transaction.getType().supports1559FeeMarket()
           && transaction
-                  .getMaxPriorityFeePerGas()
-                  .get()
-                  .getAsBigInteger()
-                  .compareTo(transaction.getMaxFeePerGas().get().getAsBigInteger())
-              > 0) {
+              .getMaxPriorityFeePerGas()
+              .get()
+              .getAsBigInteger()
+              .compareTo(transaction.getMaxFeePerGas().get().getAsBigInteger()) > 0) {
         return ValidationResult.invalid(
             TransactionInvalidReason.MAX_PRIORITY_FEE_PER_GAS_EXCEEDS_MAX_FEE_PER_GAS,
             "max priority fee per gas cannot be greater than max fee per gas");
@@ -173,27 +211,21 @@ public class MainnetTransactionValidator implements TransactionValidator {
       }
     }
 
-    if (transaction.getType().supportsBlob()) {
-      final long txTotalBlobGas = gasCalculator.blobGasCost(transaction.getBlobCount());
-      if (txTotalBlobGas > gasLimitCalculator.currentBlobGasLimit()) {
-        return ValidationResult.invalid(
-            TransactionInvalidReason.TOTAL_BLOB_GAS_TOO_HIGH,
-            String.format(
-                "total blob gas %d exceeds max blob gas per block %d",
-                txTotalBlobGas, gasLimitCalculator.currentBlobGasLimit()));
-      }
-    }
-
-    final long intrinsicGasCost =
-        gasCalculator.transactionIntrinsicGasCost(
-                transaction.getPayload(), transaction.isContractCreation())
-            + (transaction.getAccessList().map(gasCalculator::accessListGasCost).orElse(0L));
+    final long intrinsicGasCost = gasCalculator.transactionIntrinsicGasCost(
+        transaction.getPayload(), transaction.isContractCreation())
+        + (transaction.getAccessList().map(gasCalculator::accessListGasCost).orElse(0L));
     if (Long.compareUnsigned(intrinsicGasCost, transaction.getGasLimit()) > 0) {
       return ValidationResult.invalid(
           TransactionInvalidReason.INTRINSIC_GAS_EXCEEDS_GAS_LIMIT,
           String.format(
               "intrinsic gas cost %s exceeds gas limit %s",
               intrinsicGasCost, transaction.getGasLimit()));
+    }
+
+    if (transaction.calculateUpfrontGasCost(transaction.getMaxGasPrice(), Wei.ZERO, 0).bitLength() > 256) {
+      return ValidationResult.invalid(
+          TransactionInvalidReason.UPFRONT_COST_EXCEEDS_UINT256,
+          "Upfront gas cost cannot exceed 2^256 Wei");
     }
 
     return ValidationResult.valid();
@@ -211,11 +243,11 @@ public class MainnetTransactionValidator implements TransactionValidator {
     if (sender != null) {
       senderBalance = sender.getBalance();
       senderNonce = sender.getNonce();
-      if (sender.getCodeHash() != null) codeHash = sender.getCodeHash();
+      if (sender.getCodeHash() != null)
+        codeHash = sender.getCodeHash();
     }
 
-    final Wei upfrontCost =
-        transaction.getUpfrontCost(gasCalculator.blobGasCost(transaction.getBlobCount()));
+    final Wei upfrontCost = transaction.getUpfrontCost(gasCalculator.blobGasCost(transaction.getBlobCount()));
     if (upfrontCost.compareTo(senderBalance) > 0) {
       return ValidationResult.invalid(
           TransactionInvalidReason.UPFRONT_COST_EXCEEDS_BALANCE,
@@ -336,11 +368,11 @@ public class MainnetTransactionValidator implements TransactionValidator {
       final KZGCommitment commitment = blobsWithCommitments.getKzgCommitments().get(i);
       final VersionedHash versionedHash = versionedHashes.get(i);
 
-      if (versionedHash.getVersionId() != BLOB_COMMITMENT_VERSION_KZG) {
+      if (versionedHash.getVersionId() != VersionedHash.SHA256_VERSION_ID) {
         return ValidationResult.invalid(
             TransactionInvalidReason.INVALID_BLOBS,
             "transaction blobs commitment version is not supported. Expected "
-                + BLOB_COMMITMENT_VERSION_KZG
+                + VersionedHash.SHA256_VERSION_ID
                 + ", found "
                 + versionedHash.getVersionId());
       }
@@ -353,30 +385,23 @@ public class MainnetTransactionValidator implements TransactionValidator {
       }
     }
 
-    final Bytes blobs =
-        blobsWithCommitments.getBlobs().stream()
-            .map(Blob::getData)
-            .reduce(Bytes::concatenate)
-            .orElseThrow();
+    final byte[] blobs = Bytes.wrap(blobsWithCommitments.getBlobs().stream().map(Blob::getData).toList())
+        .toArrayUnsafe();
 
-    final Bytes kzgCommitments =
+    final byte[] kzgCommitments = Bytes.wrap(
         blobsWithCommitments.getKzgCommitments().stream()
-            .map(KZGCommitment::getData)
-            .reduce(Bytes::concatenate)
-            .orElseThrow();
+            .map(kc -> (Bytes) kc.getData())
+            .toList())
+        .toArrayUnsafe();
 
-    final Bytes kzgProofs =
+    final byte[] kzgProofs = Bytes.wrap(
         blobsWithCommitments.getKzgProofs().stream()
-            .map(KZGProof::getData)
-            .reduce(Bytes::concatenate)
-            .orElseThrow();
+            .map(kp -> (Bytes) kp.getData())
+            .toList())
+        .toArrayUnsafe();
 
-    final boolean kzgVerification =
-        CKZG4844JNI.verifyBlobKzgProofBatch(
-            blobs.toArrayUnsafe(),
-            kzgCommitments.toArrayUnsafe(),
-            kzgProofs.toArrayUnsafe(),
-            blobsWithCommitments.getBlobs().size());
+    final boolean kzgVerification = CKZG4844JNI.verifyBlobKzgProofBatch(
+        blobs, kzgCommitments, kzgProofs, blobsWithCommitments.getBlobs().size());
 
     if (!kzgVerification) {
       return ValidationResult.invalid(
@@ -387,14 +412,6 @@ public class MainnetTransactionValidator implements TransactionValidator {
     return ValidationResult.valid();
   }
 
-  /*
-  private VersionedHash hashCommitment(final Bytes32 commitment) {
-    return new VersionedHash(
-        VersionedHash.SHA256_VERSION_ID, Sha256Hash.hash(commitment));
-  }
-
-   */
-
   private VersionedHash hashCommitment(final KZGCommitment commitment) {
     final SHA256Digest digest = new SHA256Digest();
     digest.update(commitment.getData().toArrayUnsafe(), 0, commitment.getData().size());
@@ -403,7 +420,7 @@ public class MainnetTransactionValidator implements TransactionValidator {
 
     digest.doFinal(dig, 0);
 
-    dig[0] = BLOB_COMMITMENT_VERSION_KZG;
+    dig[0] = VersionedHash.SHA256_VERSION_ID;
     return new VersionedHash(Bytes32.wrap(dig));
   }
 }

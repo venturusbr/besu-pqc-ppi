@@ -173,7 +173,7 @@ public abstract class PeerDiscoveryAgent {
                 return discoveryPort;
               });
     } else {
-      this.isActive = false;
+      this.isActive = false; 
       return CompletableFuture.completedFuture(0);
     }
   }

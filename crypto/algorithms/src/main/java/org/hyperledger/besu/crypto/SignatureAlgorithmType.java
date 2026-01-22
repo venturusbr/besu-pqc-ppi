@@ -18,6 +18,12 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import org.hyperledger.besu.crypto.pqc.PqcSignatureAlgorithm;
+import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.AbstractCrystalsDilithium3;
+import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.CrystalsDilithium3;
+import org.hyperledger.besu.crypto.pqc.falcon.Falcon;
+import org.hyperledger.besu.crypto.pqc.sphincsplus.SphincsPlus;
+
 import com.google.common.collect.ImmutableMap;
 
 /** The Signature algorithm type. */
@@ -25,13 +31,35 @@ public class SignatureAlgorithmType {
 
   /** The constant DEFAULT_EC_CURVE_NAME. */
   public static final String DEFAULT_EC_CURVE_NAME = "secp256k1";
+  public static final String PQC_LATTICE_BASED_DILITHIUM = "dilithium";
 
-  private static final ImmutableMap<String, Supplier<SignatureAlgorithm>> SUPPORTED_ALGORITHMS =
-      ImmutableMap.of(DEFAULT_EC_CURVE_NAME, SECP256K1::new, "secp256r1", SECP256R1::new);
+  private static final ImmutableMap<String, Supplier<SignatureAlgorithm>> SUPPORTED_ALGORITHMS = ImmutableMap
+      .of(DEFAULT_EC_CURVE_NAME, SECP256K1::new, "secp256r1", SECP256R1::new);
+
+  private static final ImmutableMap<String, Supplier<PqcSignatureAlgorithm>> PQC_POSSIBLES_ALGORITHM = ImmutableMap
+  .of(PQC_LATTICE_BASED_DILITHIUM, CrystalsDilithium3::new, "sphincsplus", SphincsPlus::new, "falcon", Falcon::new);
+
+  private static final ImmutableMap<String, Supplier<AbstractCrystalsDilithium3>> PQC_SUPPORTED_ALGORITHMS = ImmutableMap
+      .of(PQC_LATTICE_BASED_DILITHIUM, CrystalsDilithium3::new);
+
+  private static final ImmutableMap<String, Supplier<SphincsPlus>> SPHINCS_ALGORITHM = ImmutableMap
+      .of("SPHINCSPlus", SphincsPlus::new);
+
+  private static final ImmutableMap<String, Supplier<Falcon>> FALCON_ALGORITHM = ImmutableMap
+      .of("Falcon", Falcon::new);
 
   /** The constant DEFAULT_SIGNATURE_ALGORITHM_TYPE. */
-  public static final Supplier<SignatureAlgorithm> DEFAULT_SIGNATURE_ALGORITHM_TYPE =
-      SUPPORTED_ALGORITHMS.get(DEFAULT_EC_CURVE_NAME);
+  public static final Supplier<SignatureAlgorithm> DEFAULT_SIGNATURE_ALGORITHM_TYPE = SUPPORTED_ALGORITHMS
+      .get(DEFAULT_EC_CURVE_NAME);
+
+  public static final Supplier<AbstractCrystalsDilithium3> DEFAULT_PQC_SIGNATURE_ALGORITHM_TYPE = PQC_SUPPORTED_ALGORITHMS
+      .get(PQC_LATTICE_BASED_DILITHIUM);
+
+  public static final Supplier<SphincsPlus> SPHINCS_PQC_SIGNATURE_ALGORITHM_TYPE = SPHINCS_ALGORITHM
+      .get("SPHINCSPlus");
+
+  public static final Supplier<Falcon> FALCON_PQC_SIGNATURE_ALGORITHM_TYPE = FALCON_ALGORITHM
+      .get("Falcon");
 
   private final Supplier<SignatureAlgorithm> instantiator;
 
@@ -62,6 +90,10 @@ public class SignatureAlgorithmType {
    */
   public static SignatureAlgorithmType createDefault() {
     return new SignatureAlgorithmType(DEFAULT_SIGNATURE_ALGORITHM_TYPE);
+  }
+
+  public static PqcSignatureAlgorithm getGenericInstanceByName(final String algorithmName){
+    return SignatureAlgorithmType.PQC_POSSIBLES_ALGORITHM.get(algorithmName).get();
   }
 
   /**
