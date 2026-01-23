@@ -1,0 +1,60 @@
+name: Build Docker Image and Push to ACR
+
+on:
+  push:
+    tags:
+      - "img-*"   # Trigger when any tag starting with "img-" is pushed
+
+jobs:
+
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+
+      - name: Log in to ACR
+        run: |
+          az acr login --name ${{ secrets.ACR_NAME }}
+
+      - name: Build Docker image via Gradle
+        run: |
+          ./gradlew \
+            -PdockerVariants=openjdk-17 \
+            -Prelease.releaseVersion=24.1.x-pqc \
+            distDocker
+
+      - name: Extract version from tag
+        id: version
+        # Get raw tag and remove leading "img-"
+        # Combine tag with release version and variant suffix
+        run: |
+          RAW_TAG=${GITHUB_REF#refs/tags/}
+          TAG=${RAW_TAG#img-}
+          FINAL_VERSION="24.1.x-pqc-openjdk-17-${TAG}"
+
+          echo "FINAL_VERSION=$FINAL_VERSION" >> $GITHUB_ENV
+
+      - name: Tag image for ACR
+        run: |
+          REGISTRY=${{ secrets.ACR_NAME }}.azurecr.io
+          VERSION=${{ env.FINAL_VERSION }}
+
+          docker tag hyperledger/besu:24.1.x-pqc-openjdk-17 $REGISTRY/hyperledger/besu:$VERSION
+          docker tag hyperledger/besu:24.1.x-pqc-openjdk-17 $REGISTRY/hyperledger/besu:latest
+
+      - name: Push image to ACR
+        run: |
+          REGISTRY=${{ secrets.ACR_NAME }}.azurecr.io
+          VERSION=${{ env.FINAL_VERSION }}
+
+          docker push $REGISTRY/hyperledger/besu:$VERSION
+          docker push $REGISTRY/hyperledger/besu:latest
