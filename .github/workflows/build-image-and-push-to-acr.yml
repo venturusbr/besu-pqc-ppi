@@ -1,0 +1,78 @@
+name: Build Docker Image and Push to ACR
+
+on:
+  push:
+    tags:
+      - 'img*'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  REPO: venturusbr/besu-pqc-ppi
+  DOCKER_VARIANTS: openjdk-17
+  RELEASE_VERSION: 24.1.x-pqc
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code at tag
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'oracle'
+          java-version: '17'
+
+      - name: Extract tag name and set image tag
+        id: vars
+        run: |
+          set -euo pipefail
+          TAG_NAME="${GITHUB_REF#refs/tags/img-}"
+          IMAGE_TAG="${RELEASE_VERSION}-${DOCKER_VARIANTS}-${TAG_NAME}"
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Log in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Log in to Azure Container Registry using az CLI
+        run: |
+          set -euo pipefail
+          az acr login --name ppiethpqc
+
+      - name: Build Docker image
+        run: |
+          set -euo pipefail
+          ./gradlew -PdockerVariants=${{ env.DOCKER_VARIANTS }} -Prelease.releaseVersion=${{ env.RELEASE_VERSION }} distDocker
+
+      - name: Tag Docker image for ACR
+        run: |
+          set -euo pipefail
+          IMAGE_TAG="${{ steps.vars.outputs.IMAGE_TAG }}"
+          ACR_SERVER="ppiethpqc.azurecr.io"
+          REPO="${{ env.REPO }}"
+          BASE_TAG="${{ env.RELEASE_VERSION }}-${{ env.DOCKER_VARIANTS }}"
+          docker tag hyperledger/besu:$BASE_TAG $ACR_SERVER/$REPO:$IMAGE_TAG
+          docker tag hyperledger/besu:$BASE_TAG $ACR_SERVER/$REPO:latest
+          echo "ACR_IMAGE_VERSIONED=$ACR_SERVER/$REPO:$IMAGE_TAG" >> $GITHUB_ENV
+          echo "ACR_IMAGE_LATEST=$ACR_SERVER/$REPO:latest" >> $GITHUB_ENV
+
+      - name: Push Docker images to ACR
+        run: |
+          set -euo pipefail
+          docker push $ACR_IMAGE_VERSIONED
+          docker push $ACR_IMAGE_LATEST
+
+      - name: Log out of Azure
+        run: az logout
+        if: always()
