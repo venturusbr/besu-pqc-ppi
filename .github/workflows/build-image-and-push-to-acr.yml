@@ -10,6 +10,7 @@ permissions:
   contents: read
 
 env:
+  REPO: venturusbr/besu-pqc-ppi
   DOCKER_VARIANTS: openjdk-17
   RELEASE_VERSION: 24.1.x-pqc
 
@@ -20,7 +21,7 @@ jobs:
       - name: Checkout code at tag
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # fetch all tags
+          fetch-depth: 0
           ref: ${{ github.ref }}
 
       - name: Set up JDK 17
@@ -32,6 +33,7 @@ jobs:
       - name: Extract tag name and set image tag
         id: vars
         run: |
+          set -euo pipefail
           TAG_NAME="${GITHUB_REF#refs/tags/img-}"
           IMAGE_TAG="${RELEASE_VERSION}-${DOCKER_VARIANTS}-${TAG_NAME}"
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_OUTPUT
@@ -43,30 +45,40 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      # - name: Docker login to ACR via Azure CLI token
-      #   run: az acr login --name ${{ secrets.ACR_NAME }}
-        # az acr login caches an Entra token in docker config :contentReference[oaicite:6]{index=6}
-      - name: Log in to Azure Container Registry
-        uses: azure/docker-login@v2
-        with:
-          login-server: ${{ secrets.ACR_LOGIN_SERVER }}
-          username: ${{ secrets.ACR_TOKEN_USERNAME }}
-          password: ${{ secrets.ACR_TOKEN_PASSWORD }}
+      - name: Extract ACR name from login server
+        id: acr
+        run: |
+          set -euo pipefail
+          echo "ACR_NAME=$(echo "${{ secrets.ACR_LOGIN_SERVER }}" | cut -d'.' -f1)" >> $GITHUB_OUTPUT
+
+      - name: Log in to Azure Container Registry using az CLI
+        run: |
+          set -euo pipefail
+          az acr login --name ${{ steps.acr.outputs.ACR_NAME }}
 
       - name: Build Docker image
         run: |
+          set -euo pipefail
           ./gradlew -PdockerVariants=${{ env.DOCKER_VARIANTS }} -Prelease.releaseVersion=${{ env.RELEASE_VERSION }} distDocker
 
       - name: Tag Docker image for ACR
         run: |
+          set -euo pipefail
           IMAGE_TAG="${{ steps.vars.outputs.IMAGE_TAG }}"
           ACR_SERVER="${{ secrets.ACR_LOGIN_SERVER }}"
-          docker tag hyperledger/besu:24.1.x-pqc-openjdk-17 $ACR_SERVER/hyperledger/besu:$IMAGE_TAG
-          docker tag hyperledger/besu:24.1.x-pqc-openjdk-17 $ACR_SERVER/hyperledger/besu:latest
-          echo "ACR_IMAGE_VERSIONED=$ACR_SERVER/hyperledger/besu:$IMAGE_TAG" >> $GITHUB_ENV
-          echo "ACR_IMAGE_LATEST=$ACR_SERVER/hyperledger/besu:latest" >> $GITHUB_ENV
+          REPO="${{ env.REPO }}"
+          BASE_TAG="${{ env.RELEASE_VERSION }}-${{ env.DOCKER_VARIANTS }}"
+          docker tag $REPO:$BASE_TAG $ACR_SERVER/$REPO:$IMAGE_TAG
+          docker tag $REPO:$BASE_TAG $ACR_SERVER/$REPO:latest
+          echo "ACR_IMAGE_VERSIONED=$ACR_SERVER/$REPO:$IMAGE_TAG" >> $GITHUB_ENV
+          echo "ACR_IMAGE_LATEST=$ACR_SERVER/$REPO:latest" >> $GITHUB_ENV
 
       - name: Push Docker images to ACR
         run: |
+          set -euo pipefail
           docker push $ACR_IMAGE_VERSIONED
           docker push $ACR_IMAGE_LATEST
+
+      - name: Log out of Azure
+        run: az logout
+        if: always()
