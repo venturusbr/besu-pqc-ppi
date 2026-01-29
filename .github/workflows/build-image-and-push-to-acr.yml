@@ -48,7 +48,7 @@ jobs:
       - name: Docker login to ACR (token-based)
         uses: azure/docker-login@v2
         with:
-          login-server: ${{ secrets.ACR_LOGIN_SERVER }}
+          login-server: ppiethpqc.azurecr.io
           username: ${{ secrets.ACR_TOKEN_USERNAME }}
           password: ${{ secrets.ACR_TOKEN_PASSWORD }}
 
@@ -61,7 +61,7 @@ jobs:
         run: |
           set -euo pipefail
           IMAGE_TAG="${{ steps.vars.outputs.IMAGE_TAG }}"
-          ACR_SERVER="${{ secrets.ACR_LOGIN_SERVER }}"
+          ACR_SERVER="ppiethpqc.azurecr.io"
           REPO="${{ env.REPO }}"
           BASE_TAG="${{ env.RELEASE_VERSION }}-${{ env.DOCKER_VARIANTS }}"
           docker tag hyperledger/besu:$BASE_TAG $ACR_SERVER/$REPO:$IMAGE_TAG
