@@ -45,12 +45,6 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Extract ACR name from login server
-        id: acr
-        run: |
-          set -euo pipefail
-          echo "ACR_NAME=$(echo "${{ secrets.ACR_LOGIN_SERVER }}" | cut -d'.' -f1)" >> $GITHUB_OUTPUT
-
       - name: Docker login to ACR (token-based)
         run: |
           set -euo pipefail
