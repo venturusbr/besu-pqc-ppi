@@ -64,8 +64,8 @@ jobs:
           ACR_SERVER="${{ secrets.ACR_LOGIN_SERVER }}"
           REPO="${{ env.REPO }}"
           BASE_TAG="${{ env.RELEASE_VERSION }}-${{ env.DOCKER_VARIANTS }}"
-          docker tag $REPO:$BASE_TAG $ACR_SERVER/$REPO:$IMAGE_TAG
-          docker tag $REPO:$BASE_TAG $ACR_SERVER/$REPO:latest
+          docker tag hyperledger/besu:$BASE_TAG $ACR_SERVER/$REPO:$IMAGE_TAG
+          docker tag hyperledger/besu:$BASE_TAG $ACR_SERVER/$REPO:latest
           echo "ACR_IMAGE_VERSIONED=$ACR_SERVER/$REPO:$IMAGE_TAG" >> $GITHUB_ENV
           echo "ACR_IMAGE_LATEST=$ACR_SERVER/$REPO:latest" >> $GITHUB_ENV
 
