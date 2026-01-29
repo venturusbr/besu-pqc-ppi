@@ -49,8 +49,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ${{ secrets.ACR_LOGIN_SERVER }}
-          username: ${{ secrets.ACR_TOKEN_USERNAME }}
-          password: ${{ secrets.ACR_TOKEN_PASSWORD }}
+          username: ${{ secrets.AZURE_CLIENT_ID }}
+          password: ${{ secrets.AZURE_SECRET_VALUE }}
 
       - name: Build Docker image
         run: |
