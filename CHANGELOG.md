@@ -39,7 +39,7 @@
     - Proof of Work consensus (PoW)
     - Clique Block Production (mining) - you will still be able to sync existing Clique networks, but not be a validator or create new Clique networks.
     - Fast Sync
-  
+
 ### Additions and Improvements
 - Performance: Optimise ADD Opcode: ADD 86% faster, using new UInt256 implementation [#9477](https://github.com/hyperledger/besu/pull/9477)
 - Performance: Optimise EIP-196 AltBn128: EcAdd 33-128% faster, EcMul 8% faster [#9570](https://github.com/hyperledger/besu/pull/9570)
@@ -57,6 +57,8 @@
 - Fix callTracer to properly capture nested calls and populate revertReason field when transactions revert [#9651](https://github.com/hyperledger/besu/pull/9651)
 - Enhance payload selection with tx count and creation time tiebreakers [#9657](https://github.com/hyperledger/besu/pull/9657)
 - Fix mining beneficiary for BFT networks when set to zero address [#9679](https://github.com/hyperledger/besu/pull/9679)
+
+[PR_9462]: https://github.com/hyperledger/besu/pull/9642
 
 ##  25.12.0
 
@@ -208,9 +210,9 @@ This RC is still pending burn in for mainnet.
 ## 25.9.0
 
 ### Breaking Changes
-- Remove deprecated option `--bonsai-maximum-back-layers-to-load` (deprecated since 23.4.0). Use `--bonsai-historical-block-limit` instead 
+- Remove deprecated option `--bonsai-maximum-back-layers-to-load` (deprecated since 23.4.0). Use `--bonsai-historical-block-limit` instead
 
-### Known issue 
+### Known issue
 Affects users of eth_subscribe (WebSocket) eg SSV, and ethstats integration
 - symptom: `io.vertx.core.json.EncodeException: Failed to encode as JSON: Java 8 optional type`
 - fixes and more info [#9212](https://github.com/hyperledger/besu/pull/9212) and [#9220](https://github.com/hyperledger/besu/pull/9220)
@@ -241,13 +243,13 @@ Affects users of eth_subscribe (WebSocket) eg SSV, and ethstats integration
 
 ## 25.8.0
 ### Breaking Changes
-- Change in behavior for `eth_estimateGas` to improve accuracy when used on a network with a base fee market. 
+- Change in behavior for `eth_estimateGas` to improve accuracy when used on a network with a base fee market.
   - if there are no gas pricing parameters specified in the request, then gas price for the transaction is set to the base fee value [#8888](https://github.com/hyperledger/besu/pull/8888)
   - however, if you specify gas price of 0, the estimation will fail if the baseFee is > 0
 - Remove PoAMetricsService and IbftQueryService which have been deprecated since 2019 and are replaced by PoaQueryService and BftQueryService respectively [#8940](https://github.com/hyperledger/besu/pull/8940)
 - Remove deprecated `Quantity.getValue` method (deprecated since 2019) [#8968](https://github.com/hyperledger/besu/pull/8968)
 - Support for block creation on networks running a pre-Byzantium fork is removed, after being deprecated for a few months. If still running a pre-Byzantium network, it needs to be updated to continue to produce blocks [#9005](https://github.com/hyperledger/besu/pull/9005)
-- Remove support for Ethereum protocol version `eth/67`. [#9008](https://github.com/hyperledger/besu/pull/9008). 
+- Remove support for Ethereum protocol version `eth/67`. [#9008](https://github.com/hyperledger/besu/pull/9008).
 - Abort startup if boolean command line options are specified more than once [#8898](https://github.com/hyperledger/besu/pull/8898)
 - Ubuntu 20.04 is no longer supported. You need at least 22.04 (required for native libraries).
 - Improve performance of OperandStack resizes for deep stacks (> 100 elements). Impacts general EVM performance while working with deep stacks [#8869](https://github.com/hyperledger/besu/pull/8869)
@@ -523,8 +525,8 @@ Affects users of eth_subscribe (WebSocket) eg SSV, and ethstats integration
 - Tune layered txpool default configuration for upcoming gas limit and blob count increases [#8487](https://github.com/hyperledger/besu/pull/8487)
 - Removed support for Ethereum protocol versions `eth/62`, `eth/63`, `eth/64`, and `eth/65`. [#8492](https://github.com/hyperledger/besu/pull/8492)
 
-#### Dependencies 
-- Replace tuweni libs with https://github.com/Consensys/tuweni [#8330](https://github.com/hyperledger/besu/pull/8330), [#8461](https://github.com/hyperledger/besu/pull/8461) 
+#### Dependencies
+- Replace tuweni libs with https://github.com/Consensys/tuweni [#8330](https://github.com/hyperledger/besu/pull/8330), [#8461](https://github.com/hyperledger/besu/pull/8461)
 - Performance: Consensys/tuweni 2.7.0 reduces boxing/unboxing overhead on some EVM opcodes, like PushX and Caller [#8330](https://github.com/hyperledger/besu/pull/8330), [#8461](https://github.com/hyperledger/besu/pull/8461)
 
 ### Bug fixes
@@ -535,10 +537,10 @@ Affects users of eth_subscribe (WebSocket) eg SSV, and ethstats integration
 - Fix for bonsai db inconsistency on abnormal shutdown [#8500](https://github.com/hyperledger/besu/pull/8500)
 - Fix to add stateroot mismatches to bad block manager [#8207](https://github.com/hyperledger/besu/pull/8207)
 
-## 25.3.0 
+## 25.3.0
 
 ### Breaking Changes
-NOTE: This release breaks native Windows compatibility for mainnet ethereum configurations.  As the prague(pectra) hardfork require 
+NOTE: This release breaks native Windows compatibility for mainnet ethereum configurations.  As the prague(pectra) hardfork require
 BLS12-381 precompiles and besu does not currently have a pure java implementation of bls12-381, only platforms which
 have support in besu-native can run mainnet ethereum configurations.  Windows support via WSL should still continue to work.
 
@@ -571,7 +573,7 @@ have support in besu-native can run mainnet ethereum configurations.  Windows su
 - Add support for transaction permissioning rules in Plugin API [#8365](https://github.com/hyperledger/besu/pull/8365)
 #### Parallelization
 - Improve conflict detection by considering slots to reduce false positives [#7923](https://github.com/hyperledger/besu/pull/7923)
-#### Dependencies 
+#### Dependencies
 - Upgrade Netty to version 4.1.118 to fix CVE-2025-24970 [#8275](https://github.com/hyperledger/besu/pull/8275)
 - Update the jc-kzg-4844 dependency from 1.0.0 to 2.0.0, which is now available on Maven Central [#7849](https://github.com/hyperledger/besu/pull/7849)
 - Other dependency updates [#8293](https://github.com/hyperledger/besu/pull/8293) [#8315](https://github.com/hyperledger/besu/pull/8315) [#8350](https://github.com/hyperledger/besu/pull/8350)
@@ -616,7 +618,7 @@ have support in besu-native can run mainnet ethereum configurations.  Windows su
     - Smart-contract-based (onchain) permissioning
     - Proof of Work consensus
     - Fast Sync
-- Support for block creation on networks running a pre-Byzantium fork is deprecated for removal in a future release, after that in order to update Besu on nodes that build blocks, your network needs to be upgraded at least to the Byzantium fork. The main reason is to simplify world state management during block creation, since before Byzantium for each selected transaction, the receipt must contain the root hash of the modified world state, and this does not play well with the new plugin features and future work on parallelism. 
+- Support for block creation on networks running a pre-Byzantium fork is deprecated for removal in a future release, after that in order to update Besu on nodes that build blocks, your network needs to be upgraded at least to the Byzantium fork. The main reason is to simplify world state management during block creation, since before Byzantium for each selected transaction, the receipt must contain the root hash of the modified world state, and this does not play well with the new plugin features and future work on parallelism.
 ### Additions and Improvements
 - Add a tx selector to skip txs from the same sender after the first not selected [#8216](https://github.com/hyperledger/besu/pull/8216)
 - `rpc-gas-cap` default value has changed from 0 (unlimited) to 50M [#8251](https://github.com/hyperledger/besu/issues/8251)
@@ -624,7 +626,7 @@ have support in besu-native can run mainnet ethereum configurations.  Windows su
 
 #### Prague
 - Add timestamps to enable Prague hardfork on Sepolia and Holesky test networks [#8163](https://github.com/hyperledger/besu/pull/8163)
-- Update system call addresses to match [devnet-6](https://github.com/ethereum/execution-spec-tests/releases/) values [#8209](https://github.com/hyperledger/besu/issues/8209) 
+- Update system call addresses to match [devnet-6](https://github.com/ethereum/execution-spec-tests/releases/) values [#8209](https://github.com/hyperledger/besu/issues/8209)
 
 #### Plugins
 - Extend simulate transaction on pending block plugin API [#8174](https://github.com/hyperledger/besu/pull/8174)
@@ -636,7 +638,7 @@ have support in besu-native can run mainnet ethereum configurations.  Windows su
 ## 25.1.0
 
 ### Breaking Changes
-- `--host-whitelist` has been deprecated since 2020 and this option is removed. Use the equivalent `--host-allowlist` instead. 
+- `--host-whitelist` has been deprecated since 2020 and this option is removed. Use the equivalent `--host-allowlist` instead.
 - Change tracer API to include the mining beneficiary in BlockAwareOperationTracer::traceStartBlock [#8096](https://github.com/hyperledger/besu/pull/8096)
 - Change the input defaults on debug_trace* calls to not trace memory by default ("disableMemory": true, "disableStack": false,  "disableStorage": false)
 - Change the output format of debug_trace* and trace_* calls to match Geth behaviour
@@ -653,8 +655,8 @@ have support in besu-native can run mainnet ethereum configurations.  Windows su
   - Smart-contract-based (onchain) permissioning
   - Proof of Work consensus
   - Fast Sync
-- Plugins 
-  - `BesuConfiguration` methods `getRpcHttpHost` and `getRpcHttpPort` (which return Optionals) have been deprecated in favour of `getConfiguredRpcHttpHost` and `getConfiguredRpcHttpPort` which return the actual values, which will always be populated since these options have defaults. [#8127](https://github.com/hyperledger/besu/pull/8127) 
+- Plugins
+  - `BesuConfiguration` methods `getRpcHttpHost` and `getRpcHttpPort` (which return Optionals) have been deprecated in favour of `getConfiguredRpcHttpHost` and `getConfiguredRpcHttpPort` which return the actual values, which will always be populated since these options have defaults. [#8127](https://github.com/hyperledger/besu/pull/8127)
 
 ### Additions and Improvements
 - Add RPC HTTP options to specify custom truststore and its password [#7978](https://github.com/hyperledger/besu/pull/7978)
@@ -675,7 +677,7 @@ have support in besu-native can run mainnet ethereum configurations.  Windows su
 
 ## 24.12.2 Hotfix
 
-This is an optional hotfix to address serialization of state overrides parameter when `movePrecompileToAddress` is present. 
+This is an optional hotfix to address serialization of state overrides parameter when `movePrecompileToAddress` is present.
 
 There is no need to upgrade from 24.12.0 (or 24.12.1) to this release if you are not yet using this functionality.
 
@@ -724,7 +726,7 @@ This is a hotfix to address publishing besu maven artifacts.  There are no issue
 ### Additions and Improvements
 - Fine tune already seen txs tracker when a tx is removed from the pool [#7755](https://github.com/hyperledger/besu/pull/7755)
 - Support for enabling and configuring TLS/mTLS in WebSocket service. [#7854](https://github.com/hyperledger/besu/pull/7854)
-- Create and publish Besu BOM (Bill of Materials) [#7615](https://github.com/hyperledger/besu/pull/7615) 
+- Create and publish Besu BOM (Bill of Materials) [#7615](https://github.com/hyperledger/besu/pull/7615)
 - Update Java dependencies [#7786](https://github.com/hyperledger/besu/pull/7786)
 - Add a method to get all the transaction in the pool, to the `TransactionPoolService`, to easily access the transaction pool content from plugins [#7813](https://github.com/hyperledger/besu/pull/7813)
 - Upgrade RocksDB JNI library from version 8.3.2 to 9.7.3 [#7817](https://github.com/hyperledger/besu/pull/7817)
@@ -993,7 +995,7 @@ https://github.com/hyperledger/besu/releases/download/24.5.2/besu-24.5.2.zip / s
 ### Upcoming Breaking Changes
 - Version 24.5.x will be the last series to support Java 17. Next release after versions 24.5.x will require Java 21 to build and run.
 - Receipt compaction will be enabled by default in a future version of Besu. After this change it will not be possible to downgrade to the previous Besu version.
-- PKI-backed QBFT will be removed in a future version of Besu. Other forms of QBFT will remain unchanged. 
+- PKI-backed QBFT will be removed in a future version of Besu. Other forms of QBFT will remain unchanged.
 
 ### Known Issues
 - [Frequency: occasional < 10%] Chain download halt. Only affects new syncs (new nodes syncing from scratch). Symptom: Block import halts, despite having a full set of peers and world state downloading finishing. Generally restarting besu will resolve the issue. We are tracking this in [#6884](https://github.com/hyperledger/besu/pull/6884)
@@ -1087,7 +1089,7 @@ https://github.com/hyperledger/besu/releases/download/24.5.1/besu-24.5.1.zip / s
 - Added configuration options for `pragueTime` to genesis file for Prague fork development [#6473](https://github.com/hyperledger/besu/pull/6473)
 - Moving trielog storage to RocksDB's blobdb to improve write amplications [#6289](https://github.com/hyperledger/besu/pull/6289)
 - Support for `shanghaiTime` fork and Shanghai EVM smart contracts in QBFT/IBFT chains [#6353](https://github.com/hyperledger/besu/pull/6353)
-- Change ExecutionHaltReason for contract creation collision case to return ILLEGAL_STATE_CHANGE [#6518](https://github.com/hyperledger/besu/pull/6518) 
+- Change ExecutionHaltReason for contract creation collision case to return ILLEGAL_STATE_CHANGE [#6518](https://github.com/hyperledger/besu/pull/6518)
 - Experimental feature `--Xbonsai-code-using-code-hash-enabled` for storing Bonsai code storage by code hash [#6505](https://github.com/hyperledger/besu/pull/6505)
 - More accurate column size `storage rocksdb usage` subcommand [#6540](https://github.com/hyperledger/besu/pull/6540)
 - Adds `storage rocksdb x-stats` subcommand [#6540](https://github.com/hyperledger/besu/pull/6540)
