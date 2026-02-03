@@ -61,7 +61,7 @@ public class Packet {
     final Bytes typeBytes = Bytes.of(this.type.getValue());
     final Bytes dataBytes = RLP.encode(this.data::writeTo);
 
-    this.signature = nodeKey.sign(keccak256(Bytes.wrap(typeBytes, dataBytes)));
+    this.signature = nodeKey.sign(keccak256(Bytes.wrap(typeBytes, dataBytes)), "packet");
     this.hash = keccak256(Bytes.concatenate(encodeSignature(signature), typeBytes, dataBytes));
     this.publicKey = nodeKey.getPublicKey();
   }

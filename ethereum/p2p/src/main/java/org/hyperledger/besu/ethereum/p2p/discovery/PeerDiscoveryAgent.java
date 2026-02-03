@@ -222,7 +222,7 @@ public abstract class PeerDiscoveryAgent {
                               forkIdEnrField, Collections.singletonList(forkIdSupplier.get())));
                   nodeRecord.setSignature(
                       nodeKey
-                          .sign(Hash.keccak256(nodeRecord.serializeNoSignature()))
+                          .sign(Hash.keccak256(nodeRecord.serializeNoSignature()), "node-data")
                           .encodedBytes()
                           .slice(0, 64));
 
