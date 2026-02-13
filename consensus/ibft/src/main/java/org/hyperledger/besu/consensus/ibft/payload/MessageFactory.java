@@ -64,7 +64,7 @@ public class MessageFactory {
     final ProposalPayload payload = new ProposalPayload(roundIdentifier, block.getHash());
 
     return new Proposal(
-        createSignedMessage(payload), block, blockAccessList, roundChangeCertificate);
+        createSignedMessage(payload, "proposal"), block, blockAccessList, roundChangeCertificate);
   }
 
   /**
@@ -93,7 +93,7 @@ public class MessageFactory {
 
     final PreparePayload payload = new PreparePayload(roundIdentifier, digest);
 
-    return new Prepare(createSignedMessage(payload));
+    return new Prepare(createSignedMessage(payload, "prepare"));
   }
 
   /**
@@ -111,7 +111,7 @@ public class MessageFactory {
 
     final CommitPayload payload = new CommitPayload(roundIdentifier, digest, commitSeal);
 
-    return new Commit(createSignedMessage(payload));
+    return new Commit(createSignedMessage(payload, "commit"));
   }
 
   /**
@@ -130,14 +130,14 @@ public class MessageFactory {
             roundIdentifier,
             preparedRoundArtifacts.map(PreparedRoundArtifacts::getPreparedCertificate));
     return new RoundChange(
-        createSignedMessage(payload),
-        preparedRoundArtifacts.map(PreparedRoundArtifacts::getBlock),
+        createSignedMessage(payload, "round-change"),
+            preparedRoundArtifacts.map(PreparedRoundArtifacts::getBlock),
         preparedRoundArtifacts.flatMap(PreparedRoundArtifacts::getBlockAccessList));
   }
 
-  private <M extends Payload> SignedData<M> createSignedMessage(final M payload) {
+  private <M extends Payload> SignedData<M> createSignedMessage(final M payload, final String finality) {
     final SECPSignature signature =
-        nodeKey.sign(Bytes32.wrap(payload.hashForSignature().getBytes()));
+        nodeKey.sign(Bytes32.wrap(payload.hashForSignature().getBytes()), finality);
     return SignedData.create(payload, signature);
   }
 }

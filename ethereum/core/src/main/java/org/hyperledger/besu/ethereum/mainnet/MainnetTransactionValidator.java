@@ -98,6 +98,7 @@ public class MainnetTransactionValidator implements TransactionValidator {
     this.chainId = chainId;
     this.acceptedTransactionTypes = acceptedTransactionTypes;
     this.maxInitcodeSize = maxInitcodeSize;
+    this.blobsValidator = new MainnetBlobsValidator(acceptedBlobVersions, gasLimitCalculator, gasCalculator);
     this.verifyWriter = MetricWriters.getVerifyInstance();
     this.stringBuilder = new StringBuilder();
   }
@@ -118,7 +119,7 @@ public class MainnetTransactionValidator implements TransactionValidator {
     long classicalVerifyEnd = System.nanoTime();
 
     if (!SignatureAlgorithmFactory.getPqcAlgorithmName().equals("none")) {
-      byte[] dataToPqcSign = transaction.getHash().toArray();
+      byte[] dataToPqcSign = transaction.getHash().getBytes().toArray();
 
       PqcSignatureAlgorithm selectedPqcAlgorithm = SignatureAlgorithmFactory.getPqcGenericInstance();
 
@@ -141,20 +142,6 @@ public class MainnetTransactionValidator implements TransactionValidator {
 
     if (!signatureResult.isValid()) {
       return signatureResult;
-    }
-
-    if (transaction.getType().supportsBlob()) {
-      final ValidationResult<TransactionInvalidReason> blobTransactionResult = validateBlobTransaction(transaction);
-      if (!blobTransactionResult.isValid()) {
-        return blobTransactionResult;
-      }
-
-      if (transaction.getBlobsWithCommitments().isPresent()) {
-        final ValidationResult<TransactionInvalidReason> blobsResult = validateTransactionsBlobs(transaction);
-        if (!blobsResult.isValid()) {
-          return blobsResult;
-        }
-      }
     }
 
     final TransactionType transactionType = transaction.getType();

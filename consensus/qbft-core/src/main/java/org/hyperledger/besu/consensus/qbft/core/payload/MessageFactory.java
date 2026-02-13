@@ -28,9 +28,6 @@ import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.mainnet.block.access.list.BlockAccessList;
-import org.hyperledger.besu.ethereum.core.Block;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
@@ -144,8 +141,8 @@ public class MessageFactory {
                   new PreparedRoundMetadata(
                       preparedBlock.getHash(), preparedRoundData.get().getRound())));
       return new RoundChange(
-          createSignedMessage(payload, "round change prepared block"),
-          Optional.of(preparedBlock),
+          createSignedMessage(payload, "round-change-prepared-block"),
+              Optional.of(preparedBlock),
           preparedRoundData.get().getBlockAccessList(),
           blockEncoder,
           preparedRoundData.get().getPrepares());
@@ -153,8 +150,8 @@ public class MessageFactory {
     } else {
       payload = new RoundChangePayload(roundIdentifier, Optional.empty());
       return new RoundChange(
-          createSignedMessage(payload, "round change"),
-          Optional.empty(),
+          createSignedMessage(payload, "round-change"),
+              Optional.empty(),
           Optional.empty(),
           blockEncoder,
           Collections.emptyList());

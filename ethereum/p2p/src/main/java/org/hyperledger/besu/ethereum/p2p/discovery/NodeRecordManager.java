@@ -232,7 +232,7 @@ public class NodeRecordManager {
             new EnrField(FORK_ID_ENR_FIELD, Collections.singletonList(forkId)));
 
     record.setSignature(
-        nodeKey.sign(Hash.keccak256(record.serializeNoSignature())).encodedBytes().slice(0, 64));
+            nodeKey.sign(Hash.keccak256(record.serializeNoSignature()), "node-record").encodedBytes().slice(0, 64));
 
     LOG.info("Writing node record to disk. {}", record);
 

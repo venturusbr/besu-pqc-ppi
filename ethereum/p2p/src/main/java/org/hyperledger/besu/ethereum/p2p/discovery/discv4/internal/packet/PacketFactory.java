@@ -94,7 +94,7 @@ public class PacketFactory {
               }
             });
 
-    SECPSignature signature = nodeKey.sign(Hash.keccak256(Bytes.wrap(typeBytes, dataBytes)));
+    SECPSignature signature = nodeKey.sign(Hash.keccak256(Bytes.wrap(typeBytes, dataBytes)), "packet");
     Bytes32 hash =
         Hash.keccak256(
             Bytes.concatenate(

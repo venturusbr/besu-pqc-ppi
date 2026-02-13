@@ -103,6 +103,16 @@ import org.hyperledger.besu.crypto.KeyPairUtil;
 import org.hyperledger.besu.crypto.SECP256R1;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.SignatureAlgorithmType;
+import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3KeyPair;
+import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3PrivateKey;
+import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3PublicKey;
+import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconKeyPair;
+import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconPrivateKey;
+import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconPublicKey;
+import org.hyperledger.besu.crypto.pqc.keys.PqcKeyPair;
+import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusKeyPair;
+import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusPrivateKey;
+import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusPublicKey;
 import org.hyperledger.besu.cryptoservices.KeyPairSecurityModule;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.datatypes.Address;
@@ -407,6 +417,14 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
       description =
           "Use genesis state hash from data on startup if specified (default: ${DEFAULT-VALUE})")
   private final Boolean genesisStateHashCacheEnabled = false;
+
+  @SuppressWarnings({ "FieldCanBeFinal", "FieldMayBeFinal" }) // PicoCLI requires non-final Strings.
+  @Option(names = "--pqc-algorithm-name", paramLabel = DefaultCommandValues.MANDATORY_PATH_FORMAT_HELP, description = "Name of the pqc algorithm. (default: ${DEFAULT-VALUE})", arity = "1..1")
+  private String pqcAlgorithmName = "none";
+
+  @SuppressWarnings({ "FieldCanBeFinal", "FieldMayBeFinal" }) // PicoCLI requires non-final Strings.
+  @Option(names = "--pqc-parameter-spec", paramLabel = "<String>", description = "Name of the pqc parameter spec. (default: ${DEFAULT-VALUE})", arity = "1..1")
+  private String pqcParameterSpec = "none";
 
   @Option(
       names = "--identity",
@@ -1285,6 +1303,33 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
   }
 
   private SecurityModule defaultSecurityModule() {
+    if (!pqcAlgorithmName.equals("none"))
+      SignatureAlgorithmFactory.setpqcAlgorithmName(pqcAlgorithmName);
+    SignatureAlgorithmFactory.setPqcParameterSpecIndex(pqcParameterSpec);
+
+    switch (pqcAlgorithmName) {
+      case "none":
+        System.out.println("Warning: Running Without PQC Algorithm");
+        break;
+      case "dilithium":
+        Dilithium3KeyPair dilithiumKp = loadPqcKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile());
+        PqcKeyPair.setKeys(dilithiumKp.getPrivateKey().getCrystalsDilithiumPrivateKeyFromEncoded(),
+            dilithiumKp.getPublicKey().getCrystalsDilithiumPublicKeyFromEncoded());
+        break;
+      case "sphincsplus":
+        SphincsPlusKeyPair sphincsKp = loadSphincsKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile());
+        PqcKeyPair.setKeys(sphincsKp.getPrivateKey().getSphincsPlusPrivateKeyFromEncoded(),
+            sphincsKp.getPublicKey().getSphincsPlusPublicKeyFromEncoded());
+        break;
+      case "falcon":
+        FalconKeyPair falconKp = loadFalconKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile());
+        PqcKeyPair.setKeys(falconKp.getPrivateKey().getFalconPrivateKeyFromEncoded(),
+            falconKp.getPublicKey().getFalconPublicKeyFromEncoded());
+        break;
+      default:
+        throw new IllegalArgumentException("PQC algorithm Name not identified.");
+    }
+
     keyPair = loadKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile());
     return new KeyPairSecurityModule(keyPair);
   }
@@ -1297,6 +1342,18 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
    */
   public KeyPair loadKeyPair(final File nodePrivateKeyFile) {
     return KeyPairUtil.loadKeyPair(resolveNodePrivateKeyFile(nodePrivateKeyFile));
+  }
+
+  public Dilithium3KeyPair loadPqcKeyPair(final File nodePrivateKeyFile) {
+    return KeyPairUtil.loadPQCKeyPair(resolveNodePQCPrivateKeyFile(nodePrivateKeyFile).toPath());
+  }
+
+  public SphincsPlusKeyPair loadSphincsKeyPair(final File nodePrivateKeyFile) {
+    return KeyPairUtil.loadSphincsKeyPair(resolveNodePQCPrivateKeyFile(nodePrivateKeyFile).toPath());
+  }
+
+  public FalconKeyPair loadFalconKeyPair(final File nodePrivateKeyFile) {
+    return KeyPairUtil.loadFalconKeyPair(resolveNodePQCPrivateKeyFile(nodePrivateKeyFile).toPath());
   }
 
   private void preSynchronization() {
@@ -2585,6 +2642,11 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
   private File resolveNodePrivateKeyFile(final File nodePrivateKeyFile) {
     return Optional.ofNullable(nodePrivateKeyFile)
         .orElseGet(() -> KeyPairUtil.getDefaultKeyFile(dataDir()));
+  }
+
+  private File resolveNodePQCPrivateKeyFile(final File nodePrivateKeyFile) {
+    return Optional.ofNullable(nodePrivateKeyFile)
+        .orElseGet(() -> dataDir().toFile());
   }
 
   /**

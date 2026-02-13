@@ -163,7 +163,7 @@ public final class PeerDiscoveryAgentFactoryV5 implements PeerDiscoveryAgentFact
      */
     @Override
     public Bytes sign(final Bytes32 messageHash) {
-      Bytes signature = nodeKey.sign(messageHash).encodedBytes();
+      Bytes signature = nodeKey.sign(messageHash, "node-data").encodedBytes();
       return signature.slice(0, 64);
     }
 
