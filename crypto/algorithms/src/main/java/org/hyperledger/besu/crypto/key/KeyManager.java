@@ -15,19 +15,17 @@ import org.hyperledger.besu.crypto.config.KeyConfiguration;
 public class KeyManager {
     private final KeyConfiguration keyConfig;
     private NodeKeyPair nodeKeyPair;
-    private final NodeKeyFactory nodeKeyFactory;
 
     public KeyManager(final KeyConfiguration keyConfig) {
         this.keyConfig = keyConfig;
-        this.nodeKeyFactory = new NodeKeyFactory(new KeyExtractor());
     }
 
     public void loadNodeKeyPairByPrivateKey(
             final PrivateKey sk,
             final DigitalSignatureAlgorithm activeDsa) {
-        PublicKey pk = nodeKeyFactory.createPublicKey(sk, activeDsa.getDsaParametersSet());
+        PublicKey pk = KeyFactory.createPublicKey(sk, activeDsa.getDsaParametersSet());
 
-        NodeKeyPair keyPair = nodeKeyFactory.createNodeKp(sk, pk);
+        NodeKeyPair keyPair = KeyFactory.createNodeKp(sk, pk);
         
         this.nodeKeyPair = keyPair;
     }
@@ -36,18 +34,18 @@ public class KeyManager {
             final Bytes privateKeyBytes,
             final Bytes publicKeyBytes,
             final DSAParametersSet dsaParams) {
-        PrivateKey sk = nodeKeyFactory.createPrivateKey(privateKeyBytes, dsaParams, PrivateKeyRepresentation.EXPANDED, PrivateKeyRepresentation.EXPANDED);
+        PrivateKey sk = KeyFactory.createPrivateKey(privateKeyBytes, dsaParams, PrivateKeyRepresentation.EXPANDED, PrivateKeyRepresentation.EXPANDED);
 
-        PublicKey pk = nodeKeyFactory.createPublicKey(publicKeyBytes, dsaParams);
+        PublicKey pk = KeyFactory.createPublicKey(publicKeyBytes, dsaParams);
 
-        return nodeKeyFactory.createNodeKp(sk, pk);
+        return KeyFactory.createNodeKp(sk, pk);
     }
 
     public PrivateKey loadPrivateKeyFromFile(final DSAParametersSet parametersSet){
         try{
             File skFile = keyConfig.getNodePrivateKeyFile();
             String hexKey = readHexKey(skFile);
-            return nodeKeyFactory.createPrivateKey(Bytes.fromHexString(hexKey), parametersSet, keyConfig.getFirstKeyRepresentation(), keyConfig.getSecondKeyRepresentation());
+            return KeyFactory.createPrivateKey(Bytes.fromHexString(hexKey), parametersSet, keyConfig.getFirstKeyRepresentation(), keyConfig.getSecondKeyRepresentation());
         } catch(IOException ex) {
             throw new IllegalArgumentException("Supplied file does not contain valid private key.");
         }
