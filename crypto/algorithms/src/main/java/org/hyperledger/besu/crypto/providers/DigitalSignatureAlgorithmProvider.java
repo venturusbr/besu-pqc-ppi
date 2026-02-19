@@ -8,7 +8,7 @@ import org.hyperledger.besu.crypto.config.DigitalSignatureAlgorithmConfiguration
 import org.hyperledger.besu.crypto.config.KeyConfiguration;
 import org.hyperledger.besu.crypto.key.KeyExtractor;
 import org.hyperledger.besu.crypto.key.KeyManager;
-import org.hyperledger.besu.crypto.key.NodeKeyFactory;
+import org.hyperledger.besu.crypto.key.KeyFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
 
 public class DigitalSignatureAlgorithmProvider implements DSAProvider{

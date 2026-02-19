@@ -14,16 +14,34 @@
  */
 package org.hyperledger.besu.ethereum.core;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkState;
-import static org.hyperledger.besu.crypto.Hash.keccak256;
-import static org.hyperledger.besu.datatypes.VersionedHash.SHA256_VERSION_ID;
+import static com.google.common.base.Preconditions.*;
+import static org.hyperledger.besu.crypto.Hash.*;
+import static org.hyperledger.besu.datatypes.VersionedHash.*;
 
+import java.math.BigInteger;
+import java.security.PublicKey;
+import java.util.Collection;
+import java.util.List;
+import java.util.function.Supplier;
+import java.util.Objects;
+import java.util.Optional;
+
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.units.bigints.UInt256;
+import org.apache.tuweni.units.bigints.UInt256s;
+import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
+import org.hyperledger.besu.crypto.HybridDigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.KeyPair;
+import org.hyperledger.besu.crypto.PublicKeyRecoverable;
 import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SECPSignature;
-import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.key.KeyFactory;
+import org.hyperledger.besu.crypto.key.PublicKeyResolver;
+import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
+import org.hyperledger.besu.crypto.signature.CompositeSignature;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.AccessListEntry;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Blob;
@@ -45,17 +63,7 @@ import org.hyperledger.besu.ethereum.rlp.RLP;
 import org.hyperledger.besu.ethereum.rlp.RLPInput;
 import org.hyperledger.besu.ethereum.rlp.RLPOutput;
 
-import java.math.BigInteger;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-
 import com.google.common.primitives.Longs;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.units.bigints.UInt256;
-import org.apache.tuweni.units.bigints.UInt256s;
 
 /** An operation submitted by an external actor to be applied to the system. */
 public class Transaction
@@ -74,7 +82,8 @@ public class Transaction
   public static final BigInteger REPLAY_PROTECTED_V_MIN = BigInteger.valueOf(36);
 
   public static final BigInteger TWO = BigInteger.valueOf(2);
-
+  
+  private final 
   private final long nonce;
 
   private final Optional<Wei> gasPrice;
@@ -90,7 +99,7 @@ public class Transaction
 
   private final Wei value;
 
-  private final SECPSignature signature;
+  private final Signature signature;
 
   private final Bytes payload;
 
@@ -113,7 +122,9 @@ public class Transaction
   protected volatile int size = -1;
   private final TransactionType transactionType;
 
-  private final SignatureAlgorithm signatureAlgorithm = SignatureAlgorithmFactory.getInstance();
+  private PublicKey publicKey;
+
+  private final DigitalSignatureAlgorithm signatureAlgorithm = SignatureAlgorithmFactory.getInstance();
   private final Optional<List<VersionedHash>> versionedHashes;
 
   private final Optional<BlobsWithCommitments> blobsWithCommitments;
@@ -166,7 +177,7 @@ public class Transaction
       final long gasLimit,
       final Optional<Address> to,
       final Wei value,
-      final SECPSignature signature,
+      final Signature signature,
       final Bytes payload,
       final Optional<List<AccessListEntry>> maybeAccessList,
       final Address sender,
@@ -351,7 +362,7 @@ public class Transaction
    *
    * @return the signature used to sign the transaction
    */
-  public SECPSignature getSignature() {
+  public Signature getSignature() {
     return signature;
   }
 
@@ -411,14 +422,13 @@ public class Transaction
   @Override
   public Address getSender() {
     if (sender == null) {
-      final SECPPublicKey publicKey =
-          signatureAlgorithm
-              .recoverPublicKeyFromSignature(getOrComputeSenderRecoveryHash(), signature)
-              .orElseThrow(
-                  () ->
-                      new IllegalStateException(
-                          "Cannot recover public key from signature for " + this));
-      sender = Address.extract(Hash.hash(publicKey.getEncodedBytes()));
+      publicKey = PublicKeyResolver.resolvePublicKey(
+        signatureAlgorithm,
+        signature,
+        publicKey,
+        getOrComputeSenderRecoveryHash()
+      );
+      sender = Address.extract(Hash.hash(Bytes.wrap(publicKey.getEncoded())));
     }
     return sender;
   }

@@ -47,7 +47,7 @@ import org.bouncycastle.math.ec.ECPoint;
 import org.hyperledger.besu.crypto.key.NodeKeyPair;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.KeyManager;
-import org.hyperledger.besu.crypto.key.NodeKeyFactory;
+import org.hyperledger.besu.crypto.key.KeyFactory;
 
 /** The Abstract secp256. */
 public abstract class AbstractSECP256 implements SignatureAlgorithm {
