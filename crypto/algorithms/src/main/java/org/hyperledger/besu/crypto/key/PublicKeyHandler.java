@@ -1,6 +1,7 @@
 package org.hyperledger.besu.crypto.key;
 
 import java.security.PublicKey;
+import java.util.Optional;
 
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
@@ -9,32 +10,32 @@ import org.hyperledger.besu.crypto.PublicKeyRecoverable;
 import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
 import org.hyperledger.besu.crypto.signature.Signature;
 
-public class PublicKeyResolver {
-    private PublicKeyResolver() {}
+public class PublicKeyHandler {
+    private PublicKeyHandler() {}
 
-    public static PublicKey resolvePublicKey(
+    public static Optional<PublicKey> resolvePublicKey(
         final DigitalSignatureAlgorithm signatureAlgorithm,
         final Signature signature,
-        final PublicKey maybePartialPk,
+        final Optional<PublicKey> maybePartialPk,
         final Bytes32 recoveryHash) {
         
-        if(maybePartialPk instanceof CompositePublicKey) return maybePartialPk;
+        if(maybePartialPk.get() instanceof CompositePublicKey) return maybePartialPk;
 
         if (signatureAlgorithm instanceof HybridDigitalSignatureAlgorithm hybrid) {
-            return extractHybridPublicKey(hybrid, signature, maybePartialPk, recoveryHash);
+            return Optional.of(extractHybridPublicKey(hybrid, signature, maybePartialPk, recoveryHash));
         }
 
-        return resolveSingleAlgorithmPublicKey(
+        return Optional.of(resolveSingleAlgorithmPublicKey(
             signatureAlgorithm,
             signature,
             maybePartialPk,
-            recoveryHash);
+            recoveryHash));
     }
 
     private static PublicKey extractHybridPublicKey(
         final HybridDigitalSignatureAlgorithm hybrid,
         final Signature signature,
-        final PublicKey maybePartialPk,
+        final Optional<PublicKey> maybePartialPk,
         final Bytes32 recoveryHash) {
 
         final DigitalSignatureAlgorithm first = hybrid.getFirstAlgorithm();
@@ -60,7 +61,7 @@ public class PublicKeyResolver {
     private static PublicKey resolveSingleAlgorithmPublicKey(
         final DigitalSignatureAlgorithm dsa,
         final Signature signature,
-        final PublicKey maybePartialPk,
+        final Optional<PublicKey> maybePartialPk,
         final Bytes32 recoveryHash) {
 
         if (dsa instanceof PublicKeyRecoverable recoverable) {
@@ -75,6 +76,6 @@ public class PublicKeyResolver {
                 "Public key must be provided when algorithm does not support PKR");
         }
 
-        return maybePartialPk;
+        return maybePartialPk.get();
     }
 }

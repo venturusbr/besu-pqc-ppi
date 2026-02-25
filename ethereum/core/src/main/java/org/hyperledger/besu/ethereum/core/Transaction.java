@@ -22,7 +22,6 @@ import java.math.BigInteger;
 import java.security.PublicKey;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.Supplier;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -31,16 +30,10 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.apache.tuweni.units.bigints.UInt256s;
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
-import org.hyperledger.besu.crypto.HybridDigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.PublicKeyRecoverable;
-import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
-import org.hyperledger.besu.crypto.key.KeyFactory;
-import org.hyperledger.besu.crypto.key.PublicKeyResolver;
-import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
-import org.hyperledger.besu.crypto.signature.CompositeSignature;
+import org.hyperledger.besu.crypto.key.PublicKeyHandler;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.AccessListEntry;
 import org.hyperledger.besu.datatypes.Address;
@@ -83,7 +76,7 @@ public class Transaction
 
   public static final BigInteger TWO = BigInteger.valueOf(2);
   
-  private final 
+  private final Optional<Short> dsaType;
   private final long nonce;
 
   private final Optional<Wei> gasPrice;
@@ -122,7 +115,7 @@ public class Transaction
   protected volatile int size = -1;
   private final TransactionType transactionType;
 
-  private PublicKey publicKey;
+  private Optional<PublicKey> publicKey;
 
   private final DigitalSignatureAlgorithm signatureAlgorithm = SignatureAlgorithmFactory.getInstance();
   private final Optional<List<VersionedHash>> versionedHashes;
@@ -147,6 +140,7 @@ public class Transaction
    * @param forCopy true when using to create a copy of an already validated transaction avoid to
    *     redo the validation
    * @param transactionType the transaction type
+   * @param dsaType the transaction dsa identifier
    * @param nonce the nonce
    * @param gasPrice the gas price
    * @param maxPriorityFeePerGas the max priority fee per gas
@@ -156,10 +150,12 @@ public class Transaction
    * @param to the transaction recipient
    * @param value the value being transferred to the recipient
    * @param signature the signature
+   * @param maybePublicKey the signer public key
    * @param payload the payload
    * @param maybeAccessList the optional list of addresses/storage slots this transaction intends to
    *     preload
    * @param sender the transaction sender
+   * @param publicKey the transaction sender's public keys
    * @param chainId the chain id to apply the transaction to
    *     <p>The {@code to} will be an {@code Optional.empty()} for a contract creation transaction;
    *     otherwise it should contain an address.
@@ -169,6 +165,7 @@ public class Transaction
   private Transaction(
       final boolean forCopy,
       final TransactionType transactionType,
+      final Optional<Short> dsaType,
       final long nonce,
       final Optional<Wei> gasPrice,
       final Optional<Wei> maxPriorityFeePerGas,
@@ -177,7 +174,9 @@ public class Transaction
       final long gasLimit,
       final Optional<Address> to,
       final Wei value,
+      final Optional<PublicKey> pk,
       final Signature signature,
+      final Optional<PublicKey> maybePublicKey,
       final Bytes payload,
       final Optional<List<AccessListEntry>> maybeAccessList,
       final Address sender,
@@ -222,6 +221,7 @@ public class Transaction
     }
 
     this.transactionType = transactionType;
+    this.dsaType = dsaType;
     this.nonce = nonce;
     this.gasPrice = gasPrice;
     this.maxPriorityFeePerGas = maxPriorityFeePerGas;
@@ -231,12 +231,23 @@ public class Transaction
     this.to = to;
     this.value = value;
     this.signature = signature;
+    this.publicKey = pk;
     this.payload = payload;
     this.maybeAccessList = maybeAccessList;
     this.sender = sender;
     this.chainId = chainId;
     this.versionedHashes = versionedHashes;
     this.blobsWithCommitments = blobsWithCommitments;
+  }
+
+  @Override
+  public Optional<Short> getDsaType(){
+    return dsaType;
+  }
+
+  @Override
+  public Optional<PublicKey> getMaybePublicKey(){
+    return publicKey;
   }
 
   /**
@@ -358,9 +369,9 @@ public class Transaction
   }
 
   /**
-   * Returns the signature used to sign the transaction.
+   * Returns the transaction signature.
    *
-   * @return the signature used to sign the transaction
+   * @return the transaction signature
    */
   public Signature getSignature() {
     return signature;
@@ -422,13 +433,13 @@ public class Transaction
   @Override
   public Address getSender() {
     if (sender == null) {
-      publicKey = PublicKeyResolver.resolvePublicKey(
+      publicKey = PublicKeyHandler.resolvePublicKey(
         signatureAlgorithm,
         signature,
         publicKey,
         getOrComputeSenderRecoveryHash()
       );
-      sender = Address.extract(Hash.hash(Bytes.wrap(publicKey.getEncoded())));
+      sender = Address.extract(Hash.hash(Bytes.wrap(publicKey.get().getEncoded())));
     }
     return sender;
   }
@@ -439,9 +450,8 @@ public class Transaction
    * @return the public key
    */
   public Optional<String> getPublicKey() {
-    return signatureAlgorithm
-        .recoverPublicKeyFromSignature(getOrComputeSenderRecoveryHash(), signature)
-        .map(SECPPublicKey::toString);
+    return PublicKeyHandler.resolvePublicKey(signatureAlgorithm, signature, Optional.empty(), getOrComputeSenderRecoveryHash())
+    .map(pk -> Bytes.wrap(pk.getEncoded()).toHexString());
   }
 
   private Bytes32 getOrComputeSenderRecoveryHash() {
@@ -483,12 +493,18 @@ public class Transaction
 
   @Override
   public BigInteger getR() {
-    return signature.getR();
+    if (signature instanceof SECPSignature ecdsa) {
+      return ecdsa.getR();
+    }
+    return null;
   }
 
   @Override
   public BigInteger getS() {
-    return signature.getS();
+    if (signature instanceof SECPSignature ecdsa) {
+      return ecdsa.getS();
+    }
+    return null;
   }
 
   @Override
