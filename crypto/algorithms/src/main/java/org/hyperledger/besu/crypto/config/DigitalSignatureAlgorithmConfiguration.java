@@ -8,7 +8,7 @@ public class DigitalSignatureAlgorithmConfiguration {
     private final SupportedAlgorithms supportedAlgorithms;
     private DigitalSignatureAlgorithm activeDSA;
 
-    public DigitalSignatureAlgorithmConfiguration() {
+    public DigitalSignatureAlgorithmConfiguration(){
         this.supportedAlgorithms = new SupportedAlgorithms();
         this.activeDSA = null;
     }

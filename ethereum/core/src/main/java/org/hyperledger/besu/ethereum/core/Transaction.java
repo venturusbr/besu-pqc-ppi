@@ -215,8 +215,8 @@ public class Transaction
       final long gasLimit,
       final Optional<Address> to,
       final Wei value,
+      final Payload payload,
       final Signature signature,
-      final Bytes payload,
       final Optional<List<AccessListEntry>> maybeAccessList,
       final Address sender,
       final Optional<BigInteger> chainId,
@@ -483,25 +483,18 @@ public class Transaction
     if (sender == null) {
       Optional<Address> cachedSender = Optional.ofNullable(senderCache.getIfPresent(getHash()));
       sender = cachedSender.orElseGet(this::computeSender);
-      publicKey = PublicKeyResolver.resolvePublicKey(
-        signatureAlgorithm,
-        signature,
-        publicKey,
-        getOrComputeSenderRecoveryHash()
-      );
-      sender = Address.extract(Hash.hash(Bytes.wrap(publicKey.getEncoded())));
     }
     return sender;
   }
 
   private Address computeSender() {
-    final SECPPublicKey publicKey =
-        signatureAlgorithm
-            .recoverPublicKeyFromSignature(getOrComputeSenderRecoveryHash(), signature)
-            .orElseThrow(
-                () ->
-                    new IllegalStateException(
-                        "Cannot recover public key from signature for " + this));
+    publicKey = PublicKeyResolver.resolvePublicKey(
+        signatureAlgorithm,
+        signature,
+        publicKey,
+        getOrComputeSenderRecoveryHash()
+      );
+    sender = Address.extract(Hash.hash(Bytes.wrap(publicKey.getEncoded())));
     final Address calculatedSender =
         Address.extract(Bytes32.wrap(Hash.hash(publicKey.getEncodedBytes()).getBytes()));
     senderCache.put(getHash(), calculatedSender);
