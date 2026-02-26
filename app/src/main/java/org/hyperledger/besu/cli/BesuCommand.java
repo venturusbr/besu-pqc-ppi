@@ -103,6 +103,7 @@ import org.hyperledger.besu.crypto.KeyPairUtil;
 import org.hyperledger.besu.crypto.SECP256R1;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.SignatureAlgorithmType;
+import org.hyperledger.besu.crypto.config.DigitalSignatureAlgorithmConfiguration;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3KeyPair;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3PrivateKey;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3PublicKey;
@@ -113,6 +114,8 @@ import org.hyperledger.besu.crypto.pqc.keys.PqcKeyPair;
 import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusKeyPair;
 import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusPrivateKey;
 import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusPublicKey;
+import org.hyperledger.besu.crypto.providers.DSAAlgorithmProviderFactory;
+import org.hyperledger.besu.crypto.providers.DigitalSignatureAlgorithmProvider;
 import org.hyperledger.besu.cryptoservices.KeyPairSecurityModule;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.datatypes.Address;
@@ -238,6 +241,7 @@ import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.UserPrincipal;
+import java.security.InvalidAlgorithmParameterException;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -425,6 +429,10 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
   @SuppressWarnings({ "FieldCanBeFinal", "FieldMayBeFinal" }) // PicoCLI requires non-final Strings.
   @Option(names = "--pqc-parameter-spec", paramLabel = "<String>", description = "Name of the pqc parameter spec. (default: ${DEFAULT-VALUE})", arity = "1..1")
   private String pqcParameterSpec = "none";
+
+  @SuppressWarnings({ "FieldCanBeFinal", "FieldMayBeFinal" }) // PicoCLI requires non-final Strings.
+  @Option(names = "--dsa-algorithm", paramLabel = "<String>", description = "Name of the DSA algorithm. (default: ${DEFAULT-VALUE})", arity = "1..1")
+  private String dsaAlgorithm = "none";
 
   @Option(
       names = "--identity",
@@ -1303,6 +1311,17 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
   }
 
   private SecurityModule defaultSecurityModule() {
+    if (!dsaAlgorithm.equals("none")) {
+      DigitalSignatureAlgorithmConfiguration dsaConfig = new DigitalSignatureAlgorithmConfiguration();
+      try {
+        dsaConfig.setActiveDSA(dsaAlgorithm);
+      } catch (final InvalidAlgorithmParameterException e) {
+        throw new RuntimeException(e);
+      }
+      DigitalSignatureAlgorithmProvider dsaProvider = new DigitalSignatureAlgorithmProvider(dsaConfig, null);
+      DSAAlgorithmProviderFactory.setDsaProvider(dsaProvider);
+    }
+
     if (!pqcAlgorithmName.equals("none"))
       SignatureAlgorithmFactory.setpqcAlgorithmName(pqcAlgorithmName);
     SignatureAlgorithmFactory.setPqcParameterSpecIndex(pqcParameterSpec);
