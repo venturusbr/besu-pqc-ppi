@@ -11,9 +11,9 @@ import org.hyperledger.besu.crypto.key.KeyManager;
 import org.hyperledger.besu.crypto.key.NodeKeyPair;
 import org.hyperledger.besu.crypto.key.types.CompositePrivateKey;
 import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
-import org.hyperledger.besu.crypto.signature.CompositeSignature;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.SingleSignature;
+import org.hyperledger.besu.crypto.signature.types.CompositeSignature;
 import org.hyperledger.besu.crypto.signature.SignatureFactory;
 
 public class HybridStrongNestingConcatenation implements HybridDigitalSignatureAlgorithm{
@@ -21,7 +21,7 @@ public class HybridStrongNestingConcatenation implements HybridDigitalSignatureA
     DigitalSignatureAlgorithm delegateFirstAlgorithm;
     DigitalSignatureAlgorithm delegateSecondAlgorithm;
     DSAParametersSet parametersSet;
-                                                                 //falcon                                    //dilithium
+                                                                 
     public HybridStrongNestingConcatenation(final DigitalSignatureAlgorithm firstAlgorithm, final DigitalSignatureAlgorithm secondAlgorithm, final DSAParametersSet parametersSet){
         this.delegateFirstAlgorithm = firstAlgorithm;
         this.delegateSecondAlgorithm = secondAlgorithm;
@@ -38,7 +38,6 @@ public class HybridStrongNestingConcatenation implements HybridDigitalSignatureA
         return SignatureFactory.createCompositeStrongNestedConcSignature((SingleSignature) firstSignature, (SingleSignature) secondSignature);
     }
 
-    // TODO: SignatureExtractor
     @Override
     public Boolean verify(final Bytes data, final Signature signature, final PublicKey pk) {
         CompositePublicKey hybridPublicKey = (CompositePublicKey) pk;

@@ -22,7 +22,6 @@ import java.math.BigInteger;
 import java.security.PublicKey;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.Supplier;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -31,16 +30,10 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.apache.tuweni.units.bigints.UInt256s;
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
-import org.hyperledger.besu.crypto.HybridDigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.PublicKeyRecoverable;
-import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
-import org.hyperledger.besu.crypto.key.KeyFactory;
-import org.hyperledger.besu.crypto.key.PublicKeyResolver;
-import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
-import org.hyperledger.besu.crypto.signature.CompositeSignature;
+import org.hyperledger.besu.crypto.key.PublicKeyHandler;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.AccessListEntry;
 import org.hyperledger.besu.datatypes.Address;
@@ -67,12 +60,6 @@ import org.hyperledger.besu.ethereum.rlp.RLP;
 import org.hyperledger.besu.ethereum.rlp.RLPInput;
 import org.hyperledger.besu.ethereum.rlp.RLPOutput;
 
-import java.math.BigInteger;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.primitives.Longs;
@@ -98,6 +85,7 @@ public class Transaction
   private static final Cache<Hash, Address> senderCache =
       CacheBuilder.newBuilder().recordStats().maximumSize(100_000L).build();
 
+  private final Optional<Short> dsaType;
   private final long nonce;
 
   private final Optional<Wei> gasPrice;
@@ -137,7 +125,7 @@ public class Transaction
   private volatile int sizeForBlockInclusion = -1;
   private final TransactionType transactionType;
 
-  private PublicKey publicKey;
+  private Optional<PublicKey> publicKey;
 
   private final DigitalSignatureAlgorithm signatureAlgorithm = SignatureAlgorithmFactory.getInstance();
   private final Optional<List<VersionedHash>> versionedHashes;
@@ -207,6 +195,7 @@ public class Transaction
   private Transaction(
       final boolean forCopy,
       final TransactionType transactionType,
+      final Optional<Short> dsaType,
       final long nonce,
       final Optional<Wei> gasPrice,
       final Optional<Wei> maxPriorityFeePerGas,
@@ -215,6 +204,7 @@ public class Transaction
       final long gasLimit,
       final Optional<Address> to,
       final Wei value,
+      final Optional<PublicKey> pk,
       final Payload payload,
       final Signature signature,
       final Optional<List<AccessListEntry>> maybeAccessList,
@@ -271,6 +261,7 @@ public class Transaction
     }
 
     this.transactionType = transactionType;
+    this.dsaType = dsaType;
     this.nonce = nonce;
     this.gasPrice = gasPrice;
     this.maxPriorityFeePerGas = maxPriorityFeePerGas;
@@ -280,6 +271,7 @@ public class Transaction
     this.to = to;
     this.value = value;
     this.signature = signature;
+    this.publicKey = pk;
     this.payload = payload;
     this.maybeAccessList = maybeAccessList;
     this.sender = sender;
@@ -293,6 +285,15 @@ public class Transaction
     sizeForBlockInclusion.ifPresent(i -> this.sizeForBlockInclusion = i);
   }
 
+  @Override
+  public Optional<Short> getDsaType(){
+    return dsaType;
+  }
+
+  @Override
+  public Optional<PublicKey> getMaybePublicKey(){
+    return publicKey;
+  }
   /**
    * Returns the transaction nonce.
    *
@@ -488,15 +489,14 @@ public class Transaction
   }
 
   private Address computeSender() {
-    publicKey = PublicKeyResolver.resolvePublicKey(
+    publicKey = PublicKeyHandler.resolvePublicKey(
         signatureAlgorithm,
         signature,
         publicKey,
         getOrComputeSenderRecoveryHash()
       );
-    sender = Address.extract(Hash.hash(Bytes.wrap(publicKey.getEncoded())));
     final Address calculatedSender =
-        Address.extract(Bytes32.wrap(Hash.hash(publicKey.getEncodedBytes()).getBytes()));
+        Address.extract(Bytes32.wrap(Hash.hash(Bytes.wrap(publicKey.getEncoded())).getBytes()));
     senderCache.put(getHash(), calculatedSender);
     return calculatedSender;
   }
@@ -507,9 +507,8 @@ public class Transaction
    * @return the public key
    */
   public Optional<String> getPublicKey() {
-    return signatureAlgorithm
-        .recoverPublicKeyFromSignature(getOrComputeSenderRecoveryHash(), signature)
-        .map(SECPPublicKey::toString);
+    return PublicKeyHandler.resolvePublicKey(signatureAlgorithm, signature, Optional.empty(), getOrComputeSenderRecoveryHash())
+    .map(pk -> Bytes.wrap(pk.getEncoded()).toHexString());
   }
 
   private Bytes32 getOrComputeSenderRecoveryHash() {
@@ -562,12 +561,18 @@ public class Transaction
 
   @Override
   public BigInteger getR() {
-    return signature.getR();
+    if (signature instanceof SECPSignature ecdsa) {
+      return ecdsa.getR();
+    }
+    return null;
   }
 
   @Override
   public BigInteger getS() {
-    return signature.getS();
+    if (signature instanceof SECPSignature ecdsa) {
+      return ecdsa.getS();
+    }
+    return null;
   }
 
   @Override
@@ -1247,6 +1252,7 @@ public class Transaction
         new Transaction(
             true,
             transactionType,
+            dsaType
             nonce,
             gasPrice,
             maxPriorityFeePerGas,
@@ -1255,6 +1261,7 @@ public class Transaction
             gasLimit,
             detachedTo,
             value,
+            publicKey,
             signature,
             payload,
             detachedAccessList,

@@ -29,7 +29,17 @@ public enum TransactionType {
   /** Blob transaction type. */
   BLOB(0x03),
   /** Eip7702 transaction type. */
-  DELEGATE_CODE(0x04);
+  DELEGATE_CODE(0x04),
+  /** DSA-agnostic Frontier. */
+  FLEXIBLE_FRONTIER (0x05),
+  /** DSA-agnostic Access list transaction type. */
+  FLEXIBLE_ACCESS_LIST (0x06),
+  /** DSA-agnostic Eip1559 transaction type. */
+  FLEXIBLE_EIP1559 (0x07),
+  /** DSA-agnostic Blob transaction type. */
+  FLEXIBLE_BLOB (0x08),
+  /** DSA-agnostic Eip7702 transaction type. */
+  FLEXIBLE_DELEGATE_CODE(0x09);
 
   private static final Set<TransactionType> ACCESS_LIST_SUPPORTED_TRANSACTION_TYPES =
       EnumSet.of(ACCESS_LIST, EIP1559, BLOB, DELEGATE_CODE);

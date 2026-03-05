@@ -1,5 +1,9 @@
 package org.hyperledger.besu.crypto.algorithms.parameters;
 
+import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 public enum DSAParametersSet {
     SECP256K1((short) 0x0001,"SECP256K1", 32, 64, 65, null),
     SECP256R1((short) 0x0002, "SECP256R1", 32, 64, 65, null),
@@ -16,6 +20,10 @@ public enum DSAParametersSet {
     private final Integer signatureLength;
     private final Integer seedLength;
 
+    private static final Map<Short, DSAParametersSet> BY_ID =
+        Arrays.stream(values())
+              .collect(Collectors.toMap(DSAParametersSet::getId, e -> e));
+
     DSAParametersSet(final short id, final String name, final Integer privateKeyLength, final Integer publicKeyLength,
             final Integer signatureLength, final Integer seedLength) {
         this.id = id;
@@ -24,6 +32,14 @@ public enum DSAParametersSet {
         this.privateKeyLength = privateKeyLength;
         this.signatureLength = signatureLength;
         this.seedLength = seedLength;
+    }
+
+    public static DSAParametersSet fromId(short id) {
+        DSAParametersSet set = BY_ID.get(id);
+        if (set == null) {
+            throw new IllegalArgumentException("Unknown DSAParametersSet id: " + id);
+        }
+        return set;
     }
 
     public short getId() {

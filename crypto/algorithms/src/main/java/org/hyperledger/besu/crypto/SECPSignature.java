@@ -184,10 +184,6 @@ public class SECPSignature implements Signature{
     return s;
   }
 
-  public Boolean isHybrid(){
-    return false;
-  }
-
   @Override
   public String toString() {
     final StringBuilder sb = new StringBuilder();
