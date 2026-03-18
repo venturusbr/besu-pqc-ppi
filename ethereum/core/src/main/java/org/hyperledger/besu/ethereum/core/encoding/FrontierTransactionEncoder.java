@@ -14,8 +14,6 @@
  */
 package org.hyperledger.besu.ethereum.core.encoding;
 
-import static org.hyperledger.besu.ethereum.core.encoding.TransactionEncoder.writeSignatureAndV;
-
 import org.hyperledger.besu.datatypes.BytesHolder;
 import org.hyperledger.besu.ethereum.core.Transaction;
 import org.hyperledger.besu.ethereum.rlp.RLPOutput;
@@ -32,7 +30,7 @@ public class FrontierTransactionEncoder {
         transaction.getTo().map(BytesHolder::getBytes).map(Bytes::copy).orElse(Bytes.EMPTY));
     out.writeUInt256Scalar(transaction.getValue());
     out.writeBytes(transaction.getPayload());
-    writeSignatureAndV(transaction, out);
+    TransactionSignatureEncoder.writeSignatureAndV(transaction, out);
     out.endList();
   }
 }

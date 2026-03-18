@@ -25,6 +25,7 @@ import org.hyperledger.besu.ethereum.core.json.ChainIdDeserializer;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPOutput;
 
 import java.math.BigInteger;
+import java.security.Signature;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -47,7 +48,7 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
   private final BigInteger chainId;
   private final Address address;
   private final long nonce;
-  private final SECPSignature signature;
+  private final Signature signature;
   private final Supplier<Optional<Address>> authorizerSupplier =
       Suppliers.memoize(this::computeAuthority);
 
@@ -63,7 +64,7 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
       final BigInteger chainId,
       final Address address,
       final long nonce,
-      final SECPSignature signature) {
+      final Signature signature) {
     this.chainId = chainId;
     this.address = address;
     this.nonce = nonce;
@@ -116,7 +117,7 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
 
   @JsonProperty("signature")
   @Override
-  public SECPSignature signature() {
+  public Signature signature() {
     return signature;
   }
 
@@ -124,6 +125,7 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
   public Optional<Address> authorizer() {
     // recId needs to be between either 0 or 1, otherwise the signature is invalid
     // which means we can't recover the authorizer.
+    if()
     if (signature.getRecId() > 1 || signature.getRecId() < 0) {
       return Optional.empty();
     }

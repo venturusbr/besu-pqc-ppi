@@ -14,9 +14,8 @@
  */
 package org.hyperledger.besu.datatypes;
 
-import org.hyperledger.besu.crypto.SECPSignature;
-
 import java.math.BigInteger;
+import java.security.Signature;
 import java.util.Optional;
 
 /**
@@ -46,7 +45,7 @@ public interface CodeDelegation {
    *
    * @return signature
    */
-  SECPSignature signature();
+  Signature signature();
 
   /**
    * Return the authorizer address.

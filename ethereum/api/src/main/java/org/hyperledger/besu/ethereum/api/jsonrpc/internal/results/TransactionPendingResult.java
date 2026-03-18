@@ -40,10 +40,13 @@ import org.apache.tuweni.bytes.Bytes;
   "maxFeePerBlobGas",
   "hash",
   "input",
+  "dsaType",
   "nonce",
   "to",
   "transactionIndex",
   "value",
+  "publicKey",
+  "signature",
   "yParity",
   "v",
   "r",
@@ -76,8 +79,10 @@ public class TransactionPendingResult implements TransactionResult {
   private final String publicKey;
   private final String raw;
   private final String to;
+  private final String dsaType;
   private final String type;
   private final String value;
+  private final String signature;
   private final String yParity;
   private final String v;
   private final String r;
@@ -101,6 +106,7 @@ public class TransactionPendingResult implements TransactionResult {
     this.hash = transaction.getHash().toString();
     this.input = transaction.getPayload().toString();
     this.nonce = Quantity.create(transaction.getNonce());
+    this.dsaType = transaction.getDsaType().toString();
     this.publicKey = transaction.getPublicKey().orElse(null);
     this.raw =
         TransactionEncoder.encodeOpaqueBytes(transaction, EncodingContext.POOLED_TRANSACTION)
@@ -122,6 +128,7 @@ public class TransactionPendingResult implements TransactionResult {
               : null;
     }
     this.value = Quantity.create(transaction.getValue());
+    this.signature = transaction.getSignature().toString();
     this.r = Quantity.create(transaction.getR());
     this.s = Quantity.create(transaction.getS());
     this.versionedHashes =
@@ -191,6 +198,17 @@ public class TransactionPendingResult implements TransactionResult {
   @JsonGetter(value = "publicKey")
   public String getPublicKey() {
     return publicKey;
+  }
+
+  @JsonGetter(value = "dsaType")
+  public String getDsaType(){
+    return dsaType;
+  }
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  @JsonGetter(value = "signature")
+  public String getSignature(){
+    return signature;
   }
 
   @JsonGetter(value = "raw")

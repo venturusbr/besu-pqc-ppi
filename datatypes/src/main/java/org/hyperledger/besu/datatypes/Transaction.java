@@ -20,6 +20,7 @@ import java.util.Optional;
 import java.security.PublicKey;
 
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.crypto.signature.Signature;
 
 /**
  * A transaction is a single cryptographically-signed instruction constructed by an actor externally
@@ -202,6 +203,8 @@ public interface Transaction {
   TransactionType getType();
 
   Optional<Short> getDsaType();
+
+  Signature getSignature();
 
   Optional<PublicKey> getMaybePublicKey();
 

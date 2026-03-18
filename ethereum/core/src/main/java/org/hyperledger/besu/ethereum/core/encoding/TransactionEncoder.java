@@ -41,10 +41,21 @@ public class TransactionEncoder {
           TransactionType.BLOB,
           BlobTransactionEncoder::encode,
           TransactionType.DELEGATE_CODE,
-          CodeDelegationTransactionEncoder::encode);
+          CodeDelegationTransactionEncoder::encode,
+          TransactionType.FLEXIBLE_ACCESS_LIST,
+          FlexibleAccessListTransactionEncoder::encode,
+          TransactionType.FLEXIBLE_EIP1559,
+          FlexibleEIP1559TransactionEncoder::encode,
+          TransactionType.FLEXIBLE_BLOB,
+          FlexibleBlobTransactionEncoder::encode,
+          TransactionType.FLEXIBLE_DELEGATE_CODE,
+          FlexibleCodeDelegationTransactionEncoder::encode);
 
   private static final ImmutableMap<TransactionType, Encoder> POOLED_TRANSACTION_ENCODERS =
-      ImmutableMap.of(TransactionType.BLOB, BlobPooledTransactionEncoder::encode);
+      ImmutableMap.of(TransactionType.BLOB, BlobPooledTransactionEncoder::encode,
+      TransactionType.FLEXIBLE_BLOB,
+      FlexibleBlobPooledTransactionEncoder::encode
+      );
 
   /**
    * Encodes a transaction into RLP format.
@@ -107,21 +118,6 @@ public class TransactionEncoder {
               });
       return out.encoded();
     }
-  }
-
-  static void writeSignatureAndV(final Transaction transaction, final RLPOutput out) {
-    out.writeBigIntegerScalar(transaction.getV());
-    writeSignature(transaction, out);
-  }
-
-  static void writeSignatureAndRecoveryId(final Transaction transaction, final RLPOutput out) {
-    out.writeIntScalar(transaction.getSignature().getRecId());
-    writeSignature(transaction, out);
-  }
-
-  static void writeSignature(final Transaction transaction, final RLPOutput out) {
-    out.writeBigIntegerScalar(transaction.getSignature().getR());
-    out.writeBigIntegerScalar(transaction.getSignature().getS());
   }
 
   private static TransactionType getTransactionType(final Transaction transaction) {

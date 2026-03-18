@@ -83,7 +83,7 @@ public class CodeDelegationTransactionEncoder {
                     new IllegalStateException(
                         "Developer error: the transaction should be guaranteed to have a code delegation authorizations here")),
         out);
-    writeSignatureAndRecoveryId(transaction, out);
+    TransactionSignatureEncoder.writeStandardSignatureAndRecoveryId(transaction.getSignature(), out);
     out.endList();
   }
 }
