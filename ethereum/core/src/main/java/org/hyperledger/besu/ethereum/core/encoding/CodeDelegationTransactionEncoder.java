@@ -17,6 +17,7 @@ package org.hyperledger.besu.ethereum.core.encoding;
 import static org.hyperledger.besu.ethereum.core.encoding.AccessListTransactionEncoder.writeAccessList;
 import static org.hyperledger.besu.ethereum.core.encoding.TransactionEncoder.writeSignatureAndRecoveryId;
 
+import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.datatypes.BytesHolder;
 import org.hyperledger.besu.datatypes.CodeDelegation;
 import org.hyperledger.besu.ethereum.core.Transaction;
@@ -48,15 +49,16 @@ public class CodeDelegationTransactionEncoder {
 
   public static void encodeSingleCodeDelegation(
       final CodeDelegation payload, final RLPOutput rlpOutput) {
+    SECPSignature secpSignature = (SECPSignature) payload.signature();
     rlpOutput.startList();
     encodeAuthorizationDetails(payload, rlpOutput);
-    rlpOutput.writeUnsignedByte(payload.signature().getRecId() & 0xFF);
-    rlpOutput.writeBigIntegerScalar(payload.signature().getR());
-    rlpOutput.writeBigIntegerScalar(payload.signature().getS());
+    rlpOutput.writeUnsignedByte(secpSignature.getRecId() & 0xFF);
+    rlpOutput.writeBigIntegerScalar(secpSignature.getR());
+    rlpOutput.writeBigIntegerScalar(secpSignature.getS());
     rlpOutput.endList();
   }
 
-  private static void encodeAuthorizationDetails(
+  public static void encodeAuthorizationDetails(
       final CodeDelegation payload, final RLPOutput rlpOutput) {
     rlpOutput.writeBigIntegerScalar(payload.chainId());
     rlpOutput.writeBytes(payload.address().getBytes().copy());

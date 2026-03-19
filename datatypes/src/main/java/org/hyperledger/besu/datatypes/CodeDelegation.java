@@ -15,8 +15,9 @@
 package org.hyperledger.besu.datatypes;
 
 import java.math.BigInteger;
-import java.security.Signature;
 import java.util.Optional;
+
+import org.hyperledger.besu.crypto.signature.Signature;
 
 /**
  * CodeDelegation is a data structure that represents the authorization to delegate code of an EOA
