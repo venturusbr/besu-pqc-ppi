@@ -13,7 +13,7 @@ public enum DSAParametersSet {
     SECP256K1MLDSA44((short) 0x0060, "SECP256K1-MLDSA44", 2592, 1376, 2485, null)
     ;
 
-    private final short id;
+    private final Short id;
     private final String name;
     private final Integer publicKeyLength;
     private final Integer privateKeyLength;
@@ -24,7 +24,7 @@ public enum DSAParametersSet {
         Arrays.stream(values())
               .collect(Collectors.toMap(DSAParametersSet::getId, e -> e));
 
-    DSAParametersSet(final short id, final String name, final Integer privateKeyLength, final Integer publicKeyLength,
+    DSAParametersSet(final Short id, final String name, final Integer privateKeyLength, final Integer publicKeyLength,
             final Integer signatureLength, final Integer seedLength) {
         this.id = id;
         this.name = name;
@@ -34,7 +34,7 @@ public enum DSAParametersSet {
         this.seedLength = seedLength;
     }
 
-    public static DSAParametersSet fromId(short id) {
+    public static DSAParametersSet fromId(Short id) {
         DSAParametersSet set = BY_ID.get(id);
         if (set == null) {
             throw new IllegalArgumentException("Unknown DSAParametersSet id: " + id);
@@ -42,7 +42,7 @@ public enum DSAParametersSet {
         return set;
     }
 
-    public short getId() {
+    public Short getId() {
         return id;
     }
 

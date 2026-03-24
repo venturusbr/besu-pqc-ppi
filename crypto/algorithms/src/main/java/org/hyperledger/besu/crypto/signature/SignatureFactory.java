@@ -19,6 +19,7 @@ public class SignatureFactory {
 
         return switch (algo) {
             case SECP256K1, SECP256R1 ->
+                //use V to calculate recId
                 SignatureAlgorithmFactory.getInstance().decodeSignature(bytes);
             case MLDSA44, MLDSA65, MLDSA87 ->
                 MLDSASignature.create(algo.getName(), bytes);

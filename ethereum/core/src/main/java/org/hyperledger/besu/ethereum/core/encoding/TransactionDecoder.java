@@ -40,11 +40,22 @@ public class TransactionDecoder {
               TransactionType.FRONTIER, FrontierTransactionDecoder::decode,
               TransactionType.ACCESS_LIST, AccessListTransactionDecoder::decode,
               TransactionType.EIP1559, EIP1559TransactionDecoder::decode,
-              TransactionType.BLOB, BlobTransactionDecoder::decode,
-              TransactionType.DELEGATE_CODE, CodeDelegationTransactionDecoder::decode));
+              TransactionType.BLOB, 
+              BlobTransactionDecoder::decode,
+              TransactionType.DELEGATE_CODE, CodeDelegationTransactionDecoder::decode,
+              TransactionType.FLEXIBLE_FRONTIER, //remove?
+              FlexibleFrontierTransactionDecoder::decode,
+              TransactionType.FLEXIBLE_ACCESS_LIST,
+              FlexibleAccessListTransactionDecoder::decode,
+              TransactionType.FLEXIBLE_EIP1559,
+              FlexibleEIP1559TransactionDecoder::decode,
+              TransactionType.FLEXIBLE_BLOB,
+              FlexibleBlobTransactionDecoder::decode,
+              TransactionType.FLEXIBLE_DELEGATE_CODE,
+              FlexibleCodeDelegationTransactionDecoder::decode));
 
   private static final EnumMap<TransactionType, Decoder> POOLED_TRANSACTION_DECODERS =
-      new EnumMap<>(Map.of(TransactionType.BLOB, BlobPooledTransactionDecoder::decode));
+      new EnumMap<>(Map.of(TransactionType.BLOB, BlobPooledTransactionDecoder::decode, TransactionType.FLEXIBLE_BLOB, FlexibleBlobPooledTransactionDecoder::decode));
 
   /**
    * Decodes an RLP input into a transaction. If the input represents a typed transaction, it uses
