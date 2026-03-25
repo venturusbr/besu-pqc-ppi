@@ -49,7 +49,7 @@ public class FlexibleCodeDelegationTransactionDecoder {
                             accessListEntryRLPInput.leaveList();
                             return accessListEntry;
                         }))
-                .codeDelegations(txRlp.readList(authorizationsRLPInput -> decodeInnerPayload(authorizationsRLPInput, dsaType)))
+                .codeDelegations(txRlp.readList(authorizationsRLPInput -> decodeInnerPayload(authorizationsRLPInput, dsaParams)))
                 .publicKey(txRlp.readBytes(pkBytes -> pkBytes.isEmpty() ? null : KeyFactory.createPublicKey(pkBytes, dsaParams)))
                 .sizeForAnnouncement(input.size())
                 .sizeForBlockInclusion(input.size())
@@ -57,14 +57,14 @@ public class FlexibleCodeDelegationTransactionDecoder {
         final Transaction transaction = 
             builder
                 .signature(
-                    txRlp.readBytes(signatureBytes -> SignatureFactory.createSignatureFromBytes(signatureBytes, dsaType))
+                    txRlp.readBytes(signatureBytes -> SignatureFactory.createSignatureFromBytes(signatureBytes, dsaParams))
                 )
                 .build();
         txRlp.leaveList();
         return transaction;
     }
 
-    public static CodeDelegation decodeInnerPayload(final RLPInput input, final Short dsaType){
+    public static CodeDelegation decodeInnerPayload(final RLPInput input, final DSAParametersSet algo){
         input.enterList();
 
         final BigInteger chainId = input.readBigIntegerScalar();
@@ -72,7 +72,7 @@ public class FlexibleCodeDelegationTransactionDecoder {
         final long nonce = input.readLongScalar();
 
         final Bytes signatureBytes = input.readBytes();
-        final Signature signature = SignatureFactory.createSignatureFromBytes(signatureBytes, dsaType);
+        final Signature signature = SignatureFactory.createSignatureFromBytes(signatureBytes, algo);
 
         input.leaveList();
 

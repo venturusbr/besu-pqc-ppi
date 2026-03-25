@@ -13,9 +13,7 @@ public class SignatureFactory {
 
     private static final SignatureExtractor signatureExtractor = new SignatureExtractor();
 
-    public static Signature createSignatureFromBytes(Bytes bytes, Short dsaId) {
-
-        DSAParametersSet algo = DSAParametersSet.fromId(dsaId);
+    public static Signature createSignatureFromBytes(final Bytes bytes, final DSAParametersSet algo) {
 
         return switch (algo) {
             case SECP256K1, SECP256R1 ->
@@ -45,12 +43,12 @@ public class SignatureFactory {
                     Signature secpSig =
                         createSignatureFromBytes(
                             secpSigBytes,
-                            DSAParametersSet.SECP256K1.getId());
+                            DSAParametersSet.SECP256K1);
 
                     Signature mldsaSig =
                         createSignatureFromBytes(
                             mldsaSigBytes,
-                            DSAParametersSet.MLDSA44.getId());
+                            DSAParametersSet.MLDSA44);
 
                     yield CompositeSignature.create(secpSig, mldsaSig);
                 }

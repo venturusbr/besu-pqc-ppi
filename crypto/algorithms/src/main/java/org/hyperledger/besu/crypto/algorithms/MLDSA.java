@@ -61,7 +61,7 @@ public class MLDSA implements DigitalSignatureAlgorithm{
         } catch (DataLengthException | CryptoException e) {
             LOG.error("Error while signing MLDSA", e);
         }
-        return SignatureFactory.createSingleSignatureFromBytes(signature, sk.getAlgorithm());
+        return SignatureFactory.createSignatureFromBytes(Bytes.wrap(signature), mldsaParameters);
     }
 
     @Override

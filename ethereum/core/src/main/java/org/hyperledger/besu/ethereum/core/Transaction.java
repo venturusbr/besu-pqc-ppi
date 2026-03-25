@@ -49,6 +49,7 @@ import org.hyperledger.besu.ethereum.core.encoding.AccessListTransactionEncoder;
 import org.hyperledger.besu.ethereum.core.encoding.BlobTransactionEncoder;
 import org.hyperledger.besu.ethereum.core.encoding.CodeDelegationTransactionEncoder;
 import org.hyperledger.besu.ethereum.core.encoding.EncodingContext;
+import org.hyperledger.besu.ethereum.core.encoding.FlexibleAccessListTransactionEncoder;
 import org.hyperledger.besu.ethereum.core.encoding.TransactionDecoder;
 import org.hyperledger.besu.ethereum.core.encoding.TransactionEncoder;
 import org.hyperledger.besu.ethereum.core.kzg.Blob;
@@ -516,6 +517,7 @@ public class Transaction
       hashNoSignature =
           computeSenderRecoveryHash(
               transactionType,
+              dsaType,
               nonce,
               gasPrice.orElse(null),
               maxPriorityFeePerGas.orElse(null),
@@ -524,6 +526,7 @@ public class Transaction
               gasLimit,
               to,
               value,
+              publicKey,
               payload,
               maybeAccessList,
               versionedHashes.orElse(null),
@@ -804,6 +807,7 @@ public class Transaction
 
   private static Bytes32 computeSenderRecoveryHash(
       final TransactionType transactionType,
+      final Optional<Short> dsaType,
       final long nonce,
       final Wei gasPrice,
       final Wei maxPriorityFeePerGas,
@@ -812,6 +816,7 @@ public class Transaction
       final long gasLimit,
       final Optional<Address> to,
       final Wei value,
+      final Optional<PublicKey> pk,
       final Payload payload,
       final Optional<List<AccessListEntry>> accessList,
       final List<VersionedHash> versionedHashes,
@@ -823,6 +828,7 @@ public class Transaction
     final Bytes preimage =
         getPreimage(
             transactionType,
+            dsaType,
             nonce,
             gasPrice,
             maxPriorityFeePerGas,
@@ -831,6 +837,7 @@ public class Transaction
             gasLimit,
             to,
             value,
+            pk,
             payload.getPayloadBytes(),
             accessList,
             versionedHashes,
@@ -932,6 +939,49 @@ public class Transaction
                       () ->
                           new IllegalStateException(
                               "Developer error: the transaction should be guaranteed to have a code delegations here")));
+          case FLEXIBLE_ACCESS_LIST -> 
+              flexibleAccessListPreimage(
+                dsaType,
+                nonce,
+                gasPrice,
+                gasLimit,
+                to,
+                value,
+                publicKey,
+                payload,
+                accessList.orElseThrow(
+                    () ->
+                        new IllegalStateException(
+                            "Developer error: the transaction should be guaranteed to have an access list here")),
+                chainId);
+          case FLEXIBLE_EIP1559 -> 
+              flexibleEip1559Preimage(
+                dsaType,
+                nonce,
+                maxPriorityFeePerGas,
+                maxFeePerGas,
+                gasLimit,
+                to,
+                value,
+                publicKey,
+                payload,
+                accessList,
+                chainId);
+          case FLEXIBLE_BLOB -> 
+              flexibleBlobPreimage(
+                dsaType,
+                nonce,
+                maxPriorityFeePerGas,
+                maxFeePerGas,
+                maxFeePerBlobGas,
+                gasLimit,
+                to,
+                value,
+                publicKey,
+                payload,
+                chainId,
+                accessList,
+                versionedHashes);
           case FLEXIBLE_DELEGATE_CODE ->
               flexibleCodeDelegationPreimage(
                   dsaType,
@@ -1010,6 +1060,40 @@ public class Transaction
     return Bytes.concatenate(Bytes.of(TransactionType.EIP1559.getSerializedType()), encoded);
   }
 
+  private static Bytes flexibleEip1559Preimage(
+    final Optional<Short> dsaType,
+    final long nonce,
+    final Wei maxPriorityFeePerGas,
+    final Wei maxFeePerGas,
+    final long gasLimit,
+    final Optional<Address> to,
+    final Wei value,
+    final Optional<PublicKey> pk,
+    final Bytes payload,
+    final Optional<List<AccessListEntry>> accessList,
+    final Optional<BigInteger> chainId
+  ){
+    final Bytes encoded = 
+        RLP.encode(rlpOutput -> {
+          rlpOutput.startList();
+          rlpOutput.writeShort(dsaType.get());
+          eip1559PreimageFields(
+                  nonce,
+                  maxPriorityFeePerGas,
+                  maxFeePerGas,
+                  gasLimit,
+                  to,
+                  value,
+                  payload,
+                  chainId,
+                  accessList,
+                  rlpOutput);
+          rlpOutput.writeBytes(Bytes.wrap(pk.get().getEncoded()));
+          rlpOutput.endList();
+        });
+    return Bytes.concatenate(Bytes.of(TransactionType.FLEXIBLE_EIP1559.getSerializedType()), encoded);
+  }
+
   private static void eip1559PreimageFields(
       final long nonce,
       final Wei maxPriorityFeePerGas,
@@ -1067,6 +1151,46 @@ public class Transaction
     return Bytes.concatenate(Bytes.of(TransactionType.BLOB.getSerializedType()), encoded);
   }
 
+  private static Bytes flexibleBlobPreimage(
+      final Optional<Short> dsaType,
+      final long nonce,
+      final Wei maxPriorityFeePerGas,
+      final Wei maxFeePerGas,
+      final Wei maxFeePerBlobGas,
+      final long gasLimit,
+      final Optional<Address> to,
+      final Wei value,
+      final Optional<PublicKey> pk,
+      final Bytes payload,
+      final Optional<BigInteger> chainId,
+      final Optional<List<AccessListEntry>> accessList,
+      final List<VersionedHash> versionedHashes
+  ){
+    final Bytes encoded = 
+        RLP.encode(
+          rlpOutput -> {
+            rlpOutput.startList();
+            rlpOutput.writeShort(dsaType.get());
+            eip1559PreimageFields(
+                  nonce,
+                  maxPriorityFeePerGas,
+                  maxFeePerGas,
+                  gasLimit,
+                  to,
+                  value,
+                  payload,
+                  chainId,
+                  accessList,
+                  rlpOutput);
+            rlpOutput.writeUInt256Scalar(maxFeePerBlobGas);
+            BlobTransactionEncoder.writeBlobVersionedHashes(rlpOutput, versionedHashes);
+            rlpOutput.writeBytes(Bytes.wrap(pk.get().getEncoded()));
+            rlpOutput.endList();
+          }
+        );
+    return Bytes.concatenate(Bytes.of(TransactionType.FLEXIBLE_BLOB.getSerializedType()), encoded);
+  }
+
   private static Bytes accessListPreimage(
       final long nonce,
       final Wei gasPrice,
@@ -1085,6 +1209,40 @@ public class Transaction
               rlpOutput.endList();
             });
     return Bytes.concatenate(Bytes.of(TransactionType.ACCESS_LIST.getSerializedType()), encode);
+  }
+
+  private static Bytes flexibleAccessListPreimage(
+      final Optional<Short> dsaType,
+      final long nonce,
+      final Wei gasPrice,
+      final long gasLimit,
+      final Optional<Address> to,
+      final Wei value,
+      final Optional<PublicKey> pk,
+      final Bytes payload,
+      final List<AccessListEntry> accessList,
+      final Optional<BigInteger> chainId){
+    final Bytes encoded = 
+      RLP.encode(
+        rlpOutput -> {
+          rlpOutput.startList();
+          FlexibleAccessListTransactionEncoder.encodeAccessListInner(
+            dsaType,
+            chainId,
+            nonce,
+            gasPrice,
+            gasLimit,
+            to,
+            value,
+            pk,
+            payload,
+            accessList,
+            rlpOutput
+          );
+          rlpOutput.endList();
+        }
+      );
+    return Bytes.concatenate(Bytes.of(TransactionType.FLEXIBLE_ACCESS_LIST.getSerializedType()), encoded);
   }
 
   private static Bytes codeDelegationPreimage(
@@ -1623,6 +1781,7 @@ public class Transaction
           .sign(
               computeSenderRecoveryHash(
                   transactionType,
+                  dsaType,
                   nonce,
                   gasPrice,
                   maxPriorityFeePerGas,
@@ -1631,6 +1790,7 @@ public class Transaction
                   gasLimit,
                   to,
                   value,
+                  publicKey,
                   payload,
                   accessList,
                   versionedHashes,

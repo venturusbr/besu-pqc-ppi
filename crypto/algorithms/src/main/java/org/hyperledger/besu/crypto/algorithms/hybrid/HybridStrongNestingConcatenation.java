@@ -12,7 +12,6 @@ import org.hyperledger.besu.crypto.key.NodeKeyPair;
 import org.hyperledger.besu.crypto.key.types.CompositePrivateKey;
 import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
 import org.hyperledger.besu.crypto.signature.Signature;
-import org.hyperledger.besu.crypto.signature.SingleSignature;
 import org.hyperledger.besu.crypto.signature.types.CompositeSignature;
 import org.hyperledger.besu.crypto.signature.SignatureFactory;
 
@@ -35,7 +34,7 @@ public class HybridStrongNestingConcatenation implements HybridDigitalSignatureA
         Signature firstSignature = delegateFirstAlgorithm.sign(data, hybridPrivateKey.getFirstKey());
         Signature secondSignature = delegateSecondAlgorithm.sign(Bytes.concatenate(data, firstSignature.encodedBytes()), hybridPrivateKey.getSecondKey());
 
-        return SignatureFactory.createCompositeStrongNestedConcSignature((SingleSignature) firstSignature, (SingleSignature) secondSignature);
+        return SignatureFactory.createCompositeConcSignature(firstSignature, secondSignature);
     }
 
     @Override

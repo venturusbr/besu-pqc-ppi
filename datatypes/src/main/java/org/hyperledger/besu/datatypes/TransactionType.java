@@ -30,22 +30,20 @@ public enum TransactionType {
   BLOB(0x03),
   /** Eip7702 transaction type. */
   DELEGATE_CODE(0x04),
-  /** DSA-agnostic Frontier. */
-  FLEXIBLE_FRONTIER (0x05),
   /** DSA-agnostic Access list transaction type. */
-  FLEXIBLE_ACCESS_LIST (0x06),
+  FLEXIBLE_ACCESS_LIST (0x40),
   /** DSA-agnostic Eip1559 transaction type. */
-  FLEXIBLE_EIP1559 (0x07),
+  FLEXIBLE_EIP1559 (0x41),
   /** DSA-agnostic Blob transaction type. */
-  FLEXIBLE_BLOB (0x08),
+  FLEXIBLE_BLOB (0x42),
   /** DSA-agnostic Eip7702 transaction type. */
-  FLEXIBLE_DELEGATE_CODE(0x09);
+  FLEXIBLE_DELEGATE_CODE(0x43);
 
   private static final Set<TransactionType> ACCESS_LIST_SUPPORTED_TRANSACTION_TYPES =
       EnumSet.of(ACCESS_LIST, EIP1559, BLOB, DELEGATE_CODE, FLEXIBLE_ACCESS_LIST, FLEXIBLE_EIP1559, FLEXIBLE_BLOB, FLEXIBLE_DELEGATE_CODE);
 
   private static final Set<TransactionType> LEGACY_FEE_MARKET_TRANSACTION_TYPES =
-      EnumSet.of(FRONTIER, ACCESS_LIST, FLEXIBLE_FRONTIER, FLEXIBLE_ACCESS_LIST);
+      EnumSet.of(FRONTIER, ACCESS_LIST, FLEXIBLE_ACCESS_LIST);
 
   // The theoretical boundaries of the first byte of the RLP of a Frontier transaction.
   // In practice Frontier transactions almost always start with 0xf8 or 0xf9.
@@ -68,12 +66,12 @@ public enum TransactionType {
     EnumSet.allOf(TransactionType.class).stream()
         .forEach(
             tt -> {
-              tt.requireChainId = tt != FRONTIER || tt != FLEXIBLE_FRONTIER;
+              tt.requireChainId = tt != FRONTIER;
               tt.supportAccessList = ACCESS_LIST_SUPPORTED_TRANSACTION_TYPES.contains(tt);
               tt.supportBaseFeeMarket = !LEGACY_FEE_MARKET_TRANSACTION_TYPES.contains(tt);
               tt.supportBlob = tt == BLOB || tt == FLEXIBLE_BLOB;
               tt.supportDelegatedCode = tt == DELEGATE_CODE || tt == FLEXIBLE_DELEGATE_CODE;
-              if (tt == FRONTIER || tt == FLEXIBLE_FRONTIER) {
+              if (tt == FRONTIER) {
                 for (int i = Byte.toUnsignedInt(MIN_LEGACY_TX_OPAQUE_BYTE);
                     i < Byte.toUnsignedInt(MAX_LEGACY_TX_OPAQUE_BYTE);
                     i++) {
@@ -125,8 +123,7 @@ public enum TransactionType {
 
   public boolean isFlexible() {
     return switch (this) {
-      case FLEXIBLE_FRONTIER,
-          FLEXIBLE_ACCESS_LIST,
+      case FLEXIBLE_ACCESS_LIST,
           FLEXIBLE_EIP1559,
           FLEXIBLE_BLOB,
           FLEXIBLE_DELEGATE_CODE -> true;

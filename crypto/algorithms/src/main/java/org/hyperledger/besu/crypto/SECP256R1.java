@@ -126,7 +126,7 @@ public class SECP256R1 extends AbstractSECP256 {
 
     SECPSignature secpSignature = sign(Bytes32.wrap(data), kpSecp);
     
-    return SignatureFactory.createSingleSignatureFromBytes(secpSignature.encodedBytes().toArrayUnsafe(), sk.getAlgorithm());
+    return SignatureFactory.createSignatureFromBytes(secpSignature.encodedBytes(), secpParameters);
   }
 
   @Override

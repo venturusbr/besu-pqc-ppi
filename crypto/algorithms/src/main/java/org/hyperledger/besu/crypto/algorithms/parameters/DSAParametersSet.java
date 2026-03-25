@@ -34,7 +34,7 @@ public enum DSAParametersSet {
         this.seedLength = seedLength;
     }
 
-    public static DSAParametersSet fromId(Short id) {
+    public static DSAParametersSet fromId(final Short id) {
         DSAParametersSet set = BY_ID.get(id);
         if (set == null) {
             throw new IllegalArgumentException("Unknown DSAParametersSet id: " + id);

@@ -57,7 +57,7 @@ public class FlexibleAccessListTransactionDecoder {
         final Transaction transaction = 
             builder
                 .signature(
-                    txRlp.readBytes(signatureBytes -> SignatureFactory.createSignatureFromBytes(signatureBytes, dsaType))
+                    txRlp.readBytes(signatureBytes -> SignatureFactory.createSignatureFromBytes(signatureBytes, dsaParams))
                 )
                 .build();
         txRlp.leaveList();

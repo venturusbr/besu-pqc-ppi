@@ -68,7 +68,7 @@ public class FlexibleBlobTransactionDecoder {
             
             builder
                 .signature(
-                    txRlp.readBytes(signatureBytes -> SignatureFactory.createSignatureFromBytes(signatureBytes, dsaType))
+                    txRlp.readBytes(signatureBytes -> SignatureFactory.createSignatureFromBytes(signatureBytes, dsaParams))
                 );
         txRlp.leaveList();
     }

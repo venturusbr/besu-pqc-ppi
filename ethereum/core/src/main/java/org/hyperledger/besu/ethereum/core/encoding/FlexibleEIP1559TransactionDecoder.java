@@ -54,7 +54,7 @@ public class FlexibleEIP1559TransactionDecoder {
         final Transaction transaction = 
             builder
                 .signature(
-                    txRlp.readBytes(signatureBytes -> SignatureFactory.createSignatureFromBytes(signatureBytes, dsaType))
+                    txRlp.readBytes(signatureBytes -> SignatureFactory.createSignatureFromBytes(signatureBytes, dsaParams))
                 )
                 .build();
         txRlp.leaveList();
