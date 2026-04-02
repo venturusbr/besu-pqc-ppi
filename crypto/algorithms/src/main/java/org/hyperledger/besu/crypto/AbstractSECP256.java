@@ -19,6 +19,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyPairGenerator;
+import java.security.PublicKey;
 import java.security.Security;
 import java.security.spec.ECGenParameterSpec;
 import java.util.Arrays;
@@ -42,11 +43,12 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.math.ec.ECAlgorithms;
 import org.bouncycastle.math.ec.ECPoint;
 import org.hyperledger.besu.crypto.key.NodeKeyPair;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.KeyManager;
 
 /** The Abstract secp256. */
-public abstract class AbstractSECP256 implements SignatureAlgorithm {
+public abstract class AbstractSECP256 implements SignatureAlgorithm, PublicKeyRecoverable {
 
   /** The constant PROVIDER. */
   public static final String PROVIDER = "BC";
@@ -420,6 +422,16 @@ public abstract class AbstractSECP256 implements SignatureAlgorithm {
     return publicKeyBI == null
         ? Optional.empty()
         : Optional.of(SECPPublicKey.create(publicKeyBI, ALGORITHM));
+  }
+
+  @Override
+  public Optional<PublicKey> recoverPublicKeyFromSignature(
+      final Bytes32 dataHash, final Signature signature) {
+    if (!(signature instanceof SECPSignature secpSignature)) {
+      throw new IllegalArgumentException("Expected SECPSignature");
+    }
+
+    return recoverPublicKeyFromSignature(dataHash, secpSignature);
   }
 
   @Override

@@ -9,6 +9,7 @@ import org.hyperledger.besu.crypto.HybridDigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.PublicKeyRecoverable;
 import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
 import org.hyperledger.besu.crypto.signature.Signature;
+import org.hyperledger.besu.crypto.signature.types.CompositeSignature;
 
 public class PublicKeyHandler {
     private PublicKeyHandler() {}
@@ -41,17 +42,18 @@ public class PublicKeyHandler {
         final DigitalSignatureAlgorithm first = hybrid.getFirstAlgorithm();
         final DigitalSignatureAlgorithm second = hybrid.getSecondAlgorithm();
 
+        CompositeSignature hybridSignature = (CompositeSignature) signature;
         PublicKey firstPk =
             resolveSingleAlgorithmPublicKey(
                 first,
-                signature,
+                hybridSignature.getFirstSignature(),
                 maybePartialPk,
                 recoveryHash);
 
         PublicKey secondPk =
             resolveSingleAlgorithmPublicKey(
                 second,
-                signature,
+                hybridSignature.getSecondSignature(),
                 maybePartialPk,
                 recoveryHash);
 
