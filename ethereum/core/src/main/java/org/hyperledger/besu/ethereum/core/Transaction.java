@@ -47,6 +47,7 @@ import org.hyperledger.besu.datatypes.VersionedHash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.ethereum.core.encoding.AccessListTransactionEncoder;
 import org.hyperledger.besu.ethereum.core.encoding.BlobTransactionEncoder;
+import org.hyperledger.besu.ethereum.core.encoding.CodeDelegationEncoder;
 import org.hyperledger.besu.ethereum.core.encoding.CodeDelegationTransactionEncoder;
 import org.hyperledger.besu.ethereum.core.encoding.EncodingContext;
 import org.hyperledger.besu.ethereum.core.encoding.FlexibleAccessListTransactionEncoder;
@@ -1271,7 +1272,7 @@ public class Transaction
                   chainId,
                   accessList,
                   rlpOutput);
-              CodeDelegationTransactionEncoder.encodeCodeDelegationInner(
+              CodeDelegationEncoder.encodeCodeDelegationInner(
                   authorizationList, rlpOutput);
               rlpOutput.endList();
             });
@@ -1306,7 +1307,7 @@ public class Transaction
                   chainId,
                   accessList,
                   rlpOutput);
-              CodeDelegationTransactionEncoder.encodeCodeDelegationInner(
+              CodeDelegationEncoder.encodeCodeDelegationInner(
                   authorizationList, rlpOutput);
               rlpOutput.endList();
             });

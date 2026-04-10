@@ -7,19 +7,20 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.HybridDigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.PublicKeyRecoverable;
+import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.types.CompositeSignature;
 
 public class PublicKeyHandler {
     private PublicKeyHandler() {}
-
+    
     public static Optional<PublicKey> resolvePublicKey(
         final DigitalSignatureAlgorithm signatureAlgorithm,
         final Signature signature,
         final Optional<PublicKey> maybePartialPk,
         final Bytes32 recoveryHash) {
-        
+        // what if maybePartialPk is null?
         if(maybePartialPk.get() instanceof CompositePublicKey) return maybePartialPk;
 
         if (signatureAlgorithm instanceof HybridDigitalSignatureAlgorithm hybrid) {

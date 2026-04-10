@@ -9,19 +9,6 @@ import org.hyperledger.besu.ethereum.core.Transaction;
 import org.hyperledger.besu.ethereum.rlp.RLPOutput;
 
 public class FlexibleCodeDelegationTransactionEncoder {
-    public static void encodeCodeDelegationInner(final List<CodeDelegation> payloads, final RLPOutput rlpOutput){
-        rlpOutput.startList();
-        payloads.forEach( payload -> encodeSingleFlexibleCodeDelegation(payload, rlpOutput));
-        rlpOutput.endList();
-    }
-
-    public static void encodeSingleFlexibleCodeDelegation(final CodeDelegation payload, final RLPOutput rlpOutput){
-        rlpOutput.startList();
-        CodeDelegationTransactionEncoder.encodeAuthorizationDetails(payload, rlpOutput);
-        rlpOutput.writeBytes(payload.signature().encodedBytes());
-        rlpOutput.endList();
-        
-    }
     public static void encode(final Transaction transaction, final RLPOutput out){
         out.startList();
         out.writeShort(transaction.getDsaType().orElseThrow());
@@ -35,7 +22,7 @@ public class FlexibleCodeDelegationTransactionEncoder {
         out.writeUInt256Scalar(transaction.getValue());
         out.writeBytes(transaction.getPayload());
         AccessListTransactionEncoder.writeAccessList(out, transaction.getAccessList());
-        encodeCodeDelegationInner(
+        CodeDelegationEncoder.encodeCodeDelegationInner(
             transaction
                 .getCodeDelegationList()
                 .orElseThrow(

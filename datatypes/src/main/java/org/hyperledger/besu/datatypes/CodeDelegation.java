@@ -15,6 +15,7 @@
 package org.hyperledger.besu.datatypes;
 
 import java.math.BigInteger;
+import java.security.PublicKey;
 import java.util.Optional;
 
 import org.hyperledger.besu.crypto.signature.Signature;
@@ -26,6 +27,15 @@ import org.hyperledger.besu.crypto.signature.Signature;
 public interface CodeDelegation {
   /** The cost of delegating code on an existing account. */
   long PER_AUTH_BASE_COST = 12_500L;
+
+  CodeDelegationType getType();
+
+  /**
+   * Return the chain id.
+   *
+   * @return chain id
+   */
+  Optional<Short> dsaType();
 
   /**
    * Return the chain id.
@@ -40,6 +50,13 @@ public interface CodeDelegation {
    * @return address
    */
   Address address();
+
+  /**
+   * Return the publicKey.
+   *
+   * @return publicKey
+   */
+  Optional<PublicKey> maybePublicKey();
 
   /**
    * Return the signature.

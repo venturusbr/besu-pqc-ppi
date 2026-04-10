@@ -33,6 +33,7 @@ public class FlexibleCodeDelegationTransactionDecoder {
                 .chainId(chainId)
                 .nonce(txRlp.readLongScalar())
                 .maxPriorityFeePerGas(Wei.of(txRlp.readUInt256Scalar()))
+                .maxFeePerGas(Wei.of(txRlp.readUInt256Scalar()))
                 .gasLimit(txRlp.readLongScalar())
                 .to(txRlp.readBytes(v -> v.isEmpty() ? null : Address.wrap(v)))
                 .value(Wei.of(txRlp.readUInt256Scalar()))
@@ -49,7 +50,7 @@ public class FlexibleCodeDelegationTransactionDecoder {
                             accessListEntryRLPInput.leaveList();
                             return accessListEntry;
                         }))
-                .codeDelegations(txRlp.readList(authorizationsRLPInput -> decodeInnerPayload(authorizationsRLPInput, dsaParams)))
+                .codeDelegations(txRlp.readList(authorizationRLPInput -> CodeDelegationDecoder.decodeRLP(authorizationRLPInput)))
                 .publicKey(txRlp.readBytes(pkBytes -> pkBytes.isEmpty() ? null : KeyFactory.createPublicKey(pkBytes, dsaParams)))
                 .sizeForAnnouncement(input.size())
                 .sizeForBlockInclusion(input.size())
@@ -62,21 +63,5 @@ public class FlexibleCodeDelegationTransactionDecoder {
                 .build();
         txRlp.leaveList();
         return transaction;
-    }
-
-    public static CodeDelegation decodeInnerPayload(final RLPInput input, final DSAParametersSet algo){
-        input.enterList();
-
-        final BigInteger chainId = input.readBigIntegerScalar();
-        final Address address = Address.wrap(input.readBytes());
-        final long nonce = input.readLongScalar();
-
-        final Bytes signatureBytes = input.readBytes();
-        final Signature signature = SignatureFactory.createSignatureFromBytes(signatureBytes, algo);
-
-        input.leaveList();
-
-        return new org.hyperledger.besu.ethereum.core.CodeDelegation(
-        chainId, address, nonce, signature);
     }
 }

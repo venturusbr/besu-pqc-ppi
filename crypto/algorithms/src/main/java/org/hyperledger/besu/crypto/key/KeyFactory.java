@@ -114,7 +114,8 @@ public class KeyFactory {
 
                     return CompositePublicKey.create(secpPk, mldsaPk);
                 }
-
+                // it doesnt works if user send a hybrid pk where pk.size() = secp.size();
+                // should throw a exception.
                 return MLDSAPublicKey.create(publicKeyBytes, DSAParametersSet.MLDSA44);
             default:
                 throw new IllegalArgumentException("Unsupported algorithm: " + paramsSet.getName());

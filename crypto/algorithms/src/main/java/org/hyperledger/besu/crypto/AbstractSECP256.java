@@ -431,7 +431,7 @@ public abstract class AbstractSECP256 implements SignatureAlgorithm, PublicKeyRe
       throw new IllegalArgumentException("Expected SECPSignature");
     }
 
-    return recoverPublicKeyFromSignature(dataHash, secpSignature);
+    return recoverPublicKeyFromSignature(dataHash, secpSignature).map(pk -> (PublicKey) pk);
   }
 
   @Override

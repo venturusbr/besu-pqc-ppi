@@ -32,38 +32,6 @@ public class CodeDelegationTransactionEncoder {
     // private constructor
   }
 
-  public static void encodeCodeDelegationInner(
-      final List<CodeDelegation> payloads, final RLPOutput rlpOutput) {
-    rlpOutput.startList();
-    payloads.forEach(payload -> encodeSingleCodeDelegation(payload, rlpOutput));
-    rlpOutput.endList();
-  }
-
-  public static void encodeSingleCodeDelegationWithoutSignature(
-      final CodeDelegation payload, final RLPOutput rlpOutput) {
-    rlpOutput.startList();
-    encodeAuthorizationDetails(payload, rlpOutput);
-    rlpOutput.endList();
-  }
-
-  public static void encodeSingleCodeDelegation(
-      final CodeDelegation payload, final RLPOutput rlpOutput) {
-    SECPSignature secpSignature = (SECPSignature) payload.signature();
-    rlpOutput.startList();
-    encodeAuthorizationDetails(payload, rlpOutput);
-    rlpOutput.writeUnsignedByte(secpSignature.getRecId() & 0xFF);
-    rlpOutput.writeBigIntegerScalar(secpSignature.getR());
-    rlpOutput.writeBigIntegerScalar(secpSignature.getS());
-    rlpOutput.endList();
-  }
-
-  public static void encodeAuthorizationDetails(
-      final CodeDelegation payload, final RLPOutput rlpOutput) {
-    rlpOutput.writeBigIntegerScalar(payload.chainId());
-    rlpOutput.writeBytes(payload.address().getBytes().copy());
-    rlpOutput.writeLongScalar(payload.nonce());
-  }
-
   public static void encode(final Transaction transaction, final RLPOutput out) {
     out.startList();
     out.writeBigIntegerScalar(transaction.getChainId().orElseThrow());
@@ -76,7 +44,7 @@ public class CodeDelegationTransactionEncoder {
     out.writeUInt256Scalar(transaction.getValue());
     out.writeBytes(transaction.getPayload());
     writeAccessList(out, transaction.getAccessList());
-    encodeCodeDelegationInner(
+    CodeDelegationEncoder.encodeCodeDelegationInner(
         transaction
             .getCodeDelegationList()
             .orElseThrow(

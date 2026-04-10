@@ -31,6 +31,7 @@ public class FlexibleEIP1559TransactionDecoder {
                 .chainId(chainId)
                 .nonce(txRlp.readLongScalar())
                 .maxPriorityFeePerGas(Wei.of(txRlp.readUInt256Scalar()))
+                .maxFeePerGas(Wei.of(txRlp.readUInt256Scalar()))
                 .gasLimit(txRlp.readLongScalar())
                 .to(txRlp.readBytes(v -> v.isEmpty() ? null : Address.wrap(v)))
                 .value(Wei.of(txRlp.readUInt256Scalar()))
