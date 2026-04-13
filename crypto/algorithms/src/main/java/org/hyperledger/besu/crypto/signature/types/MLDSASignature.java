@@ -1,6 +1,7 @@
 package org.hyperledger.besu.crypto.signature.types;
 
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.crypto.SignatureValidationContext;
 import org.hyperledger.besu.crypto.signature.Signature;
 
 public class MLDSASignature implements Signature{
@@ -20,6 +21,11 @@ public class MLDSASignature implements Signature{
     @Override
     public Bytes encodedBytes() {
         return encodedBytes;
+    }
+
+    @Override
+    public Boolean isValid(final SignatureValidationContext context){
+        return encodedBytes != null && !encodedBytes.isEmpty();
     }
     
 

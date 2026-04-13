@@ -26,8 +26,10 @@ import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.bouncycastle.crypto.digests.SHA256Digest;
+import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.SignatureValidationContext;
 import org.hyperledger.besu.datatypes.BlobType;
 import org.hyperledger.besu.datatypes.CodeDelegation;
 import org.hyperledger.besu.crypto.pqc.PqcSignature;
@@ -36,6 +38,7 @@ import org.hyperledger.besu.crypto.pqc.PqcSignatureFactory;
 import org.hyperledger.besu.crypto.pqc.keys.PqcKeyPair;
 import org.hyperledger.besu.crypto.pqc.metrics.CSVWriter;
 import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.Blob;
 import org.hyperledger.besu.datatypes.BlobsWithCommitments;
 import org.hyperledger.besu.datatypes.Hash;
@@ -69,7 +72,7 @@ public class MainnetTransactionValidator implements TransactionValidator {
   private final GasLimitCalculator gasLimitCalculator;
   private final FeeMarket feeMarket;
 
-  private final boolean disallowSignatureMalleability;
+  private final SignatureValidationContext signatureContext;
 
   private final Optional<BigInteger> chainId;
 
@@ -94,7 +97,7 @@ public class MainnetTransactionValidator implements TransactionValidator {
     this.gasCalculator = gasCalculator;
     this.gasLimitCalculator = gasLimitCalculator;
     this.feeMarket = feeMarket;
-    this.disallowSignatureMalleability = checkSignatureMalleability;
+    this.signatureContext = new SignatureValidationContext(checkSignatureMalleability);
     this.chainId = chainId;
     this.acceptedTransactionTypes = acceptedTransactionTypes;
     this.maxInitcodeSize = maxInitcodeSize;
@@ -114,31 +117,23 @@ public class MainnetTransactionValidator implements TransactionValidator {
       final Optional<Wei> baseFee,
       final Optional<Wei> blobFee,
       final TransactionValidationParams transactionValidationParams) {
-    long classicalVerifyStart = System.nanoTime();
-    final ValidationResult<TransactionInvalidReason> signatureResult = validateTransactionSignature(transaction);
-    long classicalVerifyEnd = System.nanoTime();
 
-    if (!SignatureAlgorithmFactory.getPqcAlgorithmName().equals("none")) {
-      byte[] dataToPqcSign = transaction.getHash().getBytes().toArray();
-
-      PqcSignatureAlgorithm selectedPqcAlgorithm = SignatureAlgorithmFactory.getPqcGenericInstance();
-
-      byte[] pqcSignature = PqcSignatureFactory
-          .createSignature(PqcKeyPair.getPrivKey(), dataToPqcSign, selectedPqcAlgorithm.getAlgorithmName())
-          .getEncoded();
-
-      long pqcTimeStart = System.nanoTime();
-      Boolean isValid = verifyPqcSignature(pqcSignature, dataToPqcSign,selectedPqcAlgorithm);
-      long pqcTimeEnd = System.nanoTime();
-
-      long pqcTime = pqcTimeEnd - pqcTimeStart;
-      long secpTime = classicalVerifyEnd - classicalVerifyStart;
-      String data = stringBuilder.append(pqcTime + "," + (pqcTime + secpTime) + "," + (isValid ? "yes" : "no") + "\n")
-          .toString();
-      verifyWriter.write(data);
-
-      stringBuilder.setLength(0);
+    final ValidationResult<TransactionInvalidReason> chainIdResult = validateChainId(transaction);
+    if (!chainIdResult.isValid()) {
+      return chainIdResult;
     }
+    
+    long verifyStart = System.nanoTime();
+    final ValidationResult<TransactionInvalidReason> signatureResult = validateTransactionSignature(transaction);
+    long verifyEnd = System.nanoTime();
+
+    long verifyTime = verifyEnd - verifyStart;
+
+    String data = stringBuilder.append(verifyTime + "," + (signatureResult.isValid() ? "yes" : "no") + "\n")
+          .toString();
+    verifyWriter.write(data);
+
+    stringBuilder.setLength(0);
 
     if (!signatureResult.isValid()) {
       return signatureResult;
@@ -388,8 +383,7 @@ public class MainnetTransactionValidator implements TransactionValidator {
     return codeHash.equals(Hash.EMPTY) || hasCodeDelegation(sender.getCode());
   }
 
-  private ValidationResult<TransactionInvalidReason> validateTransactionSignature(
-      final Transaction transaction) {
+  private ValidationResult<TransactionInvalidReason> validateChainId(final Transaction transaction){
     if (chainId.isPresent()
         && (transaction.getChainId().isPresent() && !transaction.getChainId().equals(chainId))) {
       return ValidationResult.invalid(
@@ -404,17 +398,33 @@ public class MainnetTransactionValidator implements TransactionValidator {
           TransactionInvalidReason.REPLAY_PROTECTED_SIGNATURES_NOT_SUPPORTED,
           "replay protected signatures is not supported");
     }
+  }
 
-    final SECPSignature signature = transaction.getSignature();
-    final BigInteger halfCurveOrder = SignatureAlgorithmFactory.getInstance().getHalfCurveOrder();
-    if (disallowSignatureMalleability && signature.getS().compareTo(halfCurveOrder) > 0) {
+  private ValidationResult<TransactionInvalidReason> validateTransactionSignature(
+      final Transaction transaction) {
+    
+    Signature txSignature = transaction.getSignature();
+    if(!txSignature.isValid(signatureContext)){
       return ValidationResult.invalid(
           TransactionInvalidReason.INVALID_SIGNATURE,
           String.format(
-              "Signature s value should be less than %s, but got %s",
-              halfCurveOrder, signature.getS()));
+              "Invalid signature structure"));
     }
 
+    if(transaction.getDsaType().isPresent()){ //is a flexible transaction
+      DigitalSignatureAlgorithm dsa = SignatureAlgorithmFactory.getSupportedDsaById(transaction.getDsaType().get());
+
+      Boolean isValid = dsa.verify(Bytes.wrap(transaction.getSigningHash()), txSignature, transaction.getMaybePublicKey().get());
+      if(!isValid){
+        return ValidationResult.invalid(
+          TransactionInvalidReason.INVALID_SIGNATURE,
+          String.format(
+            "Invalid %s transaction signature",
+            txSignature.getAlgorithm()
+          )
+        );
+      }
+    }
     // org.bouncycastle.math.ec.ECCurve.AbstractFp.decompressPoint throws an
     // IllegalArgumentException for "Invalid point compression" for bad signatures.
     try {

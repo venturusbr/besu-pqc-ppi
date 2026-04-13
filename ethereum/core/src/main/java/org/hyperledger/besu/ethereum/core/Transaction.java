@@ -513,6 +513,10 @@ public class Transaction
     .map(pk -> Bytes.wrap(pk.getEncoded()).toHexString());
   }
 
+  public Bytes32 getSigningHash(){
+    return getOrComputeSenderRecoveryHash();
+  }
+
   private Bytes32 getOrComputeSenderRecoveryHash() {
     if (hashNoSignature == null) {
       hashNoSignature =

@@ -1,6 +1,7 @@
 package org.hyperledger.besu.crypto.signature.types;
 
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.crypto.SignatureValidationContext;
 import org.hyperledger.besu.crypto.signature.Signature;
 
 public class CompositeSignature implements Signature{
@@ -23,6 +24,11 @@ public class CompositeSignature implements Signature{
     @Override
     public String getAlgorithm(){
         return firstSignature.getAlgorithm() + "-" + secondSignature.getAlgorithm();
+    }
+
+    @Override
+    public Boolean isValid(SignatureValidationContext context){
+        return firstSignature.isValid(context) && secondSignature.isValid(context);
     }
 
     @Override
