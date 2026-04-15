@@ -27,7 +27,7 @@ public class CompositeSignature implements Signature{
     }
 
     @Override
-    public Boolean isValid(SignatureValidationContext context){
+    public Boolean isValid(final SignatureValidationContext context){
         return firstSignature.isValid(context) && secondSignature.isValid(context);
     }
 

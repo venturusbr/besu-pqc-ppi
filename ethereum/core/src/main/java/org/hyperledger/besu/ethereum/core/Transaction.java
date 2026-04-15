@@ -14,9 +14,10 @@
  */
 package org.hyperledger.besu.ethereum.core;
 
-import static com.google.common.base.Preconditions.*;
-import static org.hyperledger.besu.crypto.Hash.*;
-import static org.hyperledger.besu.datatypes.VersionedHash.*;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
+import static org.hyperledger.besu.crypto.Hash.keccak256;
+import static org.hyperledger.besu.datatypes.VersionedHash.SHA256_VERSION_ID;
 
 import java.math.BigInteger;
 import java.security.PublicKey;
@@ -129,7 +130,7 @@ public class Transaction
 
   private Optional<PublicKey> publicKey;
 
-  private final DigitalSignatureAlgorithm signatureAlgorithm = SignatureAlgorithmFactory.getInstance();
+  private final DigitalSignatureAlgorithm signatureAlgorithm;
   private final Optional<List<VersionedHash>> versionedHashes;
 
   private final Optional<BlobsWithCommitments> blobsWithCommitments;
@@ -260,6 +261,12 @@ public class Transaction
             maybeCodeDelegationList.isPresent(),
             "Must specify code delegation authorizations for code delegation transaction");
       }
+    }
+
+    if(dsaType.isPresent()){
+      this.signatureAlgorithm = SignatureAlgorithmFactory.getSupportedDsaById(dsaType.get());
+    } else {
+      this.signatureAlgorithm = SignatureAlgorithmFactory.getInstance();
     }
 
     this.transactionType = transactionType;
@@ -419,6 +426,7 @@ public class Transaction
    *
    * @return the signature used to sign the transaction
    */
+  @Override
   public Signature getSignature() {
     return signature;
   }
@@ -1300,6 +1308,7 @@ public class Transaction
         RLP.encode(
             rlpOutput -> {
               rlpOutput.startList();
+              rlpOutput.writeShort(dsaType.get());
               eip1559PreimageFields(
                   nonce,
                   maxPriorityFeePerGas,
@@ -1313,6 +1322,8 @@ public class Transaction
                   rlpOutput);
               CodeDelegationEncoder.encodeCodeDelegationInner(
                   authorizationList, rlpOutput);
+                  
+              rlpOutput.writeBytes(Bytes.wrap(publicKey.get().getEncoded()));
               rlpOutput.endList();
             });
     return Bytes.concatenate(Bytes.of(TransactionType.FLEXIBLE_DELEGATE_CODE.getSerializedType()), encoded);

@@ -105,12 +105,7 @@ public class MainnetTransactionValidator implements TransactionValidator {
     this.verifyWriter = MetricWriters.getVerifyInstance();
     this.stringBuilder = new StringBuilder();
   }
-
-  private Boolean verifyPqcSignature(final byte[] pqcSignature, final byte[] dataToPqcSign, final PqcSignatureAlgorithm signatureAlgorithm) {
-    boolean isValid = signatureAlgorithm.verify(PqcKeyPair.getPubKey(), dataToPqcSign, pqcSignature);
-    return isValid;
-  }
-
+  
   @Override
   public ValidationResult<TransactionInvalidReason> validate(
       final Transaction transaction,
@@ -216,15 +211,45 @@ public class MainnetTransactionValidator implements TransactionValidator {
                           "Invalid 'chainId' value, should be < 2^256 but got "
                               + codeDelegation.chainId());
                     }
+                    Signature signature = codeDelegation.signature();
 
-                    if (codeDelegation.r().compareTo(TWO_POW_256) >= 0) {
-                      throw new IllegalArgumentException(
-                          "Invalid 'r' value, should be < 2^256 but got " + codeDelegation.r());
+                    if (signature == null) {
+                      return ValidationResult.invalid(
+                          TransactionInvalidReason.INVALID_SIGNATURE,
+                          "Missing code delegation signature");
                     }
+                    
+                    DigitalSignatureAlgorithm dsa;
 
-                    if (codeDelegation.s().compareTo(TWO_POW_256) >= 0) {
-                      throw new IllegalArgumentException(
-                          "Invalid 's' value, should be < 2^256 but got " + codeDelegation.s());
+                    if(codeDelegation.dsaType().isPresent()){
+                      dsa = SignatureAlgorithmFactory.getSupportedDsaById(codeDelegation.dsaType().get());
+                    } else {
+                      dsa = SignatureAlgorithmFactory.getInstance();
+                    }
+                    
+                    // already checked in CodeDelegationSignature creation
+                    // if (codeDelegation.r().compareTo(TWO_POW_256) >= 0) {
+                    //   throw new IllegalArgumentException(
+                    //       "Invalid 'r' value, should be < 2^256 but got " + codeDelegation.r());
+                    // }
+
+                    // if (codeDelegation.s().compareTo(TWO_POW_256) >= 0) {
+                    //   throw new IllegalArgumentException(
+                    //       "Invalid 's' value, should be < 2^256 but got " + codeDelegation.s());
+                    // }
+                    
+                    Bytes32 authorizationHashNoSignature = codeDelegation.getOrComputeSenderRecoveryHash();
+
+                    Boolean isValid = dsa.verify(
+                        authorizationHashNoSignature, 
+                        signature,
+                        codeDelegation.maybePublicKey().get()
+                    );
+
+                    if (!isValid) {
+                      return ValidationResult.invalid(
+                          TransactionInvalidReason.INVALID_SIGNATURE,
+                          "Invalid code delegation signature");
                     }
                   }
 
@@ -398,6 +423,8 @@ public class MainnetTransactionValidator implements TransactionValidator {
           TransactionInvalidReason.REPLAY_PROTECTED_SIGNATURES_NOT_SUPPORTED,
           "replay protected signatures is not supported");
     }
+
+    return ValidationResult.valid();
   }
 
   private ValidationResult<TransactionInvalidReason> validateTransactionSignature(
