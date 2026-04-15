@@ -19,7 +19,7 @@ import org.apache.tuweni.bytes.Bytes;
 public class FlexibleAccessListTransactionDecoder {
     private FlexibleAccessListTransactionDecoder(){}
 
-    public static Transaction decode(Bytes input){
+    public static Transaction decode(final Bytes input){
         final RLPInput txRlp = RLP.input(input.slice(1));
         txRlp.enterList();
         final Short dsaType = txRlp.readShort();

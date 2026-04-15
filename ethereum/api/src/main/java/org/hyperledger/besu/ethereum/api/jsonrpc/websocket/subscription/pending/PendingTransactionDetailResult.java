@@ -36,7 +36,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   "yParity",
   "v",
   "r",
-  "s"
+  "s",
+  "publicKey",
+  "signature",
+  "dsaType"
 })
 public class PendingTransactionDetailResult implements JsonRpcResult {
   private final String from;
@@ -56,7 +59,7 @@ public class PendingTransactionDetailResult implements JsonRpcResult {
   private final String r;
   private final String s;
 
-  public PendingTransactionDetailResult(final org.hyperledger.besu.datatypes.Transaction tx) {
+  public PendingTransactionDetailResult(final Transaction tx) {
     TransactionType transactionType = tx.getType();
     this.from = tx.getSender().toString();
     this.gas = Quantity.create(tx.getGasLimit());
@@ -79,8 +82,12 @@ public class PendingTransactionDetailResult implements JsonRpcResult {
               ? Quantity.create(tx.getYParity())
               : null;
     }
-    this.publicKey = tx.getMaybePublicKey().get().toString();
-    this.signature = tx.getSignature().toString();
+    this.publicKey = tx.getMaybePublicKey()
+        .map(Object::toString)
+        .orElse(null);
+    this.signature = tx.getSignature() != null
+        ? tx.getSignature().toString()
+        : null;
     this.value = Quantity.create(tx.getValue());
     this.r = Quantity.create(tx.getR());
     this.s = Quantity.create(tx.getS());
@@ -141,7 +148,6 @@ public class PendingTransactionDetailResult implements JsonRpcResult {
     return dsaType;
   }
 
-  @JsonInclude(JsonInclude.Include.NON_NULL)
   @JsonGetter(value = "signature")
   public String getSignature(){
     return signature;

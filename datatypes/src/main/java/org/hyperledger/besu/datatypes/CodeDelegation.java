@@ -20,6 +20,8 @@ import java.util.Optional;
 
 import org.hyperledger.besu.crypto.signature.Signature;
 
+import org.apache.tuweni.bytes.Bytes32;
+
 /**
  * CodeDelegation is a data structure that represents the authorization to delegate code of an EOA
  * account to another account.
@@ -57,6 +59,8 @@ public interface CodeDelegation {
    * @return publicKey
    */
   Optional<PublicKey> maybePublicKey();
+
+  Optional<String> publicKey();
 
   /**
    * Return the signature.
@@ -99,4 +103,6 @@ public interface CodeDelegation {
    * @return s value
    */
   BigInteger s();
+
+  Bytes32 getOrComputeSenderRecoveryHash();
 }

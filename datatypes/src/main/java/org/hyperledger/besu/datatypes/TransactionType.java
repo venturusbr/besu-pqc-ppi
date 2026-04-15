@@ -60,7 +60,7 @@ public enum TransactionType {
       new TransactionType[Byte.toUnsignedInt(MAX_LEGACY_TX_OPAQUE_BYTE) + 1];
 
   private static final TransactionType[] transactionTypeByEthSerializedType =
-      new TransactionType[values().length];
+      new TransactionType[256];
 
   static {
     EnumSet.allOf(TransactionType.class).stream()

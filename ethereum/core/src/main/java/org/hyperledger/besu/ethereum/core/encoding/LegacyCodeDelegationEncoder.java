@@ -12,7 +12,7 @@ public class LegacyCodeDelegationEncoder {
         rlpOutput.writeLongScalar(payload.nonce());
     }
 
-    public static void encode(final CodeDelegation payload, final RLPOutput rlpOutput, Boolean includeSignature){
+    public static void encode(final CodeDelegation payload, final RLPOutput rlpOutput, final Boolean includeSignature){
         rlpOutput.startList();
         encodeAuthorizationDetails(payload, rlpOutput);
         if(includeSignature){

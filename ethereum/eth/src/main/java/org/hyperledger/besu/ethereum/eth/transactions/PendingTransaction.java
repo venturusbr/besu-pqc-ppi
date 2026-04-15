@@ -23,6 +23,10 @@ import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.
 import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.CODE_DELEGATION_ENTRY_SIZE;
 import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.EIP1559_AND_EIP4844_SHALLOW_SIZE;
 import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.FRONTIER_AND_ACCESS_LIST_SHALLOW_SIZE;
+import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.OPTIONAL_DSATYPE_SIZE;
+import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.OPTIONAL_PUBLIC_KEY_SHALLOW_SIZE;
+import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.SIGNATURE_SHALLOW_SIZE;
+import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.CODE_DELEGATION_TYPE_SIZE;
 import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.KZG_PROOF_CONTAINER_SHALLOW_SIZE;
 import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.KZG_PROOF_SIZE;
 import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.OPTIONAL_ACCESS_LIST_SHALLOW_SIZE;
@@ -36,6 +40,7 @@ import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.
 
 import org.hyperledger.besu.datatypes.AccessListEntry;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.CodeDelegation;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.ethereum.core.Transaction;
@@ -160,6 +165,10 @@ public abstract class PendingTransaction
           case EIP1559 -> computeEIP1559MemorySize();
           case BLOB -> computeBlobMemorySize();
           case DELEGATE_CODE -> computeDelegateCodeMemorySize();
+          case FLEXIBLE_ACCESS_LIST -> computeFlexibleAccessListMemorySize();
+          case FLEXIBLE_EIP1559 -> computeFlexibleEIP1559MemorySize();
+          case FLEXIBLE_BLOB -> computeFlexibleBlobMemorySize();
+          case FLEXIBLE_DELEGATE_CODE -> computeFlexibleDelegateCodeMemorySize();
         }
         + PENDING_TRANSACTION_SHALLOW_SIZE;
   }
@@ -179,6 +188,13 @@ public abstract class PendingTransaction
         + computeAccessListEntriesMemorySize();
   }
 
+  private int computeFlexibleAccessListMemorySize() {
+    return OPTIONAL_DSATYPE_SIZE
+        + computeAccessListMemorySize()
+        + computePublicKeyMemorySize()
+        + computeSignatureMemorySize();
+  }
+
   private int computeEIP1559MemorySize() {
     return EIP1559_AND_EIP4844_SHALLOW_SIZE
         + computePayloadMemorySize()
@@ -187,14 +203,35 @@ public abstract class PendingTransaction
         + computeAccessListEntriesMemorySize();
   }
 
+  private int computeFlexibleEIP1559MemorySize() {
+    return OPTIONAL_DSATYPE_SIZE
+        + computeEIP1559MemorySize()
+        + computePublicKeyMemorySize()
+        + computeSignatureMemorySize();
+  }
+
   private int computeBlobMemorySize() {
     return computeEIP1559MemorySize()
         + OPTIONAL_SHALLOW_SIZE // for the versionedHashes field
         + computeBlobWithCommitmentsMemorySize();
   }
 
+    private int computeFlexibleBlobMemorySize() {
+    return OPTIONAL_DSATYPE_SIZE
+        + computeBlobMemorySize()
+        + computePublicKeyMemorySize()
+        + computeSignatureMemorySize();
+  }
+
   private int computeDelegateCodeMemorySize() {
     return computeEIP1559MemorySize() + computeCodeDelegationListMemorySize();
+  }
+
+  private int computeFlexibleDelegateCodeMemorySize() {
+    return OPTIONAL_DSATYPE_SIZE
+        + computeDelegateCodeMemorySize()
+        + computePublicKeyMemorySize()
+        + computeSignatureMemorySize();
   }
 
   private int computeBlobWithCommitmentsMemorySize() {
@@ -221,6 +258,21 @@ public abstract class PendingTransaction
     return !transaction.getPayload().isEmpty()
         ? PAYLOAD_SHALLOW_SIZE + transaction.getPayload().size()
         : 0;
+  }
+
+  private int computeSignatureMemorySize(){
+    if(transaction.getSignature() != null){
+      return SIGNATURE_SHALLOW_SIZE + transaction.getSignature().encodedBytes().size();
+    }
+    return 0;
+  }
+
+  private int computePublicKeyMemorySize(){
+    if(transaction.getMaybePublicKey().isPresent()){
+      return OPTIONAL_PUBLIC_KEY_SHALLOW_SIZE + transaction.getMaybePublicKey().get().getEncoded().length;
+    }
+
+    return 0;
   }
 
   private int computeToMemorySize() {
@@ -258,10 +310,32 @@ public abstract class PendingTransaction
         .map(
             cd -> {
               int totalSize = OPTIONAL_CODE_DELEGATION_LIST_SHALLOW_SIZE;
-              totalSize += cd.size() * CODE_DELEGATION_ENTRY_SIZE;
+              totalSize += cd.stream().mapToInt(this::computeCodeDelegationSize).sum();
               return totalSize;
             })
         .orElse(0);
+  }
+
+  private int computeCodeDelegationSize(final CodeDelegation cd) {
+    int size = CODE_DELEGATION_ENTRY_SIZE;
+
+    if (cd.getType() != null) {
+      size += CODE_DELEGATION_TYPE_SIZE;
+    }
+
+    if (cd.dsaType().isPresent()) {
+      size += OPTIONAL_DSATYPE_SIZE;
+    }
+
+    if (cd.publicKey().isPresent()) {
+      size += OPTIONAL_PUBLIC_KEY_SHALLOW_SIZE
+            + cd.maybePublicKey().get().getEncoded().length;
+    }
+
+    size += SIGNATURE_SHALLOW_SIZE
+          + cd.signature().encodedBytes().size();
+
+    return size;
   }
 
   public static List<Transaction> toTransactionList(
@@ -451,12 +525,18 @@ public abstract class PendingTransaction
     int OPTIONAL_CODE_DELEGATION_LIST_SHALLOW_SIZE = 40;
     int CODE_DELEGATION_ENTRY_SIZE = 512;
     int OPTIONAL_SHALLOW_SIZE = 16;
+    int CODE_DELEGATION_TYPE_SIZE = 8;
     int KZG_PROOF_CONTAINER_SHALLOW_SIZE = 24;
     int KZG_PROOF_SIZE = 112;
     int BLOBS_WITH_COMMITMENTS_SIZE = 48;
     int BLOB_PROOF_BUNDLE_SIZE_V0 = 131536;
     int BLOB_PROOF_BUNDLE_SIZE_V1 = 393576;
     int PENDING_TRANSACTION_SHALLOW_SIZE = 40;
+
+    // (FLEXIBLE)
+    int OPTIONAL_DSATYPE_SIZE = 40;
+    int OPTIONAL_PUBLIC_KEY_SHALLOW_SIZE = 40;
+    int SIGNATURE_SHALLOW_SIZE = 96;
 
     /**
      * This calculation is for an immutable List

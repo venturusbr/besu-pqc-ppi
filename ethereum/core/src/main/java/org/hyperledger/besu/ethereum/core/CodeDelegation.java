@@ -53,6 +53,7 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
 
   public static final Bytes MAGIC = Bytes.fromHexString("05");
 
+  private volatile Bytes32 hashNoSignature;
   private final CodeDelegationType authorizationType;
   private final Optional<Short> dsaType;
   private final BigInteger chainId;
@@ -221,6 +222,27 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
   public Optional<PublicKey> maybePublicKey() {
     return maybePublicKey;
   }
+  
+  @Override
+  public Optional<String> publicKey(){
+    if(maybePublicKey.isPresent()){
+      return maybePublicKey.map(pk -> Bytes.wrap(pk.getEncoded()).toHexString());
+    }
+    final DSAParametersSet dsaParams;
+    if(authorizationType == CodeDelegationType.FLEXIBLE){
+      dsaParams = DSAParametersSet.fromId(dsaType.get());
+    } else {
+      dsaParams = DSAParametersSet.SECP256K1;
+    }
+
+    return Optional.of(
+      Bytes.wrap(
+          KeyFactory
+              .createPublicKey(Bytes.wrap(maybePublicKey.get().getEncoded()), dsaParams)
+              .getEncoded()
+      ).toHexString()
+    );
+  }
 
   @JsonProperty("signature")
   @Override
@@ -274,16 +296,13 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
   }
 
   private Optional<Address> computeAuthority() {
-    BytesValueRLPOutput rlpOutput = new BytesValueRLPOutput();
-    CodeDelegationEncoder.encodeWithoutSignature(this, rlpOutput);
-
-    final Hash hash = Hash.hash(Bytes.concatenate(MAGIC, rlpOutput.encoded()));
+    Bytes32 hashToRecovery = getOrComputeSenderRecoveryHash();
 
     Optional<Address> authorityAddress;
     try {
       return switch (authorizationType) {
-        case LEGACY -> computeLegacyAuthority(hash);
-        case FLEXIBLE -> computeFlexibleAuthority(hash);
+        case LEGACY -> computeLegacyAuthority(hashToRecovery);
+        case FLEXIBLE -> computeFlexibleAuthority(hashToRecovery);
       };
     } catch (final IllegalArgumentException e) {
       authorityAddress = Optional.empty();
@@ -292,7 +311,7 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
     return authorityAddress;
   }
 
-  private Optional<Address> computeLegacyAuthority(final Hash hash) {
+  private Optional<Address> computeLegacyAuthority(final Bytes32 hash) {
     if (!(signature instanceof SECPSignature secp)) {
       return Optional.empty();
     }
@@ -301,7 +320,7 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
         SIGNATURE_ALGORITHM.get(),
         signature,
         maybePublicKey,
-        Bytes32.wrap(hash.getBytes())
+        hash
       );
 
     return maybeRecovered.map(
@@ -313,7 +332,7 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
     );
   }
 
-  private Optional<Address> computeFlexibleAuthority(final Hash hash) {
+  private Optional<Address> computeFlexibleAuthority(final Bytes32 hash) {
     if (dsaType.isEmpty()) {
       throw new IllegalStateException("Missing dsaType for FLEXIBLE");
     }
@@ -322,7 +341,7 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
         SignatureAlgorithmFactory.getSupportedDsaById(dsaType.get()),
         signature,
         maybePublicKey,
-        Bytes32.wrap(hash.getBytes())
+        hash
     );
 
     return Optional.of(
@@ -330,6 +349,25 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
             Bytes32.wrap(Hash.hash(Bytes.wrap(publicKey.get().getEncoded())).getBytes())
         )
     );
+  }
+
+  @Override
+  public Bytes32 getOrComputeSenderRecoveryHash(){
+    if(hashNoSignature == null){
+      hashNoSignature = computeSenderRecoveryHash();
+    }
+
+    return hashNoSignature;
+  }
+
+  private Bytes32 computeSenderRecoveryHash(){
+    BytesValueRLPOutput rlpOutput = new BytesValueRLPOutput();
+    
+    CodeDelegationEncoder.encodeWithoutSignature(this, rlpOutput);
+
+    final Hash hash = Hash.hash(Bytes.concatenate(MAGIC, rlpOutput.encoded()));
+
+    return Bytes32.wrap(hash.getBytes());
   }
 
   /**

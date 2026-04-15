@@ -32,8 +32,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import org.apache.tuweni.bytes.Bytes;
 
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 /**
  * Code delegation used only for simulations where the authority is provided directly rather than
  * recovered from a signature.
@@ -117,6 +118,12 @@ public class SimulationCodeDelegation implements CodeDelegation {
 
   @Override
   @JsonIgnore
+  public Optional<String> publicKey(){
+    return Optional.empty();
+  }
+
+  @Override
+  @JsonIgnore
   public byte v() {
     return DUMMY_SIGNATURE.getRecId();
   }
@@ -131,5 +138,11 @@ public class SimulationCodeDelegation implements CodeDelegation {
   @JsonIgnore
   public BigInteger s() {
     return DUMMY_SIGNATURE.getS();
+  }
+
+  @Override
+  @JsonIgnore
+  public Bytes32 getOrComputeSenderRecoveryHash(){
+    return Bytes32.ZERO;
   }
 }

@@ -17,7 +17,7 @@ import org.hyperledger.besu.ethereum.rlp.RLP;
 import org.hyperledger.besu.ethereum.rlp.RLPInput;
 
 public class FlexibleCodeDelegationDecoder {
-    public static CodeDelegation decode(Bytes input){
+    public static CodeDelegation decode(final Bytes input){
         final RLPInput cdRlp = RLP.input(input.slice(1)); // Skip the code delegation type byte
         cdRlp.enterList();
         final CodeDelegationType type = CodeDelegationType.FLEXIBLE;

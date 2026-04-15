@@ -20,22 +20,40 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.apache.tuweni.units.bigints.UInt256;
 
-@JsonPropertyOrder({"chainId", "address", "nonce", "yParity", "r", "s"})
+@JsonPropertyOrder({"type","dsaType","chainId", "address", "nonce", "yParity", "r", "s", "publicKey", "signature"})
 public class CodeDelegationResult {
+  private final String type;
+  private final String dsaType;
   private final String chainId;
   private final String address;
   private final String nonce;
   private final String yParity;
   private final String r;
   private final String s;
+  private final String publicKey;
+  private final String signature;
 
   public CodeDelegationResult(final CodeDelegation codeDelegation) {
+    type = Quantity.create(codeDelegation.getType().getSerializedType());
+    dsaType = codeDelegation.dsaType().get().toString();
     chainId = Quantity.create(UInt256.valueOf(codeDelegation.chainId()));
     address = codeDelegation.address().getBytes().toHexString();
     nonce = Quantity.create(codeDelegation.nonce());
     yParity = Quantity.create(codeDelegation.v());
     r = Quantity.create(codeDelegation.r());
     s = Quantity.create(codeDelegation.s());
+    publicKey = codeDelegation.publicKey().orElse(null);
+    signature = codeDelegation.signature().encodedBytes().toString();
+  }
+
+  @JsonProperty("type")
+  public String type(){
+    return type;
+  }
+
+  @JsonProperty("dsaType")
+  public String dsaType(){
+    return dsaType;
   }
 
   @JsonProperty("chainId")
@@ -66,5 +84,15 @@ public class CodeDelegationResult {
   @JsonProperty("s")
   public String s() {
     return s;
+  }
+
+  @JsonProperty("publicKey")
+  public String publicKey(){
+    return publicKey;
+  }
+
+  @JsonProperty("signature")
+  public String signature(){
+    return signature;
   }
 }

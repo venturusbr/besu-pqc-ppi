@@ -47,6 +47,7 @@ import org.hyperledger.besu.ethereum.core.encoding.TransactionDecoder;
 import org.hyperledger.besu.ethereum.core.encoding.TransactionEncoder;
 import org.hyperledger.besu.ethereum.core.kzg.BlobProofBundle;
 import org.hyperledger.besu.ethereum.core.kzg.BlobsWithCommitments;
+import org.hyperledger.besu.ethereum.eth.transactions.PendingTransactionEstimatedMemorySizeTest.FieldSize;
 import org.hyperledger.besu.ethereum.eth.transactions.layered.BaseTransactionPoolTest;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPInput;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPOutput;
@@ -494,6 +495,66 @@ public class PendingTransactionEstimatedMemorySizeTest extends BaseTransactionPo
     Transaction txEip1559 = createEIP1559Transaction(1, KEYS1, 10);
     assertThat(baseTransactionMemorySize(txEip1559, EIP1559_EIP4844_CONSTANT_FIELD_PATHS))
         .isEqualTo(EIP1559_AND_EIP4844_SHALLOW_SIZE);
+  }
+
+  @Test
+  public void measureFlexibleAccessList() {
+    Transaction tx =
+        createTransaction(TransactionType.FLEXIBLE_ACCESS_LIST, 1, Wei.of(500), 0, List.of(), KEYS1);
+
+    long size = measureTransaction(tx, FRONTIER_ACCESS_LIST_CONSTANT_FIELD_PATHS);
+
+    System.out.println("FLEXIBLE_ACCESS_LIST size: " + size);
+  }
+
+  @Test
+  public void measureFlexibleEIP1559() {
+    Transaction tx = createEIP1559Transaction(1, KEYS1, 10)
+        .detachedCopyWithType(TransactionType.FLEXIBLE_EIP1559);
+
+    long size = measureTransaction(tx, EIP1559_EIP4844_CONSTANT_FIELD_PATHS);
+
+    System.out.println("FLEXIBLE_EIP1559 size: " + size);
+  }
+
+  @Test
+  public void measureFlexibleBlob() {
+    TransactionTestFixture preparedTx =
+        prepareTransaction(
+            TransactionType.FLEXIBLE_BLOB,
+            10,
+            Wei.of(500),
+            Wei.of(50),
+            10,
+            1,
+            BlobType.KZG_PROOF,
+            null);
+
+    Transaction tx = preparedTx.createTransaction(KEYS1);
+
+    long size = measureTransaction(tx, EIP1559_EIP4844_CONSTANT_FIELD_PATHS);
+
+    System.out.println("FLEXIBLE_BLOB size: " + size);
+  }
+
+  @Test
+  public void measureFlexibleDelegateCode() {
+    TransactionTestFixture preparedTx =
+        prepareTransaction(
+            TransactionType.FLEXIBLE_DELEGATE_CODE,
+            0,
+            Wei.of(500),
+            Wei.ZERO,
+            0,
+            0,
+            BlobType.KZG_PROOF,
+            List.of(CODE_DELEGATION_SENDER_1));
+
+    Transaction tx = preparedTx.createTransaction(KEYS1);
+
+    long size = measureTransaction(tx, EIP1559_EIP4844_CONSTANT_FIELD_PATHS);
+
+    System.out.println("FLEXIBLE_DELEGATE_CODE size: " + size);
   }
 
   @Test

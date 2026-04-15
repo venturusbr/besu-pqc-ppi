@@ -18,7 +18,7 @@ public class LegacyCodeDelegationDecoder {
     private static final Supplier<SignatureAlgorithm> SIGNATURE_ALGORITHM =
       Suppliers.memoize(SignatureAlgorithmFactory::getInstance);
       
-    public static CodeDelegation decode(Bytes input){
+    public static CodeDelegation decode(final Bytes input){
         final RLPInput cdRlp = RLP.input(input);
         cdRlp.enterList();
 
