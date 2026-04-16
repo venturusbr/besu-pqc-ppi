@@ -20,7 +20,7 @@ public class PublicKeyHandler {
         final Signature signature,
         final Optional<PublicKey> maybePartialPk,
         final Bytes32 recoveryHash) {
-        // what if maybePartialPk is null?
+        // TODO what if maybePartialPk is null?
         if(maybePartialPk.get() instanceof CompositePublicKey) return maybePartialPk;
 
         if (signatureAlgorithm instanceof HybridDigitalSignatureAlgorithm hybrid) {

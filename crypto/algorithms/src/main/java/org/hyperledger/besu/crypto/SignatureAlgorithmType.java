@@ -45,7 +45,8 @@ public class SignatureAlgorithmType {
   
   private static final ImmutableMap<Short, Supplier<DigitalSignatureAlgorithm>> DSA_SUPPORTED_ALGORITHMS =
       ImmutableMap.of(
-          DSAParametersSet.SECP256K1.getId(), SECP256K1::new, DSAParametersSet.SECP256R1.getId(), SECP256R1::new,
+          DSAParametersSet.SECP256K1.getId(), SECP256K1::new, 
+          DSAParametersSet.SECP256R1.getId(), SECP256R1::new,
           DSAParametersSet.SECP256K1MLDSA44.getId(), () -> new HybridStrongNestingConcatenation(
               new SECP256K1(), new MLDSA(DSAParametersSet.MLDSA44), DSAParametersSet.SECP256K1MLDSA44
             )
