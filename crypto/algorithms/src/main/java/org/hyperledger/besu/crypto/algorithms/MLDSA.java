@@ -23,7 +23,6 @@ import org.hyperledger.besu.crypto.SecureRandomProvider;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.NodeKeyPair;
 import org.hyperledger.besu.crypto.key.KeyManager;
-import org.hyperledger.besu.crypto.key.NodeKeyFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.SignatureFactory;
 import org.slf4j.Logger;
@@ -61,7 +60,7 @@ public class MLDSA implements DigitalSignatureAlgorithm{
         } catch (DataLengthException | CryptoException e) {
             LOG.error("Error while signing MLDSA", e);
         }
-        return SignatureFactory.createSingleSignatureFromBytes(signature, sk.getAlgorithm());
+        return SignatureFactory.createSignatureFromBytes(Bytes.wrap(signature), mldsaParameters);
     }
 
     @Override

@@ -44,11 +44,14 @@ import org.apache.tuweni.bytes.Bytes;
   "maxFeePerBlobGas",
   "hash",
   "input",
+  "dsaType",
   "nonce",
   "to",
   "transactionIndex",
   "type",
   "value",
+  "publicKey",
+  "signature",
   "yParity",
   "v",
   "r",
@@ -84,9 +87,12 @@ public class TransactionCompleteResult implements TransactionResult {
   private final String nonce;
   private final String to;
   private final String transactionIndex;
+  private final String dsaType;
   private final String type;
   private final String value;
   private final String yParity;
+  private final String publicKey;
+  private final String signature;
   private final String v;
   private final String r;
   private final String s;
@@ -104,6 +110,7 @@ public class TransactionCompleteResult implements TransactionResult {
         transaction.getAccessList().orElse(transactionType.supportsAccessList() ? List.of() : null);
     this.blockHash = tx.getBlockHash().get().toString();
     this.blockNumber = Quantity.create(tx.getBlockNumber().get());
+    this.dsaType = transaction.getDsaType().get().toString();
     this.chainId = transaction.getChainId().map(Quantity::create).orElse(null);
     this.from = transaction.getSender().toString();
     this.gas = Quantity.create(transaction.getGasLimit());
@@ -139,6 +146,8 @@ public class TransactionCompleteResult implements TransactionResult {
               : null;
     }
     this.value = Quantity.create(transaction.getValue());
+    this.publicKey = transaction.getPublicKey().orElse(null);
+    this.signature = transaction.getSignature().toString();
     this.r = Quantity.create(transaction.getR());
     this.s = Quantity.create(transaction.getS());
     this.versionedHashes =
@@ -244,6 +253,21 @@ public class TransactionCompleteResult implements TransactionResult {
   @JsonGetter(value = "yParity")
   public String getYParity() {
     return yParity;
+  }
+  @JsonGetter(value = "dsaType")
+  public String getDsaType(){
+    return dsaType;
+  }
+
+  @JsonGetter(value = "publicKey")
+  public String getPublicKey(){
+    return publicKey;
+  }
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  @JsonGetter(value = "signature")
+  public String getSignature(){
+    return signature;
   }
 
   @JsonInclude(JsonInclude.Include.NON_NULL)

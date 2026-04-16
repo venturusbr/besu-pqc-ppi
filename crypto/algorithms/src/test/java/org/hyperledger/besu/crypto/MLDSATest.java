@@ -4,7 +4,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.crypto.algorithms.MLDSA;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.KeyManager;
-import org.hyperledger.besu.crypto.key.NodeKeyFactory;
 import org.hyperledger.besu.crypto.key.NodeKeyPair;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.junit.jupiter.params.ParameterizedTest;

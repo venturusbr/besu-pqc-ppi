@@ -18,6 +18,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import org.hyperledger.besu.crypto.algorithms.MLDSA;
+import org.hyperledger.besu.crypto.algorithms.hybrid.HybridStrongNestingConcatenation;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.pqc.PqcSignatureAlgorithm;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.AbstractCrystalsDilithium3;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.CrystalsDilithium3;
@@ -39,6 +42,15 @@ public class SignatureAlgorithmType {
   private static final ImmutableMap<String, Supplier<SignatureAlgorithm>> SUPPORTED_ALGORITHMS =
       ImmutableMap.of(
           DEFAULT_EC_CURVE_NAME, SECP256K1::new, SECP_256_R1_CURVE_NAME, SECP256R1::new);
+  
+  private static final ImmutableMap<Short, Supplier<DigitalSignatureAlgorithm>> DSA_SUPPORTED_ALGORITHMS =
+      ImmutableMap.of(
+          DSAParametersSet.SECP256K1.getId(), SECP256K1::new, 
+          DSAParametersSet.SECP256R1.getId(), SECP256R1::new,
+          DSAParametersSet.SECP256K1MLDSA44.getId(), () -> new HybridStrongNestingConcatenation(
+              new SECP256K1(), new MLDSA(DSAParametersSet.MLDSA44), DSAParametersSet.SECP256K1MLDSA44
+            )
+          );
 
   private static final ImmutableMap<String, Supplier<PqcSignatureAlgorithm>> PQC_POSSIBLES_ALGORITHM = ImmutableMap
   .of(PQC_LATTICE_BASED_DILITHIUM, CrystalsDilithium3::new, "sphincsplus", SphincsPlus::new, "falcon", Falcon::new);
@@ -94,6 +106,10 @@ public class SignatureAlgorithmType {
    */
   public static SignatureAlgorithmType createDefault() {
     return new SignatureAlgorithmType(DEFAULT_SIGNATURE_ALGORITHM_TYPE);
+  }
+
+  public static DigitalSignatureAlgorithm getSupportedDsaById(final Short dsaId){
+    return DSA_SUPPORTED_ALGORITHMS.get(dsaId).get();
   }
 
   public static PqcSignatureAlgorithm getGenericInstanceByName(final String algorithmName){

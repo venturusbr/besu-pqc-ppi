@@ -47,6 +47,7 @@ dependencies {
   implementation project(':ethereum:rlp')
   implementation project(':ethereum:trie')
   implementation project(':evm')
+  implementation project(':crypto:algorithms')
   implementation project(':metrics:core')
   implementation project(':services:kvstore')
   implementation project(':services:pipeline')

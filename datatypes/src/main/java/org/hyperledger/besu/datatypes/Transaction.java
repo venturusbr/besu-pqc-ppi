@@ -17,8 +17,10 @@ package org.hyperledger.besu.datatypes;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
+import java.security.PublicKey;
 
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.crypto.signature.Signature;
 
 /**
  * A transaction is a single cryptographically-signed instruction constructed by an actor externally
@@ -199,6 +201,12 @@ public interface Transaction {
    * @return the type of the transaction
    */
   TransactionType getType();
+
+  Optional<Short> getDsaType();
+
+  Signature getSignature();
+
+  Optional<PublicKey> getMaybePublicKey();
 
   /**
    * Return the versioned hashes for this transaction.

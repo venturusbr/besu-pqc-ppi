@@ -102,6 +102,15 @@ public class SECPSignature implements Signature{
     }
   }
 
+  @Override
+  public Boolean isValid(final SignatureValidationContext context){
+    final BigInteger halfCurveOrder = SignatureAlgorithmFactory.getInstance().getHalfCurveOrder();
+    if (context.isDisallowMalleability() && getS().compareTo(halfCurveOrder) > 0) {
+      return false;
+    }
+    return true;
+  }
+
   /**
    * Decode secp signature.
    *
@@ -182,10 +191,6 @@ public class SECPSignature implements Signature{
    */
   public BigInteger getS() {
     return s;
-  }
-
-  public Boolean isHybrid(){
-    return false;
   }
 
   @Override

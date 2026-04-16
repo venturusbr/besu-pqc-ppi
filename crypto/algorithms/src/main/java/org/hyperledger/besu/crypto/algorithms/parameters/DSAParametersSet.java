@@ -1,27 +1,49 @@
 package org.hyperledger.besu.crypto.algorithms.parameters;
 
+import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 public enum DSAParametersSet {
-    SECP256K1("SECP256K1", 32, 64, 65, null),
-    SECP256R1("SECP256R1", 32, 64, 65, null),
-    MLDSA44("MLDSA44", 2560, 1312, 2420, 32),
-    MLDSA65("MLDSA65", 4032, 1952, 3309, 32),
-    MLDSA87("MLDSA87", 4896, 2592, 4627, 32),
-    SECP256K1MLDSA44("SECP256K1-MLDSA44", 2592, 1376, 2485, null)
+    SECP256K1((short) 0x0001,"SECP256K1", 32, 64, 65, null),
+    SECP256R1((short) 0x0002, "SECP256R1", 32, 64, 65, null),
+    MLDSA44((short) 0x0030, "MLDSA44", 2560, 1312, 2420, 32),
+    MLDSA65((short) 0x0031, "MLDSA65", 4032, 1952, 3309, 32),
+    MLDSA87((short) 0x0032, "MLDSA87", 4896, 2592, 4627, 32),
+    SECP256K1MLDSA44((short) 0x0060, "SECP256K1-MLDSA44", 2592, 1376, 2485, null)
     ;
 
+    private final Short id;
     private final String name;
     private final Integer publicKeyLength;
     private final Integer privateKeyLength;
     private final Integer signatureLength;
     private final Integer seedLength;
 
-    DSAParametersSet(final String name, final Integer privateKeyLength, final Integer publicKeyLength,
+    private static final Map<Short, DSAParametersSet> BY_ID =
+        Arrays.stream(values())
+              .collect(Collectors.toMap(DSAParametersSet::getId, e -> e));
+
+    DSAParametersSet(final Short id, final String name, final Integer privateKeyLength, final Integer publicKeyLength,
             final Integer signatureLength, final Integer seedLength) {
+        this.id = id;
         this.name = name;
         this.publicKeyLength = publicKeyLength;
         this.privateKeyLength = privateKeyLength;
         this.signatureLength = signatureLength;
         this.seedLength = seedLength;
+    }
+
+    public static DSAParametersSet fromId(final Short id) {
+        DSAParametersSet set = BY_ID.get(id);
+        if (set == null) {
+            throw new IllegalArgumentException("Unknown DSAParametersSet id: " + id);
+        }
+        return set;
+    }
+
+    public Short getId() {
+        return id;
     }
 
     public String getName(){

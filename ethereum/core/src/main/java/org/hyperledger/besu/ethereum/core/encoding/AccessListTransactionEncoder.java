@@ -14,8 +14,6 @@
  */
 package org.hyperledger.besu.ethereum.core.encoding;
 
-import static org.hyperledger.besu.ethereum.core.encoding.TransactionEncoder.writeSignature;
-
 import org.hyperledger.besu.datatypes.AccessListEntry;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.BytesHolder;
@@ -48,8 +46,7 @@ public class AccessListTransactionEncoder {
                     new IllegalStateException(
                         "Developer error: access list should be guaranteed to be present")),
         rlpOutput);
-    rlpOutput.writeIntScalar(transaction.getSignature().getRecId());
-    writeSignature(transaction, rlpOutput);
+    TransactionSignatureEncoder.writeStandardSignatureAndRecoveryId(transaction.getSignature(), rlpOutput);
     rlpOutput.endList();
   }
 

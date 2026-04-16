@@ -528,6 +528,10 @@ public class BlockDataGenerator {
       case ACCESS_LIST -> accessListTransaction(payload, to);
       case BLOB -> blobTransaction(payload, to);
       case DELEGATE_CODE -> null;
+      case FLEXIBLE_ACCESS_LIST -> null;
+      case FLEXIBLE_EIP1559 -> null;
+      case FLEXIBLE_BLOB -> null;
+      case FLEXIBLE_DELEGATE_CODE -> null;
     };
   }
 

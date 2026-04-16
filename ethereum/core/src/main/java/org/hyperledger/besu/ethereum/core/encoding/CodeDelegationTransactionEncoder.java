@@ -15,8 +15,8 @@
 package org.hyperledger.besu.ethereum.core.encoding;
 
 import static org.hyperledger.besu.ethereum.core.encoding.AccessListTransactionEncoder.writeAccessList;
-import static org.hyperledger.besu.ethereum.core.encoding.TransactionEncoder.writeSignatureAndRecoveryId;
 
+import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.datatypes.BytesHolder;
 import org.hyperledger.besu.datatypes.CodeDelegation;
 import org.hyperledger.besu.ethereum.core.Transaction;
@@ -32,37 +32,6 @@ public class CodeDelegationTransactionEncoder {
     // private constructor
   }
 
-  public static void encodeCodeDelegationInner(
-      final List<CodeDelegation> payloads, final RLPOutput rlpOutput) {
-    rlpOutput.startList();
-    payloads.forEach(payload -> encodeSingleCodeDelegation(payload, rlpOutput));
-    rlpOutput.endList();
-  }
-
-  public static void encodeSingleCodeDelegationWithoutSignature(
-      final CodeDelegation payload, final RLPOutput rlpOutput) {
-    rlpOutput.startList();
-    encodeAuthorizationDetails(payload, rlpOutput);
-    rlpOutput.endList();
-  }
-
-  public static void encodeSingleCodeDelegation(
-      final CodeDelegation payload, final RLPOutput rlpOutput) {
-    rlpOutput.startList();
-    encodeAuthorizationDetails(payload, rlpOutput);
-    rlpOutput.writeUnsignedByte(payload.signature().getRecId() & 0xFF);
-    rlpOutput.writeBigIntegerScalar(payload.signature().getR());
-    rlpOutput.writeBigIntegerScalar(payload.signature().getS());
-    rlpOutput.endList();
-  }
-
-  private static void encodeAuthorizationDetails(
-      final CodeDelegation payload, final RLPOutput rlpOutput) {
-    rlpOutput.writeBigIntegerScalar(payload.chainId());
-    rlpOutput.writeBytes(payload.address().getBytes().copy());
-    rlpOutput.writeLongScalar(payload.nonce());
-  }
-
   public static void encode(final Transaction transaction, final RLPOutput out) {
     out.startList();
     out.writeBigIntegerScalar(transaction.getChainId().orElseThrow());
@@ -75,7 +44,7 @@ public class CodeDelegationTransactionEncoder {
     out.writeUInt256Scalar(transaction.getValue());
     out.writeBytes(transaction.getPayload());
     writeAccessList(out, transaction.getAccessList());
-    encodeCodeDelegationInner(
+    CodeDelegationEncoder.encodeCodeDelegationInner(
         transaction
             .getCodeDelegationList()
             .orElseThrow(
@@ -83,7 +52,7 @@ public class CodeDelegationTransactionEncoder {
                     new IllegalStateException(
                         "Developer error: the transaction should be guaranteed to have a code delegation authorizations here")),
         out);
-    writeSignatureAndRecoveryId(transaction, out);
+    TransactionSignatureEncoder.writeStandardSignatureAndRecoveryId(transaction.getSignature(), out);
     out.endList();
   }
 }

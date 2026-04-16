@@ -47,7 +47,7 @@ public class BlobTransactionEncoder {
               out.writeBytes(vh.getBytes());
             });
     out.endList();
-    TransactionEncoder.writeSignatureAndRecoveryId(transaction, out);
+    TransactionSignatureEncoder.writeStandardSignatureAndRecoveryId(transaction.getSignature(), out);
     out.endList();
   }
 

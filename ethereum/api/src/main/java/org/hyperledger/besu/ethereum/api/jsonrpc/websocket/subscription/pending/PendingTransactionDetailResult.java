@@ -36,7 +36,10 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
   "yParity",
   "v",
   "r",
-  "s"
+  "s",
+  "publicKey",
+  "signature",
+  "dsaType"
 })
 public class PendingTransactionDetailResult implements JsonRpcResult {
   private final String from;
@@ -46,9 +49,12 @@ public class PendingTransactionDetailResult implements JsonRpcResult {
   private final String input;
   private final String nonce;
   private final String to;
+  private final String dsaType;
   private final String type;
   private final String value;
   private final String yParity;
+  private final String publicKey;
+  private final String signature;
   private final String v;
   private final String r;
   private final String s;
@@ -60,6 +66,7 @@ public class PendingTransactionDetailResult implements JsonRpcResult {
     this.gasPrice = tx.getGasPrice().map(Quantity::create).orElse(null);
     this.hash = tx.getHash().toString();
     this.input = tx.getPayload().toString();
+    this.dsaType = tx.getDsaType().toString();
     this.nonce = Quantity.create(tx.getNonce());
     this.to = tx.getTo().map(a -> a.getBytes().toHexString()).orElse(null);
     if (transactionType == TransactionType.FRONTIER) {
@@ -75,6 +82,12 @@ public class PendingTransactionDetailResult implements JsonRpcResult {
               ? Quantity.create(tx.getYParity())
               : null;
     }
+    this.publicKey = tx.getMaybePublicKey()
+        .map(Object::toString)
+        .orElse(null);
+    this.signature = tx.getSignature() != null
+        ? tx.getSignature().toString()
+        : null;
     this.value = Quantity.create(tx.getValue());
     this.r = Quantity.create(tx.getR());
     this.s = Quantity.create(tx.getS());
@@ -123,6 +136,21 @@ public class PendingTransactionDetailResult implements JsonRpcResult {
   @JsonGetter(value = "value")
   public String getValue() {
     return value;
+  }
+
+  @JsonGetter(value = "publicKey")
+  public String getPublicKey() {
+    return publicKey;
+  }
+
+  @JsonGetter(value = "dsaType")
+  public String getDsaType(){
+    return dsaType;
+  }
+
+  @JsonGetter(value = "signature")
+  public String getSignature(){
+    return signature;
   }
 
   @JsonInclude(JsonInclude.Include.NON_NULL)

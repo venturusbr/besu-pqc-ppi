@@ -29,13 +29,21 @@ public enum TransactionType {
   /** Blob transaction type. */
   BLOB(0x03),
   /** Eip7702 transaction type. */
-  DELEGATE_CODE(0x04);
+  DELEGATE_CODE(0x04),
+  /** DSA-agnostic Access list transaction type. */
+  FLEXIBLE_ACCESS_LIST (0x41),
+  /** DSA-agnostic Eip1559 transaction type. */
+  FLEXIBLE_EIP1559 (0x42),
+  /** DSA-agnostic Blob transaction type. */
+  FLEXIBLE_BLOB (0x43),
+  /** DSA-agnostic Eip7702 transaction type. */
+  FLEXIBLE_DELEGATE_CODE(0x44);
 
   private static final Set<TransactionType> ACCESS_LIST_SUPPORTED_TRANSACTION_TYPES =
-      EnumSet.of(ACCESS_LIST, EIP1559, BLOB, DELEGATE_CODE);
+      EnumSet.of(ACCESS_LIST, EIP1559, BLOB, DELEGATE_CODE, FLEXIBLE_ACCESS_LIST, FLEXIBLE_EIP1559, FLEXIBLE_BLOB, FLEXIBLE_DELEGATE_CODE);
 
   private static final Set<TransactionType> LEGACY_FEE_MARKET_TRANSACTION_TYPES =
-      EnumSet.of(FRONTIER, ACCESS_LIST);
+      EnumSet.of(FRONTIER, ACCESS_LIST, FLEXIBLE_ACCESS_LIST);
 
   // The theoretical boundaries of the first byte of the RLP of a Frontier transaction.
   // In practice Frontier transactions almost always start with 0xf8 or 0xf9.
@@ -52,7 +60,7 @@ public enum TransactionType {
       new TransactionType[Byte.toUnsignedInt(MAX_LEGACY_TX_OPAQUE_BYTE) + 1];
 
   private static final TransactionType[] transactionTypeByEthSerializedType =
-      new TransactionType[values().length];
+      new TransactionType[256];
 
   static {
     EnumSet.allOf(TransactionType.class).stream()
@@ -61,13 +69,13 @@ public enum TransactionType {
               tt.requireChainId = tt != FRONTIER;
               tt.supportAccessList = ACCESS_LIST_SUPPORTED_TRANSACTION_TYPES.contains(tt);
               tt.supportBaseFeeMarket = !LEGACY_FEE_MARKET_TRANSACTION_TYPES.contains(tt);
-              tt.supportBlob = tt == BLOB;
-              tt.supportDelegatedCode = tt == DELEGATE_CODE;
+              tt.supportBlob = tt == BLOB || tt == FLEXIBLE_BLOB;
+              tt.supportDelegatedCode = tt == DELEGATE_CODE || tt == FLEXIBLE_DELEGATE_CODE;
               if (tt == FRONTIER) {
                 for (int i = Byte.toUnsignedInt(MIN_LEGACY_TX_OPAQUE_BYTE);
                     i < Byte.toUnsignedInt(MAX_LEGACY_TX_OPAQUE_BYTE);
                     i++) {
-                  transactionTypeByOpaqueByte[i] = FRONTIER;
+                  transactionTypeByOpaqueByte[i] = tt;
                 }
               } else {
                 transactionTypeByOpaqueByte[tt.getSerializedType()] = tt;
@@ -111,6 +119,16 @@ public enum TransactionType {
    */
   public byte getEthSerializedType() {
     return serializedType;
+  }
+
+  public boolean isFlexible() {
+    return switch (this) {
+      case FLEXIBLE_ACCESS_LIST,
+          FLEXIBLE_EIP1559,
+          FLEXIBLE_BLOB,
+          FLEXIBLE_DELEGATE_CODE -> true;
+      default -> false;
+    };
   }
 
   /**

@@ -24,6 +24,7 @@ import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.TransactionType;
 import org.hyperledger.besu.datatypes.VersionedHash;
 import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.ethereum.core.encoding.CodeDelegationEncoder;
 import org.hyperledger.besu.ethereum.core.encoding.CodeDelegationTransactionEncoder;
 import org.hyperledger.besu.ethereum.core.kzg.BlobsWithCommitments;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPOutput;
@@ -114,6 +115,8 @@ public class TransactionTestFixture {
         builder.maxFeePerGas(maxFeePerGas.orElse(Wei.of(5000)));
         builder.accessList(accessListEntries.orElse(List.of()));
         builder.codeDelegations(codeDelegations.orElse(List.of(CODE_DELEGATION)));
+        break;
+      default: 
         break;
     }
 
@@ -214,7 +217,7 @@ public class TransactionTestFixture {
   public static CodeDelegation createSignedCodeDelegation(
       final BigInteger chainId, final Address address, final long nonce, final KeyPair keys) {
     BytesValueRLPOutput rlpOutput = new BytesValueRLPOutput();
-    CodeDelegationTransactionEncoder.encodeSingleCodeDelegationWithoutSignature(
+    CodeDelegationEncoder.encodeWithoutSignature(
         new org.hyperledger.besu.ethereum.core.CodeDelegation(chainId, address, nonce, null),
         rlpOutput);
 

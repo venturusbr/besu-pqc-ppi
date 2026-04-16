@@ -10,20 +10,17 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
 import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
-import org.hyperledger.besu.crypto.config.KeyConfiguration;
 import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
 import org.hyperledger.besu.crypto.key.types.CompositePrivateKey;
 import org.hyperledger.besu.crypto.key.types.MLDSAPrivateKey;
 import org.hyperledger.besu.crypto.key.types.MLDSAPublicKey;
 
-public class NodeKeyFactory {
-    private final KeyExtractor keyExtractor;
+public class KeyFactory {
+    private static final KeyExtractor keyExtractor = new KeyExtractor();
 
-    public NodeKeyFactory(final KeyExtractor keyExtractor){
-        this.keyExtractor = keyExtractor;
-    }
+    private KeyFactory(){}
 
-    public PrivateKey createPrivateKey(final Bytes privateKeyBytes, final DSAParametersSet paramsSet, final PrivateKeyRepresentation firstSkRep, final PrivateKeyRepresentation secondSkRep){
+    public static PrivateKey createPrivateKey(final Bytes privateKeyBytes, final DSAParametersSet paramsSet, final PrivateKeyRepresentation firstSkRep, final PrivateKeyRepresentation secondSkRep){
         PrivateKey sk;
         switch (paramsSet) {
             case SECP256K1:
@@ -50,7 +47,7 @@ public class NodeKeyFactory {
         return sk;
     }
 
-    public PublicKey createPublicKey(final PrivateKey privateKey, final DSAParametersSet paramsSet){
+    public static PublicKey createPublicKey(final PrivateKey privateKey, final DSAParametersSet paramsSet){
         PublicKey pk;
         switch (paramsSet) {
             case SECP256K1:
@@ -81,7 +78,7 @@ public class NodeKeyFactory {
         return pk;
     }
 
-    public PublicKey createPublicKey(final Bytes publicKeyBytes, final DSAParametersSet paramsSet){
+    public static PublicKey createPublicKey(final Bytes publicKeyBytes, final DSAParametersSet paramsSet){
         PublicKey pk;
         switch (paramsSet) {
             case SECP256K1:
@@ -94,25 +91,47 @@ public class NodeKeyFactory {
                 pk = MLDSAPublicKey.create(publicKeyBytes, paramsSet);
                 break;
             case SECP256K1MLDSA44:
-                Bytes secpPkBytes = keyExtractor.extractPublicKeyBytesAtOffset(publicKeyBytes, 0, DSAParametersSet.SECP256K1);
-                PublicKey secpPk = createPublicKey(secpPkBytes, DSAParametersSet.SECP256K1);
+                int expectedFullLength =
+                    DSAParametersSet.SECP256K1MLDSA44.getPublicKeyLength();
 
-                Bytes mldsaPk44Bytes = keyExtractor.extractPublicKeyBytesAtOffset(publicKeyBytes, DSAParametersSet.SECP256K1.getPublicKeyLength() + 1, DSAParametersSet.MLDSA44);
-                PublicKey mldsaPk44 = createPublicKey(mldsaPk44Bytes, DSAParametersSet.MLDSA44);
+                if (publicKeyBytes.size() == expectedFullLength) {
 
-                pk = CompositePublicKey.create(secpPk, mldsaPk44);
-                break;
+                    Bytes secpPkBytes =
+                        keyExtractor.extractPublicKeyBytesAtOffset(
+                            publicKeyBytes, 0, DSAParametersSet.SECP256K1);
+
+                    Bytes mldsaPkBytes =
+                        keyExtractor.extractPublicKeyBytesAtOffset(
+                            publicKeyBytes,
+                            DSAParametersSet.SECP256K1.getPublicKeyLength() + 1,
+                            DSAParametersSet.MLDSA44);
+
+                    PublicKey secpPk =
+                        createPublicKey(secpPkBytes, DSAParametersSet.SECP256K1);
+
+                    PublicKey mldsaPk =
+                        createPublicKey(mldsaPkBytes, DSAParametersSet.MLDSA44);
+
+                    return CompositePublicKey.create(secpPk, mldsaPk);
+                }
+                // TODO it doesnt works if user send a hybrid pk where pk.size() = secp.size();
+                // should throw a exception.
+                return MLDSAPublicKey.create(publicKeyBytes, DSAParametersSet.MLDSA44);
             default:
                 throw new IllegalArgumentException("Unsupported algorithm: " + paramsSet.getName());
         }
         return pk;
     }
 
-    public NodeKeyPair createNodeKpFromKeyPair(final KeyPair kp){
+    public static PublicKey createCompositePublicKey(final PublicKey firstPk, final PublicKey secondPk){
+        return CompositePublicKey.create(firstPk, secondPk);
+    }
+
+    public static NodeKeyPair createNodeKpFromKeyPair(final KeyPair kp){
         return createNodeKp(kp.getPrivate(),kp.getPublic());
     }
 
-    public NodeKeyPair createNodeKp(final PrivateKey privateKey, final PublicKey publicKey){
+    public static NodeKeyPair createNodeKp(final PrivateKey privateKey, final PublicKey publicKey){
         return new NodeKeyPair(privateKey, publicKey);
     }
 }

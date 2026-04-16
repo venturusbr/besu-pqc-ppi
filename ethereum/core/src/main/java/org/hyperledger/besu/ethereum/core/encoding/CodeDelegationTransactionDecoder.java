@@ -68,7 +68,7 @@ public class CodeDelegationTransactionDecoder {
                       accessListEntryRLPInput.leaveList();
                       return accessListEntry;
                     }))
-            .codeDelegations(txRlp.readList(CodeDelegationTransactionDecoder::decodeInnerPayload))
+            .codeDelegations(txRlp.readList(authorizationRLPInput -> CodeDelegationDecoder.decodeRLP(authorizationRLPInput)))
             .sizeForBlockInclusion(input.size())
             .sizeForAnnouncement(input.size())
             .hash(Hash.hash(input));
@@ -80,25 +80,5 @@ public class CodeDelegationTransactionDecoder {
     txRlp.leaveList();
 
     return builder.signature(SIGNATURE_ALGORITHM.get().createSignature(r, s, recId)).build();
-  }
-
-  public static CodeDelegation decodeInnerPayload(final RLPInput input) {
-    input.enterList();
-
-    final BigInteger chainId = input.readBigIntegerScalar();
-    final Address address = Address.wrap(input.readBytes());
-    final long nonce = input.readLongScalar();
-
-    final byte yParity = (byte) input.readUnsignedByteScalar();
-    final BigInteger r = input.readUInt256Scalar().toUnsignedBigInteger();
-    final BigInteger s = input.readUInt256Scalar().toUnsignedBigInteger();
-
-    input.leaveList();
-
-    final SECPSignature signature =
-        SIGNATURE_ALGORITHM.get().createCodeDelegationSignature(r, s, yParity);
-
-    return new org.hyperledger.besu.ethereum.core.CodeDelegation(
-        chainId, address, nonce, signature);
   }
 }

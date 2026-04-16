@@ -17,11 +17,14 @@ package org.hyperledger.besu.ethereum.core;
 import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.CodeDelegation;
+import org.hyperledger.besu.datatypes.CodeDelegationType;
 import org.hyperledger.besu.ethereum.core.json.ChainIdDeserializer;
 
 import java.math.BigInteger;
+import java.security.PublicKey;
 import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -29,8 +32,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import org.apache.tuweni.bytes.Bytes;
 
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 /**
  * Code delegation used only for simulations where the authority is provided directly rather than
  * recovered from a signature.
@@ -79,7 +83,7 @@ public class SimulationCodeDelegation implements CodeDelegation {
 
   @Override
   @JsonIgnore
-  public SECPSignature signature() {
+  public Signature signature() {
     return DUMMY_SIGNATURE;
   }
 
@@ -92,6 +96,30 @@ public class SimulationCodeDelegation implements CodeDelegation {
   @Override
   public long nonce() {
     return nonce;
+  }
+
+  @Override
+  @JsonIgnore
+  public CodeDelegationType getType() {
+    return CodeDelegationType.LEGACY;
+  }
+
+  @Override
+  @JsonIgnore
+  public Optional<Short> dsaType() {
+    return Optional.empty();
+  }
+
+  @Override
+  @JsonIgnore
+  public Optional<PublicKey> maybePublicKey() {
+    return Optional.empty();
+  }
+
+  @Override
+  @JsonIgnore
+  public Optional<String> publicKey(){
+    return Optional.empty();
   }
 
   @Override
@@ -110,5 +138,11 @@ public class SimulationCodeDelegation implements CodeDelegation {
   @JsonIgnore
   public BigInteger s() {
     return DUMMY_SIGNATURE.getS();
+  }
+
+  @Override
+  @JsonIgnore
+  public Bytes32 getOrComputeSenderRecoveryHash(){
+    return Bytes32.ZERO;
   }
 }

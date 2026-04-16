@@ -16,6 +16,7 @@ package org.hyperledger.besu.ethereum.mainnet;
 
 import static org.hyperledger.besu.evm.account.Account.MAX_NONCE;
 
+import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.CodeDelegation;
 import org.hyperledger.besu.ethereum.core.Transaction;
@@ -105,10 +106,12 @@ public class CodeDelegationProcessor {
       return;
     }
 
-    if (codeDelegation.signature().getS().compareTo(halfCurveOrder) > 0) {
-      LOG.trace(
-          "Invalid signature for code delegation. S value must be less or equal than the half curve order.");
-      return;
+    if (codeDelegation.signature() instanceof SECPSignature secpSig) {
+      if (secpSig.getS().compareTo(halfCurveOrder) > 0) {
+        LOG.trace(
+            "Invalid signature for code delegation. S value must be less or equal than the half curve order.");
+        return;
+      }
     }
 
     final Optional<Address> authorizer = codeDelegation.authorizer();

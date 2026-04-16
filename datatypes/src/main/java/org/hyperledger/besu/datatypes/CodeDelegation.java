@@ -14,10 +14,13 @@
  */
 package org.hyperledger.besu.datatypes;
 
-import org.hyperledger.besu.crypto.SECPSignature;
-
 import java.math.BigInteger;
+import java.security.PublicKey;
 import java.util.Optional;
+
+import org.hyperledger.besu.crypto.signature.Signature;
+
+import org.apache.tuweni.bytes.Bytes32;
 
 /**
  * CodeDelegation is a data structure that represents the authorization to delegate code of an EOA
@@ -26,6 +29,15 @@ import java.util.Optional;
 public interface CodeDelegation {
   /** The cost of delegating code on an existing account. */
   long PER_AUTH_BASE_COST = 12_500L;
+
+  CodeDelegationType getType();
+
+  /**
+   * Return the chain id.
+   *
+   * @return chain id
+   */
+  Optional<Short> dsaType();
 
   /**
    * Return the chain id.
@@ -42,11 +54,20 @@ public interface CodeDelegation {
   Address address();
 
   /**
+   * Return the publicKey.
+   *
+   * @return publicKey
+   */
+  Optional<PublicKey> maybePublicKey();
+
+  Optional<String> publicKey();
+
+  /**
    * Return the signature.
    *
    * @return signature
    */
-  SECPSignature signature();
+  Signature signature();
 
   /**
    * Return the authorizer address.
@@ -82,4 +103,6 @@ public interface CodeDelegation {
    * @return s value
    */
   BigInteger s();
+
+  Bytes32 getOrComputeSenderRecoveryHash();
 }
