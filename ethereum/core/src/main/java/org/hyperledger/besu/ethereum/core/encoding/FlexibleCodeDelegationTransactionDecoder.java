@@ -51,7 +51,7 @@ public class FlexibleCodeDelegationTransactionDecoder {
                             return accessListEntry;
                         }))
                 .codeDelegations(txRlp.readList(authorizationRLPInput -> CodeDelegationDecoder.decodeRLP(authorizationRLPInput)))
-                .publicKey(txRlp.readBytes(pkBytes -> pkBytes.isEmpty() ? null : KeyFactory.createPublicKey(pkBytes, dsaParams)))
+                .publicKey(PublicKeyDecoder.decodeByDsaId(dsaType, txRlp))
                 .sizeForAnnouncement(input.size())
                 .sizeForBlockInclusion(input.size())
                 .hash(Hash.hash(input));

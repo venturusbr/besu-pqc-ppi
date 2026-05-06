@@ -5,9 +5,7 @@ import java.security.PublicKey;
 import java.util.Optional;
 
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
-import org.hyperledger.besu.crypto.key.KeyFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.SignatureFactory;
 import org.hyperledger.besu.datatypes.Address;
@@ -26,12 +24,7 @@ public class FlexibleCodeDelegationDecoder {
         final BigInteger chainId = cdRlp.readBigIntegerScalar();
         final Address address = Address.wrap(cdRlp.readBytes());
         final long nonce = cdRlp.readLongScalar();
-        final Optional<PublicKey> maybePk =
-        Optional.ofNullable(
-            cdRlp.readBytes(pkBytes ->
-                pkBytes.isEmpty() ? null : KeyFactory.createPublicKey(pkBytes, dsaParams)
-            )
-        );
+        final Optional<PublicKey> maybePk = PublicKeyDecoder.decodeByDsaId(dsaParams.getId(), cdRlp);
 
         final Signature signature = cdRlp.readBytes(signatureBytes -> SignatureFactory.createSignatureFromBytes(signatureBytes, dsaParams));
 

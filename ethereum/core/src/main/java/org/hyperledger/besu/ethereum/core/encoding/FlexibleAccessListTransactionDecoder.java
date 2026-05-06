@@ -1,7 +1,6 @@
 package org.hyperledger.besu.ethereum.core.encoding;
 
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
-import org.hyperledger.besu.crypto.key.KeyFactory;
 import org.hyperledger.besu.crypto.signature.SignatureFactory;
 import org.hyperledger.besu.datatypes.AccessListEntry;
 import org.hyperledger.besu.datatypes.Address;
@@ -50,7 +49,7 @@ public class FlexibleAccessListTransactionDecoder {
                       accessListEntryRLPInput.leaveList();
                       return accessListEntry;
                     }))
-                .publicKey(txRlp.readBytes(pkBytes -> pkBytes.isEmpty() ? null : KeyFactory.createPublicKey(pkBytes, dsaParams)))
+                .publicKey(PublicKeyDecoder.decodeByDsaId(dsaType, txRlp))
                 .sizeForAnnouncement(input.size())
                 .sizeForBlockInclusion(input.size())
                 .hash(Hash.hash(input));

@@ -7,7 +7,6 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.HybridDigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.PublicKeyRecoverable;
-import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.types.CompositeSignature;

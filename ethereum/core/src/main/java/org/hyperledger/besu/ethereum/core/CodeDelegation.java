@@ -180,7 +180,7 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
 
     final Optional<PublicKey> maybePk =
         maybePublicKey != null
-            ? Optional.of(KeyFactory.createPublicKey(maybePublicKey, dsaParams))
+            ? KeyFactory.createPublicKey(maybePublicKey, dsaParams)
             : Optional.empty();
 
     return new CodeDelegation(
@@ -239,6 +239,7 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
       Bytes.wrap(
           KeyFactory
               .createPublicKey(Bytes.wrap(maybePublicKey.get().getEncoded()), dsaParams)
+              .get()
               .getEncoded()
       ).toHexString()
     );

@@ -4,7 +4,6 @@ import java.math.BigInteger;
 
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
-import org.hyperledger.besu.crypto.key.KeyFactory;
 import org.hyperledger.besu.crypto.signature.SignatureFactory;
 import org.hyperledger.besu.datatypes.AccessListEntry;
 import org.hyperledger.besu.datatypes.Address;
@@ -64,7 +63,7 @@ public class FlexibleBlobTransactionDecoder {
             .maxFeePerBlobGas(Wei.of(txRlp.readUInt256Scalar()))
             .versionedHashes(
                 txRlp.readList(versionedHashes -> new VersionedHash(versionedHashes.readBytes32())))
-            .publicKey(txRlp.readBytes(pkBytes -> pkBytes.isEmpty() ? null : KeyFactory.createPublicKey(pkBytes, dsaParams)));
+            .publicKey(PublicKeyDecoder.decodeByDsaId(dsaType, txRlp));
             
             builder
                 .signature(

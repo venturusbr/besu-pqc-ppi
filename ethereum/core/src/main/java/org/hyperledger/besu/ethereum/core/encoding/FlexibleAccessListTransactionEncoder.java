@@ -59,6 +59,6 @@ public class FlexibleAccessListTransactionEncoder {
             accessList,
             out
         );
-        out.writeBytes(Bytes.wrap(pk.get().getEncoded()));
+        PublicKeyEncoder.encodeByDsaId(pk.get(), dsaType.get(), out);
     }
 }

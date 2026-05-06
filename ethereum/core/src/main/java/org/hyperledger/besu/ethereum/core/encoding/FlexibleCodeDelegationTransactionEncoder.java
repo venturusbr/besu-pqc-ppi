@@ -30,7 +30,7 @@ public class FlexibleCodeDelegationTransactionEncoder {
                         new IllegalStateException(
                             "Developer error: the transaction should be guaranteed to have a code delegation authorizations here")),
             out);
-        out.writeBytes(Bytes.wrap(transaction.getMaybePublicKey().get().getEncoded()));
+        PublicKeyEncoder.encodeByDsaId(transaction.getMaybePublicKey().get(), transaction.getDsaType().get(), out);
         TransactionSignatureEncoder.writeSignatureBytes(transaction.getSignature(), out);
         out.endList();
     }
