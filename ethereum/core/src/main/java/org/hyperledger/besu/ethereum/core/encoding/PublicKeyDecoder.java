@@ -11,6 +11,26 @@ import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.key.KeyFactory;
 import org.hyperledger.besu.ethereum.rlp.RLPInput;
 
+/*
+ * Decodes a public key from RLP based on the DSA type.
+ *
+ * Encoding rules:
+ *
+ * - Single DSA:
+ *   (pk)  -> decode public key
+ *   ()    -> skip (public key is recoverable via PKR)
+ *
+ * - Hybrid DSA:
+ *   (pk1 || pk2) -> decode full composite public key
+ *   ()           -> skip (both keys are recoverable via PKR)
+ *
+ * Notes:
+ * - Public keys are encoded only for algorithms that do NOT support PKR.
+ * - Partial Composite public keys (pk1||null or null||pk2) are not supported.
+ * - When only one key is encoded (hybrid case), the missing key must be
+ *   recovered later using PKR during sender construction.
+ * - The DSA type (from the transaction) is used to reconstruct hybrid keys.
+ */
 public class PublicKeyDecoder {
 
   public static Optional<PublicKey> decodeByDsaId(
@@ -20,20 +40,16 @@ public class PublicKeyDecoder {
     final DigitalSignatureAlgorithm dsa =
         SignatureAlgorithmFactory.getSupportedDsaById(dsaType);
 
-    // 🔹 CASO 1: algoritmo único
     if (!(dsa instanceof HybridDigitalSignatureAlgorithm)) {
 
       if (isRecoverable(dsa)) {
-        // não serializou nada
         return Optional.empty();
       }
 
-      // [pk]
       final Bytes pkBytes = in.readBytes();
       return KeyFactory.createPublicKey(pkBytes, dsa.getDsaParametersSet());
     }
 
-    // 🔹 CASO 2: híbrido
     final HybridDigitalSignatureAlgorithm hybrid =
         (HybridDigitalSignatureAlgorithm) dsa;
 
@@ -43,19 +59,16 @@ public class PublicKeyDecoder {
     final boolean firstRec = isRecoverable(firstAlgo);
     final boolean secondRec = isRecoverable(secondAlgo);
 
-    // 🔸 caso 4: nenhum serializado
     if (firstRec && secondRec) {
       return Optional.empty();
     }
 
-    // 🔸 caso 1: [pk1 || pk2]
     if (!firstRec && !secondRec) {
       final Bytes compositePkBytes = in.readBytes();
 
       return KeyFactory.createPublicKey(compositePkBytes, dsa.getDsaParametersSet());
     }
 
-    // 🔸 caso 2 e 3: [pk1] ou [pk2]
     if (!firstRec || !secondRec) {
       Bytes partialPkBytes = in.readBytes();
 

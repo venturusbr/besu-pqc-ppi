@@ -12,6 +12,28 @@ import org.hyperledger.besu.ethereum.rlp.RLPOutput;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+/*
+ * Encodes a public key into RLP based on the DSA type.
+ *
+ * Encoding rules:
+ *
+ * - Single DSA:
+ *   (pk)  -> encode public key
+ *   ()    -> skip (public key is recoverable via PKR)
+ *
+ * - Hybrid DSA:
+ *   (pk1 || pk2) -> encode full composite public key
+ *   (pk1)        -> encode only first key (second is recoverable via PKR)
+ *   (pk2)        -> encode only second key (first is recoverable via PKR)
+ *   ()           -> skip (both keys are recoverable via PKR)
+ *
+ * Notes:
+ * - Public keys are encoded only for algorithms that do NOT support PKR.
+ * - Partial Composite public keys (pk1||null or null||pk2) are not created.
+ * - When only one key is encoded (hybrid case), the missing key must be
+ *   recovered later using PKR during sender construction.
+ * - The DSA type (from the transaction) is used to reconstruct hybrid keys.
+ */
 public class PublicKeyEncoder {
     public static void encodeByDsaId(
         final PublicKey publicKey,
