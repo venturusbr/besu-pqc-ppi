@@ -22,6 +22,8 @@ import org.hyperledger.besu.ethereum.rlp.RLPInput;
  *
  * - Hybrid DSA:
  *   (pk1 || pk2) -> decode full composite public key
+ *   (pk1)        -> decode only first key (second is recoverable via PKR)
+ *   (pk2)        -> decode only second key (first is recoverable via PKR)
  *   ()           -> skip (both keys are recoverable via PKR)
  *
  * Notes:
