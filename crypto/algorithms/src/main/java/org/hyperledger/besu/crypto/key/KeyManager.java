@@ -36,7 +36,7 @@ public class KeyManager {
             final DSAParametersSet dsaParams) {
         PrivateKey sk = KeyFactory.createPrivateKey(privateKeyBytes, dsaParams, PrivateKeyRepresentation.EXPANDED, PrivateKeyRepresentation.EXPANDED);
 
-        PublicKey pk = KeyFactory.createPublicKey(publicKeyBytes, dsaParams);
+        PublicKey pk = KeyFactory.createPublicKey(sk, dsaParams);
 
         return KeyFactory.createNodeKp(sk, pk);
     }

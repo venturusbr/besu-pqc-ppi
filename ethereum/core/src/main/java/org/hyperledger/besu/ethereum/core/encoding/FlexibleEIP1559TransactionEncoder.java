@@ -20,7 +20,7 @@ public class FlexibleEIP1559TransactionEncoder {
         out.writeUInt256Scalar(transaction.getValue());
         out.writeBytes(transaction.getPayload());
         AccessListTransactionEncoder.writeAccessList(out, transaction.getAccessList());
-        out.writeBytes(Bytes.wrap(transaction.getMaybePublicKey().get().getEncoded()));
+        PublicKeyEncoder.encodeByDsaId(transaction.getMaybePublicKey().get(), transaction.getDsaType().get(), out);
         TransactionSignatureEncoder.writeSignatureBytes(transaction.getSignature(), out);
         out.endList();
     }

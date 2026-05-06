@@ -4,6 +4,7 @@ import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.Optional;
 
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -78,7 +79,7 @@ public class KeyFactory {
         return pk;
     }
 
-    public static PublicKey createPublicKey(final Bytes publicKeyBytes, final DSAParametersSet paramsSet){
+    public static Optional<PublicKey> createPublicKey(final Bytes publicKeyBytes, final DSAParametersSet paramsSet){
         PublicKey pk;
         switch (paramsSet) {
             case SECP256K1:
@@ -106,21 +107,22 @@ public class KeyFactory {
                             DSAParametersSet.SECP256K1.getPublicKeyLength() + 1,
                             DSAParametersSet.MLDSA44);
 
-                    PublicKey secpPk =
+                    Optional<PublicKey> secpPk =
                         createPublicKey(secpPkBytes, DSAParametersSet.SECP256K1);
 
-                    PublicKey mldsaPk =
+                    Optional<PublicKey> mldsaPk =
                         createPublicKey(mldsaPkBytes, DSAParametersSet.MLDSA44);
 
-                    return CompositePublicKey.create(secpPk, mldsaPk);
+                    return Optional.of(CompositePublicKey.create(secpPk.get(), mldsaPk.get()));
                 }
-                // TODO it doesnt works if user send a hybrid pk where pk.size() = secp.size();
-                // should throw a exception.
-                return MLDSAPublicKey.create(publicKeyBytes, DSAParametersSet.MLDSA44);
+                if(publicKeyBytes.size() == DSAParametersSet.MLDSA44.getPublicKeyLength()){
+                    return Optional.of(MLDSAPublicKey.create(publicKeyBytes, DSAParametersSet.MLDSA44));
+                }
+                throw new IllegalArgumentException("Wrong public key size for: " + paramsSet.getName());
             default:
                 throw new IllegalArgumentException("Unsupported algorithm: " + paramsSet.getName());
         }
-        return pk;
+        return Optional.ofNullable(pk);
     }
 
     public static PublicKey createCompositePublicKey(final PublicKey firstPk, final PublicKey secondPk){

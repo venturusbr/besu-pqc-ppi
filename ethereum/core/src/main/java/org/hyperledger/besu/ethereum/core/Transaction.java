@@ -1704,8 +1704,8 @@ public class Transaction
       return this;
     }
 
-    public Builder publicKey(final PublicKey publicKey){
-      this.publicKey = Optional.of(publicKey);
+    public Builder publicKey(final Optional<PublicKey> publicKey){
+      this.publicKey = publicKey;
       return this;
     }
 

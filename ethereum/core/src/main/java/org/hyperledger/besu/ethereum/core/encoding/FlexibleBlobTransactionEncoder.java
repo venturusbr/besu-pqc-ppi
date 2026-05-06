@@ -21,7 +21,7 @@ public class FlexibleBlobTransactionEncoder {
         AccessListTransactionEncoder.writeAccessList(out, transaction.getAccessList());
         out.writeUInt256Scalar(transaction.getMaxFeePerBlobGas().orElseThrow());
         BlobTransactionEncoder.writeBlobVersionedHashes(out, transaction.getVersionedHashes().get());
-        out.writeBytes(Bytes.wrap(transaction.getMaybePublicKey().get().getEncoded()));
+        PublicKeyEncoder.encodeByDsaId(transaction.getMaybePublicKey().get(), transaction.getDsaType().get(), out);
         TransactionSignatureEncoder.writeSignatureBytes(transaction.getSignature(), out);
         out.endList();
     }
