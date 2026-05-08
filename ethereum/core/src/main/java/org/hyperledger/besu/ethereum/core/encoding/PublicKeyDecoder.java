@@ -38,12 +38,11 @@ public class PublicKeyDecoder {
   public static Optional<PublicKey> decodeByDsaId(
       final Short dsaType,
       final RLPInput in) {
-
+    
     final DigitalSignatureAlgorithm dsa =
         SignatureAlgorithmFactory.getSupportedDsaById(dsaType);
 
     if (!(dsa instanceof HybridDigitalSignatureAlgorithm)) {
-
       if (isRecoverable(dsa)) {
         return Optional.empty();
       }

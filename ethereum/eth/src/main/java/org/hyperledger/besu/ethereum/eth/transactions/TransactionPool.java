@@ -413,8 +413,9 @@ public class TransactionPool implements BlockAddedObserver {
       return ValidationResultAndAccount.invalid(priceInvalidReason);
     }
 
+    TransactionValidator txValidator = getTransactionValidator();
     final ValidationResult<TransactionInvalidReason> basicValidationResult =
-        getTransactionValidator()
+        txValidator
             .validate(
                 transaction,
                 chainHeadBlockHeader.getBaseFee(),
@@ -422,8 +423,15 @@ public class TransactionPool implements BlockAddedObserver {
                     Wei.ZERO), // TransactionValidationParams.transactionPool() allows underpriced
                 // txs
                 TransactionValidationParams.transactionPool());
+
     if (!basicValidationResult.isValid()) {
       return new ValidationResultAndAccount(basicValidationResult);
+    }
+
+    final ValidationResult<TransactionInvalidReason> signatureValidationResult = txValidator.validateTransactionSignature(transaction);
+
+    if (!signatureValidationResult.isValid()) {
+      return new ValidationResultAndAccount(signatureValidationResult);
     }
 
     if (hasPriority

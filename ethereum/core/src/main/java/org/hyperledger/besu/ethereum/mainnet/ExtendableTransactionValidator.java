@@ -55,6 +55,11 @@ public class ExtendableTransactionValidator implements TransactionValidator {
   }
 
   @Override
+  public ValidationResult<TransactionInvalidReason> validateTransactionSignature(final Transaction transaction){
+    return delegate.validateTransactionSignature(transaction);
+  }
+
+  @Override
   public ValidationResult<TransactionInvalidReason> validateForSender(
       final Transaction transaction,
       final Account sender,

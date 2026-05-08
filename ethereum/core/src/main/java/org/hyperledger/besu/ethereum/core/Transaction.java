@@ -49,7 +49,6 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.ethereum.core.encoding.AccessListTransactionEncoder;
 import org.hyperledger.besu.ethereum.core.encoding.BlobTransactionEncoder;
 import org.hyperledger.besu.ethereum.core.encoding.CodeDelegationEncoder;
-import org.hyperledger.besu.ethereum.core.encoding.CodeDelegationTransactionEncoder;
 import org.hyperledger.besu.ethereum.core.encoding.EncodingContext;
 import org.hyperledger.besu.ethereum.core.encoding.FlexibleAccessListTransactionEncoder;
 import org.hyperledger.besu.ethereum.core.encoding.TransactionDecoder;
@@ -492,19 +491,20 @@ public class Transaction
   @Override
   public Address getSender() {
     if (sender == null) {
-      Optional<Address> cachedSender = Optional.ofNullable(senderCache.getIfPresent(getHash()));
-      sender = cachedSender.orElseGet(this::computeSender);
-    }
-    return sender;
-  }
-
-  private Address computeSender() {
-    publicKey = PublicKeyHandler.resolvePublicKey(
+      publicKey = PublicKeyHandler.resolvePublicKey(
         signatureAlgorithm,
         signature,
         publicKey,
         getOrComputeSenderRecoveryHash()
       );
+      Optional<Address> cachedSender = Optional.ofNullable(senderCache.getIfPresent(getHash()));
+      sender = cachedSender.orElseGet(this::computeSender);
+    }
+    
+    return sender;
+  }
+
+  private Address computeSender() {
     final Address calculatedSender =
         Address.extract(Bytes32.wrap(Hash.hash(Bytes.wrap(publicKey.get().getEncoded())).getBytes()));
     senderCache.put(getHash(), calculatedSender);
@@ -1373,6 +1373,7 @@ public class Transaction
                 : isContractCreation() ? "ContractCreation" : "MessageCall")
         .append("{");
     sb.append("type=").append(getType()).append(", ");
+    sb.append("sender=").append(getSender().toString()).append(", ");
     sb.append("nonce=").append(getNonce()).append(", ");
     getGasPrice()
         .ifPresent(gp -> sb.append("gasPrice=").append(gp.toHumanReadableString()).append(", "));
@@ -1412,6 +1413,15 @@ public class Transaction
     if (transactionType.supportsBlob() && this.blobsWithCommitments.isPresent()) {
       sb.append("numberOfBlobs=").append(blobsWithCommitments.get().getBlobs().size()).append(", ");
     }
+    sb.append("dsaType=");
+    if(dsaType.isPresent()){
+      sb.append(dsaType.get().toString()).append(", ");
+    }
+    sb.append("publicKey=");
+    if(getMaybePublicKey().isPresent()){
+      sb.append(getMaybePublicKey().get()).append(", ");
+    }
+    sb.append("signature=").append(getSignature().encodedBytes().toHexString()).append(", ");
     sb.append("payload=").append(getPayload());
     return sb.append("}").toString();
   }

@@ -927,7 +927,11 @@ public abstract class MainnetProtocolSpecs {
                             TransactionType.ACCESS_LIST,
                             TransactionType.EIP1559,
                             TransactionType.BLOB,
-                            TransactionType.DELEGATE_CODE),
+                            TransactionType.DELEGATE_CODE,
+                            TransactionType.FLEXIBLE_ACCESS_LIST,
+                            TransactionType.FLEXIBLE_EIP1559,
+                            TransactionType.FLEXIBLE_BLOB,
+                            TransactionType.FLEXIBLE_DELEGATE_CODE),
                         Set.of(BlobType.KZG_PROOF),
                         evm.getMaxInitcodeSize()))
             // CodeDelegationProcessor

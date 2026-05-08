@@ -206,7 +206,7 @@ public class MainnetTransactionProcessor {
       final Wei blobGasPrice,
       final Optional<AccessLocationTracker> accessLocationTracker) {
     try {
-      final var transactionValidator = transactionValidatorFactory.get();
+      final TransactionValidator transactionValidator = transactionValidatorFactory.get();
       LOG.trace("Starting execution of {}", transaction);
       ValidationResult<TransactionInvalidReason> validationResult =
           transactionValidator.validate(
@@ -223,6 +223,13 @@ public class MainnetTransactionProcessor {
       }
 
       final Address senderAddress = transaction.getSender();
+
+      // final ValidationResult<TransactionInvalidReason> signatureValidationResult = transactionValidator.validateTransactionSignature(transaction);
+
+      // if (!signatureValidationResult.isValid()) {
+      //   LOG.debug("Transaction signature verification failed: {}", signatureValidationResult.getErrorMessage());
+      //   return TransactionProcessingResult.invalid(signatureValidationResult);
+      // }
       final MutableAccount sender = worldState.getOrCreateSenderAccount(senderAddress);
       accessLocationTracker.ifPresent(t -> t.addTouchedAccount(senderAddress));
 

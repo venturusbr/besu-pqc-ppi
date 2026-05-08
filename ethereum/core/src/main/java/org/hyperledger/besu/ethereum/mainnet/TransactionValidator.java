@@ -38,6 +38,8 @@ public interface TransactionValidator {
       Optional<Wei> blobBaseFee,
       TransactionValidationParams transactionValidationParams);
 
+  ValidationResult<TransactionInvalidReason> validateTransactionSignature(Transaction transaction);
+
   /**
    * Asserts whether a transaction is valid for the sender account's current state.
    *
