@@ -10,8 +10,6 @@ import org.hyperledger.besu.crypto.PublicKeyRecoverable;
 import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.types.CompositeSignature;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class PublicKeyHandler {
     private PublicKeyHandler() {}
