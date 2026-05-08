@@ -10,6 +10,8 @@ import org.hyperledger.besu.crypto.PublicKeyRecoverable;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.key.KeyFactory;
 import org.hyperledger.besu.ethereum.rlp.RLPInput;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /*
  * Decodes a public key from RLP based on the DSA type.
@@ -34,16 +36,17 @@ import org.hyperledger.besu.ethereum.rlp.RLPInput;
  * - The DSA type (from the transaction) is used to reconstruct hybrid keys.
  */
 public class PublicKeyDecoder {
+  private static final Logger LOG = LoggerFactory.getLogger(PublicKeyDecoder.class);
 
   public static Optional<PublicKey> decodeByDsaId(
       final Short dsaType,
       final RLPInput in) {
-
+    
     final DigitalSignatureAlgorithm dsa =
         SignatureAlgorithmFactory.getSupportedDsaById(dsaType);
 
     if (!(dsa instanceof HybridDigitalSignatureAlgorithm)) {
-
+      LOG.info("Identificou que é um algoritmo híbrido.");
       if (isRecoverable(dsa)) {
         return Optional.empty();
       }

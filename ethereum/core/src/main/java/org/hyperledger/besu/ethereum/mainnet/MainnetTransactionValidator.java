@@ -19,28 +19,19 @@ import static org.hyperledger.besu.evm.internal.Words.clampedAdd;
 import static org.hyperledger.besu.evm.worldstate.CodeDelegationHelper.hasCodeDelegation;
 
 import java.math.BigInteger;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
-import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.SignatureValidationContext;
-import org.hyperledger.besu.datatypes.BlobType;
-import org.hyperledger.besu.datatypes.CodeDelegation;
-import org.hyperledger.besu.crypto.pqc.PqcSignature;
-import org.hyperledger.besu.crypto.pqc.PqcSignatureAlgorithm;
-import org.hyperledger.besu.crypto.pqc.PqcSignatureFactory;
-import org.hyperledger.besu.crypto.pqc.keys.PqcKeyPair;
 import org.hyperledger.besu.crypto.pqc.metrics.CSVWriter;
 import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
 import org.hyperledger.besu.crypto.signature.Signature;
-import org.hyperledger.besu.datatypes.Blob;
-import org.hyperledger.besu.datatypes.BlobsWithCommitments;
+import org.hyperledger.besu.datatypes.BlobType;
+import org.hyperledger.besu.datatypes.CodeDelegation;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.TransactionType;
 import org.hyperledger.besu.datatypes.Wei;
@@ -52,8 +43,6 @@ import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import ethereum.ckzg4844.CKZG4844JNI;
 
 /**
  * Validates a transaction based on Frontier protocol runtime requirements.
@@ -112,26 +101,9 @@ public class MainnetTransactionValidator implements TransactionValidator {
       final Optional<Wei> baseFee,
       final Optional<Wei> blobFee,
       final TransactionValidationParams transactionValidationParams) {
-
     final ValidationResult<TransactionInvalidReason> chainIdResult = validateChainId(transaction);
     if (!chainIdResult.isValid()) {
       return chainIdResult;
-    }
-    
-    long verifyStart = System.nanoTime();
-    final ValidationResult<TransactionInvalidReason> signatureResult = validateTransactionSignature(transaction);
-    long verifyEnd = System.nanoTime();
-
-    long verifyTime = verifyEnd - verifyStart;
-
-    String data = stringBuilder.append(verifyTime + "," + (signatureResult.isValid() ? "yes" : "no") + "\n")
-          .toString();
-    verifyWriter.write(data);
-
-    stringBuilder.setLength(0);
-
-    if (!signatureResult.isValid()) {
-      return signatureResult;
     }
 
     final TransactionType transactionType = transaction.getType();
@@ -182,7 +154,6 @@ public class MainnetTransactionValidator implements TransactionValidator {
         return codeDelegationValidation;
       }
     }
-
     return validateCostAndFee(transaction, baseFee, blobFee, transactionValidationParams);
   }
 
@@ -427,7 +398,8 @@ public class MainnetTransactionValidator implements TransactionValidator {
     return ValidationResult.valid();
   }
 
-  private ValidationResult<TransactionInvalidReason> validateTransactionSignature(
+  @Override
+  public ValidationResult<TransactionInvalidReason> validateTransactionSignature(
       final Transaction transaction) {
     
     Signature txSignature = transaction.getSignature();
@@ -440,8 +412,18 @@ public class MainnetTransactionValidator implements TransactionValidator {
 
     if(transaction.getDsaType().isPresent()){ //is a flexible transaction
       DigitalSignatureAlgorithm dsa = SignatureAlgorithmFactory.getSupportedDsaById(transaction.getDsaType().get());
-
+      long verifyStart = System.nanoTime();
       Boolean isValid = dsa.verify(Bytes.wrap(transaction.getSigningHash()), txSignature, transaction.getMaybePublicKey().get());
+      long verifyEnd = System.nanoTime();
+
+      long verifyTime = verifyEnd - verifyStart;
+
+      String data = stringBuilder.append(verifyTime + "," + (isValid ? "yes" : "no") + "\n")
+            .toString();
+      verifyWriter.write(data);
+
+      stringBuilder.setLength(0);
+
       if(!isValid){
         return ValidationResult.invalid(
           TransactionInvalidReason.INVALID_SIGNATURE,

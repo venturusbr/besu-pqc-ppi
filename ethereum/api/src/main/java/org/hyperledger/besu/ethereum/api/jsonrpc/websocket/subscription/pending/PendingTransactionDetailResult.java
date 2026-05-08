@@ -72,7 +72,23 @@ public class PendingTransactionDetailResult implements JsonRpcResult {
     if (transactionType == TransactionType.FRONTIER) {
       this.type = Quantity.create(0);
       this.yParity = null;
+      this.r = Quantity.create(tx.getR());
+      this.s = Quantity.create(tx.getS());
       this.v = Quantity.create(tx.getV());
+      this.publicKey = null;
+      this.signature = null;
+    } else if(isFlexible(transactionType)){
+      this.type = Quantity.create(transactionType.getSerializedType());
+      this.yParity = null;
+      this.r = null;
+      this.s = null;
+      this.v = null;
+      this.publicKey = tx.getMaybePublicKey()
+        .map(Object::toString)
+        .orElse(null);
+      this.signature = tx.getSignature() != null
+        ? tx.getSignature().toString()
+        : null;
     } else {
       this.type = Quantity.create(transactionType.getSerializedType());
       this.yParity = Quantity.create(tx.getYParity());
@@ -81,16 +97,19 @@ public class PendingTransactionDetailResult implements JsonRpcResult {
                   || transactionType == TransactionType.EIP1559)
               ? Quantity.create(tx.getYParity())
               : null;
+      this.r = Quantity.create(tx.getR());
+      this.s = Quantity.create(tx.getS());
+      this.publicKey = null;
+      this.signature = null;
     }
-    this.publicKey = tx.getMaybePublicKey()
-        .map(Object::toString)
-        .orElse(null);
-    this.signature = tx.getSignature() != null
-        ? tx.getSignature().toString()
-        : null;
     this.value = Quantity.create(tx.getValue());
-    this.r = Quantity.create(tx.getR());
-    this.s = Quantity.create(tx.getS());
+  }
+
+  private Boolean isFlexible(final TransactionType txType){
+    return txType == TransactionType.FLEXIBLE_ACCESS_LIST ||
+      txType == TransactionType.FLEXIBLE_EIP1559 ||
+      txType == TransactionType.FLEXIBLE_BLOB ||
+      txType == TransactionType.FLEXIBLE_DELEGATE_CODE;
   }
 
   @JsonGetter(value = "from")

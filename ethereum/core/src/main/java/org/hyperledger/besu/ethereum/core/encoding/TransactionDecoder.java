@@ -24,7 +24,6 @@ import org.hyperledger.besu.datatypes.TransactionType;
 import org.hyperledger.besu.ethereum.core.Transaction;
 import org.hyperledger.besu.ethereum.rlp.RLP;
 import org.hyperledger.besu.ethereum.rlp.RLPInput;
-
 import org.apache.tuweni.bytes.Bytes;
 
 public class TransactionDecoder {
@@ -49,6 +48,7 @@ public class TransactionDecoder {
 
   private static final EnumMap<TransactionType, Decoder> POOLED_TRANSACTION_DECODERS =
       new EnumMap<>(Map.of(TransactionType.BLOB, BlobPooledTransactionDecoder::decode, TransactionType.FLEXIBLE_BLOB, FlexibleBlobPooledTransactionDecoder::decode));
+
 
   /**
    * Decodes an RLP input into a transaction. If the input represents a typed transaction, it uses
