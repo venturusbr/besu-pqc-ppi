@@ -22,4 +22,8 @@ public class SupportedAlgorithms {
     public DigitalSignatureAlgorithm getDSA(final String algorithmName){
         return DSA_ALGORITHMS.get(algorithmName);
     }
+
+    public Boolean supports(final String algorithmName){
+        return DSA_ALGORITHMS.containsKey(algorithmName);
+    }
 }
