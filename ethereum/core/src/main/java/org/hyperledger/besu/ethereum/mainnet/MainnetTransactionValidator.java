@@ -19,6 +19,7 @@ import static org.hyperledger.besu.evm.internal.Words.clampedAdd;
 import static org.hyperledger.besu.evm.worldstate.CodeDelegationHelper.hasCodeDelegation;
 
 import java.math.BigInteger;
+import java.security.PublicKey;
 import java.util.Optional;
 import java.util.Set;
 
@@ -412,8 +413,10 @@ public class MainnetTransactionValidator implements TransactionValidator {
 
     if(transaction.getDsaType().isPresent()){ //is a flexible transaction
       DigitalSignatureAlgorithm dsa = SignatureAlgorithmFactory.getSupportedDsaById(transaction.getDsaType().get());
+      PublicKey pk = transaction.getMountedPublicKey();
+
       long verifyStart = System.nanoTime();
-      Boolean isValid = dsa.verify(Bytes.wrap(transaction.getSigningHash()), txSignature, transaction.getMountedPublicKey());
+      Boolean isValid = dsa.verify(Bytes.wrap(transaction.getSigningHash()), txSignature, pk);
       long verifyEnd = System.nanoTime();
 
       long verifyTime = verifyEnd - verifyStart;
