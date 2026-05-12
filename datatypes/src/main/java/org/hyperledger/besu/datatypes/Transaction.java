@@ -206,6 +206,8 @@ public interface Transaction {
 
   Signature getSignature();
 
+  PublicKey getMountedPublicKey();
+
   Optional<PublicKey> getMaybePublicKey();
 
   /**

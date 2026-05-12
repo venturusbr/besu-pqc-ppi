@@ -413,7 +413,7 @@ public class MainnetTransactionValidator implements TransactionValidator {
     if(transaction.getDsaType().isPresent()){ //is a flexible transaction
       DigitalSignatureAlgorithm dsa = SignatureAlgorithmFactory.getSupportedDsaById(transaction.getDsaType().get());
       long verifyStart = System.nanoTime();
-      Boolean isValid = dsa.verify(Bytes.wrap(transaction.getSigningHash()), txSignature, transaction.getMaybePublicKey().get());
+      Boolean isValid = dsa.verify(Bytes.wrap(transaction.getSigningHash()), txSignature, transaction.getMountedPublicKey());
       long verifyEnd = System.nanoTime();
 
       long verifyTime = verifyEnd - verifyStart;

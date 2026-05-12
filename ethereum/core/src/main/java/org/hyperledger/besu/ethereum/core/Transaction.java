@@ -127,7 +127,8 @@ public class Transaction
   private volatile int sizeForBlockInclusion = -1;
   private final TransactionType transactionType;
 
-  private Optional<PublicKey> publicKey;
+  private final Optional<PublicKey> providedPublicKey;
+  private volatile PublicKey publicKey;
 
   private final DigitalSignatureAlgorithm signatureAlgorithm;
   private final Optional<List<VersionedHash>> versionedHashes;
@@ -279,7 +280,7 @@ public class Transaction
     this.to = to;
     this.value = value;
     this.signature = signature;
-    this.publicKey = pk;
+    this.providedPublicKey = pk;
     this.payload = payload;
     this.maybeAccessList = maybeAccessList;
     this.sender = sender;
@@ -299,8 +300,21 @@ public class Transaction
   }
 
   @Override
-  public Optional<PublicKey> getMaybePublicKey(){
+  public PublicKey getMountedPublicKey(){
+    if(publicKey == null){
+      publicKey = PublicKeyHandler.resolvePublicKey(
+        signatureAlgorithm,
+        signature,
+        providedPublicKey,
+        getOrComputeSenderRecoveryHash()
+      ).get();
+    }
     return publicKey;
+  }
+
+  @Override
+  public Optional<PublicKey> getMaybePublicKey(){
+    return providedPublicKey;
   }
   /**
    * Returns the transaction nonce.
@@ -491,12 +505,7 @@ public class Transaction
   @Override
   public Address getSender() {
     if (sender == null) {
-      publicKey = PublicKeyHandler.resolvePublicKey(
-        signatureAlgorithm,
-        signature,
-        publicKey,
-        getOrComputeSenderRecoveryHash()
-      );
+      publicKey = getMountedPublicKey();
       Optional<Address> cachedSender = Optional.ofNullable(senderCache.getIfPresent(getHash()));
       sender = cachedSender.orElseGet(this::computeSender);
     }
@@ -506,7 +515,7 @@ public class Transaction
 
   private Address computeSender() {
     final Address calculatedSender =
-        Address.extract(Bytes32.wrap(Hash.hash(Bytes.wrap(publicKey.get().getEncoded())).getBytes()));
+        Address.extract(Bytes32.wrap(Hash.hash(Bytes.wrap(publicKey.getEncoded())).getBytes()));
     senderCache.put(getHash(), calculatedSender);
     return calculatedSender;
   }
@@ -517,10 +526,9 @@ public class Transaction
    * @return the public key
    */
   public Optional<String> getPublicKey() {
-    return PublicKeyHandler.resolvePublicKey(signatureAlgorithm, signature, Optional.empty(), getOrComputeSenderRecoveryHash())
-    .map(pk -> Bytes.wrap(pk.getEncoded()).toHexString());
+    return Optional.ofNullable(Bytes.wrap(getMountedPublicKey().getEncoded()).toHexString());
   }
-
+  
   public Bytes32 getSigningHash(){
     return getOrComputeSenderRecoveryHash();
   }
@@ -539,7 +547,7 @@ public class Transaction
               gasLimit,
               to,
               value,
-              publicKey,
+              providedPublicKey,
               payload,
               maybeAccessList,
               versionedHashes.orElse(null),
@@ -872,7 +880,7 @@ public class Transaction
         gasLimit,
         to,
         value,
-        publicKey,
+        providedPublicKey,
         payload.getPayloadBytes(),
         maybeAccessList,
         versionedHashes.orElse(null),
@@ -891,7 +899,7 @@ public class Transaction
       final long gasLimit,
       final Optional<Address> to,
       final Wei value,
-      final Optional<PublicKey> publicKey,
+      final Optional<PublicKey> providedPublicKey,
       final Bytes payload,
       final Optional<List<AccessListEntry>> accessList,
       final List<VersionedHash> versionedHashes,
@@ -960,7 +968,7 @@ public class Transaction
                 gasLimit,
                 to,
                 value,
-                publicKey,
+                providedPublicKey,
                 payload,
                 accessList.orElseThrow(
                     () ->
@@ -976,7 +984,7 @@ public class Transaction
                 gasLimit,
                 to,
                 value,
-                publicKey,
+                providedPublicKey,
                 payload,
                 accessList,
                 chainId);
@@ -990,7 +998,7 @@ public class Transaction
                 gasLimit,
                 to,
                 value,
-                publicKey,
+                providedPublicKey,
                 payload,
                 chainId,
                 accessList,
@@ -1004,7 +1012,7 @@ public class Transaction
                   gasLimit,
                   to,
                   value,
-                  publicKey,
+                  providedPublicKey,
                   payload,
                   chainId,
                   accessList,
@@ -1299,7 +1307,7 @@ public class Transaction
       final long gasLimit,
       final Optional<Address> to,
       final Wei value,
-      final Optional<PublicKey> publicKey,
+      final Optional<PublicKey> providedPublicKey,
       final Bytes payload,
       final Optional<BigInteger> chainId,
       final Optional<List<AccessListEntry>> accessList,
@@ -1323,7 +1331,7 @@ public class Transaction
               CodeDelegationEncoder.encodeCodeDelegationInner(
                   authorizationList, rlpOutput);
                   
-              rlpOutput.writeBytes(Bytes.wrap(publicKey.get().getEncoded()));
+              rlpOutput.writeBytes(Bytes.wrap(providedPublicKey.get().getEncoded()));
               rlpOutput.endList();
             });
     return Bytes.concatenate(Bytes.of(TransactionType.FLEXIBLE_DELEGATE_CODE.getSerializedType()), encoded);
@@ -1417,7 +1425,7 @@ public class Transaction
     if(dsaType.isPresent()){
       sb.append(dsaType.get().toString()).append(", ");
     }
-    sb.append("publicKey=");
+    sb.append("providedPublicKey=");
     if(getMaybePublicKey().isPresent()){
       sb.append(getMaybePublicKey().get()).append(", ");
     }
@@ -1508,7 +1516,7 @@ public class Transaction
             gasLimit,
             detachedTo,
             value,
-            publicKey,
+            providedPublicKey,
             payload,
             signature,
             detachedAccessList,
@@ -1523,6 +1531,7 @@ public class Transaction
             Optional.of(sizeForBlockInclusion));
 
     // copy also the computed fields, to avoid to recompute them
+    copiedTx.publicKey = this.publicKey;
     copiedTx.sender = this.sender;
     copiedTx.hashNoSignature = this.hashNoSignature;
 
@@ -1588,7 +1597,9 @@ public class Transaction
 
     protected Signature signature;
 
-    protected Optional<PublicKey> publicKey = Optional.empty();
+    protected Optional<PublicKey> providedPublicKey = Optional.empty();
+
+    protected PublicKey publicKey = null;
 
     protected Payload payload;
 
@@ -1619,6 +1630,7 @@ public class Transaction
       this.to = toCopy.to;
       this.value = toCopy.value;
       this.signature = toCopy.signature;
+      this.providedPublicKey = toCopy.providedPublicKey;
       this.publicKey = toCopy.publicKey;
       this.payload = toCopy.payload;
       this.accessList = toCopy.maybeAccessList;
@@ -1714,7 +1726,12 @@ public class Transaction
       return this;
     }
 
-    public Builder publicKey(final Optional<PublicKey> publicKey){
+    public Builder providedPublicKey(final Optional<PublicKey> providedPublicKey){
+      this.providedPublicKey = providedPublicKey;
+      return this;
+    }
+
+    public Builder publicKey(final PublicKey publicKey){
       this.publicKey = publicKey;
       return this;
     }
@@ -1777,7 +1794,7 @@ public class Transaction
           gasLimit,
           to,
           value,
-          publicKey,
+          providedPublicKey,
           payload,
           signature,
           accessList,
@@ -1816,7 +1833,7 @@ public class Transaction
                   gasLimit,
                   to,
                   value,
-                  publicKey,
+                  providedPublicKey,
                   payload,
                   accessList,
                   versionedHashes,
