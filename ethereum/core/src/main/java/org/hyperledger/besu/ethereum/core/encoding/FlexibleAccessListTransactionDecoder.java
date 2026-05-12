@@ -49,7 +49,7 @@ public class FlexibleAccessListTransactionDecoder {
                       accessListEntryRLPInput.leaveList();
                       return accessListEntry;
                     }))
-                .publicKey(PublicKeyDecoder.decodeByDsaId(dsaType, txRlp))
+                .providedPublicKey(PublicKeyDecoder.decodeByDsaId(dsaType, txRlp))
                 .sizeForAnnouncement(input.size())
                 .sizeForBlockInclusion(input.size())
                 .hash(Hash.hash(input));

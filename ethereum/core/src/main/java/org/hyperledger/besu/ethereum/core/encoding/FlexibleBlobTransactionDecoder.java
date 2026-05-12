@@ -63,7 +63,7 @@ public class FlexibleBlobTransactionDecoder {
             .maxFeePerBlobGas(Wei.of(txRlp.readUInt256Scalar()))
             .versionedHashes(
                 txRlp.readList(versionedHashes -> new VersionedHash(versionedHashes.readBytes32())))
-            .publicKey(PublicKeyDecoder.decodeByDsaId(dsaType, txRlp));
+            .providedPublicKey(PublicKeyDecoder.decodeByDsaId(dsaType, txRlp));
             
             builder
                 .signature(
