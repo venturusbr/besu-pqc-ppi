@@ -3,13 +3,17 @@ package org.hyperledger.besu.crypto.config;
 import java.security.InvalidAlgorithmParameterException;
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
 
 public class DigitalSignatureAlgorithmConfiguration {
+    private static final Logger LOG = LoggerFactory.getLogger(DigitalSignatureAlgorithmConfiguration.class);
     private final SupportedAlgorithms supportedAlgorithms;
     private DigitalSignatureAlgorithm nodeActiveDSA;
     private ImmutableMap<Short, Supplier<DigitalSignatureAlgorithm>> accountsEnabledDSAs;
@@ -54,6 +58,14 @@ public class DigitalSignatureAlgorithmConfiguration {
         }
 
         this.accountsEnabledDSAs = builder.build();
+
+        LOG.info(
+            "Account-enabled DSAs: {}",
+            accountsEnabledDSAs.keySet().stream()
+                .map(DSAParametersSet::fromId)
+                .map(DSAParametersSet::getName)
+                .collect(Collectors.joining(", "))
+        );
     }
 
     public DigitalSignatureAlgorithm getEnabledDSA(
