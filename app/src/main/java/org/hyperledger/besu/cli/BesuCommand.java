@@ -103,6 +103,7 @@ import org.hyperledger.besu.crypto.KeyPairUtil;
 import org.hyperledger.besu.crypto.SECP256R1;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.SignatureAlgorithmType;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.config.DigitalSignatureAlgorithmConfiguration;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3KeyPair;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3PrivateKey;
@@ -114,7 +115,7 @@ import org.hyperledger.besu.crypto.pqc.keys.PqcKeyPair;
 import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusKeyPair;
 import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusPrivateKey;
 import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusPublicKey;
-import org.hyperledger.besu.crypto.providers.DSAAlgorithmProviderFactory;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.providers.DigitalSignatureAlgorithmProvider;
 import org.hyperledger.besu.cryptoservices.KeyPairSecurityModule;
 import org.hyperledger.besu.cryptoservices.NodeKey;
@@ -227,6 +228,7 @@ import org.hyperledger.besu.util.PermissioningConfigurationValidator;
 import org.hyperledger.besu.util.number.Fraction;
 import org.hyperledger.besu.util.number.Percentage;
 import org.hyperledger.besu.util.number.PositiveNumber;
+import org.hyperledger.besu.cli.converter.DSAParametersSetConverter;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -433,6 +435,17 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
   @SuppressWarnings({ "FieldCanBeFinal", "FieldMayBeFinal" }) // PicoCLI requires non-final Strings.
   @Option(names = "--dsa-algorithm", paramLabel = "<String>", description = "Name of the DSA algorithm. (default: ${DEFAULT-VALUE})", arity = "1..1")
   private String dsaAlgorithm = "none";
+
+  @SuppressWarnings({ "FieldCanBeFinal", "FieldMayBeFinal" }) // PicoCLI requires non-final Strings.
+  @Option(
+    names = {"--accounts-supported-dsas"},
+    split = ",",
+    converter = DSAParametersSetConverter.class,
+    paramLabel = "<DSA>",
+    description =
+        "Digital signature algorithms supported by accounts.")
+  private List<DSAParametersSet> accountsSupportedDSAs =
+    List.of(DSAParametersSet.SECP256K1);
 
   @Option(
       names = "--identity",
@@ -1311,17 +1324,20 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
   }
 
   private SecurityModule defaultSecurityModule() {
-    if (!dsaAlgorithm.equals("none")) {
-      DigitalSignatureAlgorithmConfiguration dsaConfig = new DigitalSignatureAlgorithmConfiguration();
-      try {
-        dsaConfig.setActiveDSA(dsaAlgorithm);
-      } catch (final InvalidAlgorithmParameterException e) {
-        throw new RuntimeException(e);
-      }
-      DigitalSignatureAlgorithmProvider dsaProvider = new DigitalSignatureAlgorithmProvider(dsaConfig, null);
-      DSAAlgorithmProviderFactory.setDsaProvider(dsaProvider);
-    }
+    DigitalSignatureAlgorithmConfiguration dsaConfig = new DigitalSignatureAlgorithmConfiguration();
 
+    try {
+      dsaConfig.buildAccountSupportedAlgorithms(accountsSupportedDSAs);
+      if (!dsaAlgorithm.equals("none")) {
+          dsaConfig.setNodeActiveDSA(dsaAlgorithm);
+      }
+    } catch (final InvalidAlgorithmParameterException e) {
+      throw new RuntimeException(e);
+    }
+      
+    DigitalSignatureAlgorithmProvider dsaProvider = new DigitalSignatureAlgorithmProvider(dsaConfig, null);
+    DSAProviderFactory.setDsaProvider(dsaProvider);
+    
     if (!pqcAlgorithmName.equals("none"))
       SignatureAlgorithmFactory.setpqcAlgorithmName(pqcAlgorithmName);
     SignatureAlgorithmFactory.setPqcParameterSpecIndex(pqcParameterSpec);

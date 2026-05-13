@@ -35,6 +35,7 @@ import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.key.PublicKeyHandler;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.AccessListEntry;
 import org.hyperledger.besu.datatypes.Address;
@@ -263,12 +264,6 @@ public class Transaction
       }
     }
 
-    if(dsaType.isPresent()){
-      this.signatureAlgorithm = SignatureAlgorithmFactory.getSupportedDsaById(dsaType.get());
-    } else {
-      this.signatureAlgorithm = SignatureAlgorithmFactory.getInstance();
-    }
-
     this.transactionType = transactionType;
     this.dsaType = dsaType;
     this.nonce = nonce;
@@ -292,6 +287,12 @@ public class Transaction
     hash.ifPresent(h -> this.hash = h);
     sizeForAnnouncement.ifPresent(i -> this.sizeForAnnouncement = i);
     sizeForBlockInclusion.ifPresent(i -> this.sizeForBlockInclusion = i);
+
+    if(dsaType.isPresent()){
+      this.signatureAlgorithm = DSAProviderFactory.getDsaProvider().getAccountEnabledDSAById(dsaType.get());
+    } else {
+      this.signatureAlgorithm = SignatureAlgorithmFactory.getInstance();
+    }
   }
 
   @Override

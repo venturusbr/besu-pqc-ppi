@@ -26,10 +26,12 @@ import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
-import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.SignatureValidationContext;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.pqc.metrics.CSVWriter;
 import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
+import org.hyperledger.besu.crypto.providers.DigitalSignatureAlgorithmProvider;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.BlobType;
 import org.hyperledger.besu.datatypes.CodeDelegation;
@@ -71,6 +73,8 @@ public class MainnetTransactionValidator implements TransactionValidator {
   private final int maxInitcodeSize;
   private final MainnetBlobsValidator blobsValidator;
 
+  private final DigitalSignatureAlgorithmProvider dsaProvider;
+
   private final CSVWriter verifyWriter;
 
   private final StringBuilder stringBuilder;
@@ -92,6 +96,7 @@ public class MainnetTransactionValidator implements TransactionValidator {
     this.acceptedTransactionTypes = acceptedTransactionTypes;
     this.maxInitcodeSize = maxInitcodeSize;
     this.blobsValidator = new MainnetBlobsValidator(acceptedBlobVersions, gasLimitCalculator, gasCalculator);
+    this.dsaProvider = DSAProviderFactory.getDsaProvider();
     this.verifyWriter = MetricWriters.getVerifyInstance();
     this.stringBuilder = new StringBuilder();
   }
@@ -158,7 +163,7 @@ public class MainnetTransactionValidator implements TransactionValidator {
     return validateCostAndFee(transaction, baseFee, blobFee, transactionValidationParams);
   }
 
-  private static ValidationResult<TransactionInvalidReason> validateCodeDelegation(
+  private ValidationResult<TransactionInvalidReason> validateCodeDelegation(
       final Transaction transaction) {
     if (isDelegateCodeEmpty(transaction)) {
       return ValidationResult.invalid(
@@ -191,12 +196,26 @@ public class MainnetTransactionValidator implements TransactionValidator {
                           "Missing code delegation signature");
                     }
                     
-                    DigitalSignatureAlgorithm dsa;
-
                     if(codeDelegation.dsaType().isPresent()){
-                      dsa = SignatureAlgorithmFactory.getSupportedDsaById(codeDelegation.dsaType().get());
-                    } else {
-                      dsa = SignatureAlgorithmFactory.getInstance();
+                      DigitalSignatureAlgorithm dsa = dsaProvider.getAccountEnabledDSAById(codeDelegation.dsaType().get());
+                                         
+                      Bytes32 authorizationHashNoSignature = codeDelegation.getOrComputeSenderRecoveryHash();
+
+                      long verifyStart = System.nanoTime();
+                      Boolean isValid = dsa.verify(
+                          authorizationHashNoSignature, 
+                          signature,
+                          codeDelegation.maybePublicKey().get()
+                      );
+                      long verifyEnd = System.nanoTime();
+
+                      saveMetrics(verifyStart, verifyEnd,"delegation", isValid, dsa.getDsaParametersSet());
+
+                      if (!isValid) {
+                        return ValidationResult.invalid(
+                            TransactionInvalidReason.INVALID_SIGNATURE,
+                            "Invalid code delegation signature");
+                      }
                     }
                     
                     // already checked in CodeDelegationSignature creation
@@ -209,20 +228,6 @@ public class MainnetTransactionValidator implements TransactionValidator {
                     //   throw new IllegalArgumentException(
                     //       "Invalid 's' value, should be < 2^256 but got " + codeDelegation.s());
                     // }
-                    
-                    Bytes32 authorizationHashNoSignature = codeDelegation.getOrComputeSenderRecoveryHash();
-
-                    Boolean isValid = dsa.verify(
-                        authorizationHashNoSignature, 
-                        signature,
-                        codeDelegation.maybePublicKey().get()
-                    );
-
-                    if (!isValid) {
-                      return ValidationResult.invalid(
-                          TransactionInvalidReason.INVALID_SIGNATURE,
-                          "Invalid code delegation signature");
-                    }
                   }
 
                   return ValidationResult.valid();
@@ -412,20 +417,15 @@ public class MainnetTransactionValidator implements TransactionValidator {
     }
 
     if(transaction.getDsaType().isPresent()){ //is a flexible transaction
-      DigitalSignatureAlgorithm dsa = SignatureAlgorithmFactory.getSupportedDsaById(transaction.getDsaType().get());
+      DigitalSignatureAlgorithm dsa = dsaProvider.getAccountEnabledDSAById(transaction.getDsaType().get());
+
       PublicKey pk = transaction.getMountedPublicKey();
 
       long verifyStart = System.nanoTime();
       Boolean isValid = dsa.verify(Bytes.wrap(transaction.getSigningHash()), txSignature, pk);
       long verifyEnd = System.nanoTime();
 
-      long verifyTime = verifyEnd - verifyStart;
-
-      String data = stringBuilder.append(verifyTime + "," + (isValid ? "yes" : "no") + "\n")
-            .toString();
-      verifyWriter.write(data);
-
-      stringBuilder.setLength(0);
+      saveMetrics(verifyStart, verifyEnd, "tx", isValid, dsa.getDsaParametersSet());
 
       if(!isValid){
         return ValidationResult.invalid(
@@ -447,5 +447,15 @@ public class MainnetTransactionValidator implements TransactionValidator {
           "sender could not be extracted from transaction signature");
     }
     return ValidationResult.valid();
+  }
+
+  private void saveMetrics(final long verifyStart, final long verifyEnd, final String object, final Boolean isValid, final DSAParametersSet dsaParams){
+      long verifyTime = verifyEnd - verifyStart;
+
+      String data = stringBuilder.append(verifyTime + "," + object + "," + (isValid ? "yes," : "no,") + dsaParams.getName() + ",\n")
+            .toString();
+      verifyWriter.write(data);
+
+      stringBuilder.setLength(0);
   }
 }

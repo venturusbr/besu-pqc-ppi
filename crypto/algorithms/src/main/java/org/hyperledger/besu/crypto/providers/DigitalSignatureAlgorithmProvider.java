@@ -4,6 +4,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.config.DigitalSignatureAlgorithmConfiguration;
 import org.hyperledger.besu.crypto.config.KeyConfiguration;
 import org.hyperledger.besu.crypto.key.KeyManager;
@@ -16,6 +17,11 @@ public class DigitalSignatureAlgorithmProvider implements DSAProvider{
     public DigitalSignatureAlgorithmProvider(final DigitalSignatureAlgorithmConfiguration digitalSignatureAlgorithmConfig, final KeyConfiguration keyConfiguration){
         this.config = digitalSignatureAlgorithmConfig;
         this.keyManager = new KeyManager(keyConfiguration);
+    }
+
+    @Override
+    public DigitalSignatureAlgorithm getAccountEnabledDSAById(final Short dsaId){
+        return config.getEnabledDSA(dsaId);
     }
 
     @Override

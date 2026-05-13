@@ -1,10 +1,5 @@
 package org.hyperledger.besu.crypto.pqc.metrics;
 
-import java.util.Locale;
-
-import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
-import org.hyperledger.besu.crypto.pqc.PqcSignatureAlgorithm;
-
 public class MetricWriters {
     private static CSVWriter signInstance = null;
     private static CSVWriter verifyInstance = null;
@@ -15,14 +10,12 @@ public class MetricWriters {
     }
 
     public static String buildSignHeader(){
-        String pqcAlgorithmNameAndParameter = SignatureAlgorithmFactory.getPqcGenericInstance().formatAlgorithmAndParameterTitle().toUpperCase(Locale.ROOT);
-        String header = pqcAlgorithmNameAndParameter + "(ns)," + pqcAlgorithmNameAndParameter + " + SECP(ns)," + "PQC_SIGNATURE_LENGTH(bytes)," + "SECP_SIGNATURE_LENGTH(bytes)," + "FINALITY\n";
+        String header = "DSASigningTime(ns)," + "SignatureBytes," + "Object," + "Algorithm,"+ "FINALITY\n";
         return header;
     }
 
     public static String buildVerifyHeader(){
-        String pqcAlgorithmNameAndParameter = SignatureAlgorithmFactory.getPqcGenericInstance().formatAlgorithmAndParameterTitle().toUpperCase(Locale.ROOT);
-        String header = pqcAlgorithmNameAndParameter + "(ns)," + pqcAlgorithmNameAndParameter + " + SECP(ns)," + "isPqcValid\n";
+        String header = "DSAVerificationTime(ns)," + "Object," + "isSignatureValid," + "Algorithm\n";
         return header;
     }
 

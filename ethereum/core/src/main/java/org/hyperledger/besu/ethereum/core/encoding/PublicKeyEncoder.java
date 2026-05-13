@@ -6,8 +6,8 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.HybridDigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.PublicKeyRecoverable;
-import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.ethereum.rlp.RLPOutput;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -43,7 +43,7 @@ public class PublicKeyEncoder {
         checkNotNull(publicKey, "publicKey must not be null");
 
         final DigitalSignatureAlgorithm dsa =
-            SignatureAlgorithmFactory.getSupportedDsaById(dsaType);
+            DSAProviderFactory.getDsaProvider().getAccountEnabledDSAById(dsaType);
 
         if (publicKey instanceof CompositePublicKey compositePk) {
             if (!(dsa instanceof HybridDigitalSignatureAlgorithm hybridDsa)) {

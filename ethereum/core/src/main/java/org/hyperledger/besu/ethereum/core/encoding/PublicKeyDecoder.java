@@ -7,8 +7,8 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.HybridDigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.PublicKeyRecoverable;
-import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.key.KeyFactory;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.ethereum.rlp.RLPInput;
 
 /*
@@ -40,7 +40,7 @@ public class PublicKeyDecoder {
       final RLPInput in) {
     
     final DigitalSignatureAlgorithm dsa =
-        SignatureAlgorithmFactory.getSupportedDsaById(dsaType);
+            DSAProviderFactory.getDsaProvider().getAccountEnabledDSAById(dsaType);
 
     if (!(dsa instanceof HybridDigitalSignatureAlgorithm)) {
       if (isRecoverable(dsa)) {

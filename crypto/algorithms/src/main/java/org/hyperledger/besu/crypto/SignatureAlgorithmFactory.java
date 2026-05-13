@@ -110,19 +110,6 @@ public class SignatureAlgorithmFactory {
         : SignatureAlgorithmType.getGenericInstanceByName(pqcAlgorithmName);
   }
 
-  public static DigitalSignatureAlgorithm getSupportedDsaById(final Short dsaId) {
-    DigitalSignatureAlgorithm algo =
-        SignatureAlgorithmType.getSupportedDsaById(dsaId);
-
-    if (algo == null) {
-      throw new IllegalArgumentException(
-          "Unsupported DSA algorithm id: " + dsaId
-      );
-    }
-
-    return algo;
-  }
-
   public static AbstractCrystalsDilithium3 getPQCInstance() {
     return pqcInstance != null
         ? pqcInstance
