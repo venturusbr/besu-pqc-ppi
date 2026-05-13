@@ -14,7 +14,6 @@
  */
 package org.hyperledger.besu.ethereum.core;
 
-import java.lang.StackWalker.Option;
 import java.math.BigInteger;
 import java.security.PublicKey;
 import java.util.Optional;
@@ -26,13 +25,13 @@ import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.PublicKeyHandler;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.SignatureFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.CodeDelegationType;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.core.encoding.CodeDelegationEncoder;
-import org.hyperledger.besu.ethereum.core.encoding.CodeDelegationTransactionEncoder;
 import org.hyperledger.besu.ethereum.core.json.ChainIdDeserializer;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPOutput;
 import org.hyperledger.besu.crypto.key.KeyFactory;
@@ -313,7 +312,7 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
   }
 
   private Optional<Address> computeLegacyAuthority(final Bytes32 hash) {
-    if (!(signature instanceof SECPSignature secp)) {
+    if (!(signature instanceof SECPSignature)) {
       return Optional.empty();
     }
 
@@ -339,7 +338,7 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
     }
 
     Optional<PublicKey> publicKey = PublicKeyHandler.resolvePublicKey(
-        SignatureAlgorithmFactory.getSupportedDsaById(dsaType.get()),
+        DSAProviderFactory.getDsaProvider().getAccountEnabledDSAById(dsaType.get()),
         signature,
         maybePublicKey,
         hash

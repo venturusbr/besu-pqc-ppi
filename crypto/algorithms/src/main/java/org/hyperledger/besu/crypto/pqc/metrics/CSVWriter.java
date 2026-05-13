@@ -7,9 +7,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.Locale;
-
-import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,8 +41,7 @@ public class CSVWriter {
 
     private String buildPath(final String ref) {
         String path = stringBuilder
-                .append(HOME_PATH + SignatureAlgorithmFactory.getPqcGenericInstance().formatAlgorithmAndParameterTitle().toLowerCase(Locale.ROOT)
-                        + "-" + ref + "-metrics.csv")
+                .append(HOME_PATH + ref + "-metrics.csv")
                 .toString();
         stringBuilder.setLength(0);
         return path;
