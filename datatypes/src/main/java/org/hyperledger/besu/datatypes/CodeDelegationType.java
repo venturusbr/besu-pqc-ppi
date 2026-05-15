@@ -3,7 +3,7 @@ package org.hyperledger.besu.datatypes;
 import java.util.Optional;
 
 public enum CodeDelegationType {
-    LEGACY((byte) 0x00),
+    LEGACY((byte) 0xf8),
     FLEXIBLE((byte) 0x01);
 
     private final byte serializedType;

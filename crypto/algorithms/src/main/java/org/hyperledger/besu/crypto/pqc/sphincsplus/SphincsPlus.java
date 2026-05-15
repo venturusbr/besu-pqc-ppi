@@ -66,8 +66,6 @@ public class SphincsPlus extends PqcSignatureAlgorithm{
         }
         SPHINCSPlusParameterSpec parameter = SPHINCS_PLUS_PARAMETER_SPECS[SignatureAlgorithmFactory.getPqcParameterSpecIndex()];
 
-        generateKeyPairLog();
-
         SphincsPlusKeyPair keyPair = SphincsPlusKeyPair.generate(keyPairGenerator, parameter);
 
         return keyPair;

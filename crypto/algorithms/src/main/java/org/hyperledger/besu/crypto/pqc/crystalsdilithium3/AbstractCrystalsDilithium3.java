@@ -30,8 +30,6 @@ public abstract class AbstractCrystalsDilithium3 extends PqcSignatureAlgorithm {
 
         DilithiumParameterSpec parameter = DILITHIUM_PARAMETER_SPEC[SignatureAlgorithmFactory.getPqcParameterSpecIndex()];
 
-        generateKeyPairLog();
-
         Dilithium3KeyPair keyPair = Dilithium3KeyPair.generateCrystalsDilithiumPair(keyPairGenerator, parameter);
 
         return keyPair;

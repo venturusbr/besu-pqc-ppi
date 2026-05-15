@@ -1423,12 +1423,12 @@ public class Transaction
       sb.append("numberOfBlobs=").append(blobsWithCommitments.get().getBlobs().size()).append(", ");
     }
     sb.append("dsaType=");
-    if(dsaType.isPresent()){
-      sb.append(dsaType.get().toString()).append(", ");
+    if (dsaType.isPresent()) {
+        sb.append(String.format("0x%04X", dsaType.get() & 0xFFFF)).append(", ");
     }
     sb.append("providedPublicKey=");
     if(getMaybePublicKey().isPresent()){
-      sb.append(getMaybePublicKey().get()).append(", ");
+      sb.append(Bytes.wrap(getMaybePublicKey().get().getEncoded()).toHexString()).append(", ");
     }
     sb.append("signature=").append(getSignature().encodedBytes().toHexString()).append(", ");
     sb.append("payload=").append(getPayload());
