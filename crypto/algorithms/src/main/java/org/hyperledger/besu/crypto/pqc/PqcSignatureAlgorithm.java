@@ -20,10 +20,6 @@ public abstract class PqcSignatureAlgorithm {
         PqcProvider.initializeBouncyCastle();
     }
 
-    public void generateKeyPairLog(){
-        LOG.info("Generating PQC {} keypair for node.", formatAlgorithmAndParameterTitle());
-    }
-
     public boolean verify(final PublicKey publicKey, final byte[] dataToSign, final byte[] signature) {
         try {
             Signature sig = Signature.getInstance(getAlgorithmName(), "BCPQC");

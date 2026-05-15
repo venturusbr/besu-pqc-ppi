@@ -29,8 +29,6 @@ public class Falcon extends PqcSignatureAlgorithm{
         }
         FalconParameterSpec parameter = FALCON_PARAMETER_SPECS[SignatureAlgorithmFactory.getPqcParameterSpecIndex()];
 
-        generateKeyPairLog();
-
         FalconKeyPair keyPair = FalconKeyPair.generate(keyPairGenerator, parameter);
 
         return keyPair;
