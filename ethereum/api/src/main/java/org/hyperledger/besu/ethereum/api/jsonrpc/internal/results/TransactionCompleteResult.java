@@ -110,7 +110,6 @@ public class TransactionCompleteResult implements TransactionResult {
         transaction.getAccessList().orElse(transactionType.supportsAccessList() ? List.of() : null);
     this.blockHash = tx.getBlockHash().get().toString();
     this.blockNumber = Quantity.create(tx.getBlockNumber().get());
-    this.dsaType = transaction.getDsaType().get().toString();
     this.chainId = transaction.getChainId().map(Quantity::create).orElse(null);
     this.from = transaction.getSender().toString();
     this.gas = Quantity.create(transaction.getGasLimit());
@@ -133,7 +132,21 @@ public class TransactionCompleteResult implements TransactionResult {
     if (transactionType == TransactionType.FRONTIER) {
       this.type = Quantity.create(0);
       this.yParity = null;
+      this.r = Quantity.create(transaction.getR());
+      this.s = Quantity.create(transaction.getS());
       this.v = Quantity.create(transaction.getV());
+      this.dsaType = null;
+      this.publicKey = null;
+      this.signature = null;
+    } else if (isFlexible(transactionType)) {
+      this.type = Quantity.create(transactionType.getSerializedType());
+      this.yParity = null;
+      this.r = null;
+      this.s = null;
+      this.v = null;
+      this.dsaType = String.format("0x%04X", transaction.getDsaType().get() & 0xFFFF);
+      this.publicKey = Bytes.wrap(transaction.getMaybePublicKey().get().getEncoded()).toHexString();
+      this.signature = transaction.getSignature().encodedBytes().toHexString();
     } else {
       this.type = Quantity.create(transactionType.getSerializedType());
       this.yParity = Quantity.create(transaction.getYParity());
@@ -144,12 +157,13 @@ public class TransactionCompleteResult implements TransactionResult {
                   || transactionType == TransactionType.BLOB)
               ? Quantity.create(transaction.getYParity())
               : null;
+      this.r = Quantity.create(transaction.getR());
+      this.s = Quantity.create(transaction.getS());
+      this.publicKey = null;
+      this.signature = null;
+      this.dsaType = null;
     }
     this.value = Quantity.create(transaction.getValue());
-    this.publicKey = transaction.getPublicKey().orElse(null);
-    this.signature = transaction.getSignature().toString();
-    this.r = Quantity.create(transaction.getR());
-    this.s = Quantity.create(transaction.getS());
     this.versionedHashes =
         transaction
             .getVersionedHashes()
@@ -162,6 +176,13 @@ public class TransactionCompleteResult implements TransactionResult {
         codeDelegationList
             .map(cds -> cds.stream().map(CodeDelegationResult::new).toList())
             .orElse(null);
+  }
+
+  private Boolean isFlexible(final TransactionType txType){
+    return txType == TransactionType.FLEXIBLE_ACCESS_LIST ||
+      txType == TransactionType.FLEXIBLE_EIP1559 ||
+      txType == TransactionType.FLEXIBLE_BLOB ||
+      txType == TransactionType.FLEXIBLE_DELEGATE_CODE;
   }
 
   @JsonGetter(value = "accessList")
@@ -264,7 +285,6 @@ public class TransactionCompleteResult implements TransactionResult {
     return publicKey;
   }
 
-  @JsonInclude(JsonInclude.Include.NON_NULL)
   @JsonGetter(value = "signature")
   public String getSignature(){
     return signature;
