@@ -6,12 +6,8 @@ import java.security.NoSuchProviderException;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public abstract class PqcSignatureAlgorithm {
-    private static final Logger LOG = LoggerFactory.getLogger(PqcSignatureAlgorithm.class);
-
     public abstract String getAlgorithmName();
 
     public abstract String formatAlgorithmAndParameterTitle();
