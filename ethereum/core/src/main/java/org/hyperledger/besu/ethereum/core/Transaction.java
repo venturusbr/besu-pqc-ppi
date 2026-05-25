@@ -311,7 +311,7 @@ public class Transaction
   private void saveMetrics(final long pkrStart, final long pkrEnd, final String object){
       long pkrTime = pkrEnd - pkrStart;
 
-      String data = stringBuilder.append(pkrTime + "," + object + ",\n")
+      String data = stringBuilder.append(pkrTime + "," + object + "\n")
             .toString();
       pkrMetrics.write(data);
 
