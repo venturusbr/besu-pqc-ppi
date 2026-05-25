@@ -14,6 +14,7 @@
  */
 package org.hyperledger.besu.ethereum.api.jsonrpc.websocket.subscription.pending;
 
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.TransactionType;
 import org.hyperledger.besu.ethereum.api.jsonrpc.internal.results.JsonRpcResult;
 import org.hyperledger.besu.ethereum.api.jsonrpc.internal.results.Quantity;
@@ -66,7 +67,6 @@ public class PendingTransactionDetailResult implements JsonRpcResult {
     this.gasPrice = tx.getGasPrice().map(Quantity::create).orElse(null);
     this.hash = tx.getHash().toString();
     this.input = tx.getPayload().toString();
-    this.dsaType = tx.getDsaType().toString();
     this.nonce = Quantity.create(tx.getNonce());
     this.to = tx.getTo().map(a -> a.getBytes().toHexString()).orElse(null);
     if (transactionType == TransactionType.FRONTIER) {
@@ -75,6 +75,7 @@ public class PendingTransactionDetailResult implements JsonRpcResult {
       this.r = Quantity.create(tx.getR());
       this.s = Quantity.create(tx.getS());
       this.v = Quantity.create(tx.getV());
+      this.dsaType = null;
       this.publicKey = null;
       this.signature = null;
     } else if(isFlexible(transactionType)){
@@ -83,12 +84,9 @@ public class PendingTransactionDetailResult implements JsonRpcResult {
       this.r = null;
       this.s = null;
       this.v = null;
-      this.publicKey = tx.getMaybePublicKey()
-        .map(Object::toString)
-        .orElse(null);
-      this.signature = tx.getSignature() != null
-        ? tx.getSignature().toString()
-        : null;
+      this.dsaType = String.format("0x%04X", tx.getDsaType().get() & 0xFFFF);
+      this.publicKey = Bytes.wrap(tx.getMaybePublicKey().get().getEncoded()).toHexString();
+      this.signature = tx.getSignature().encodedBytes().toHexString();
     } else {
       this.type = Quantity.create(transactionType.getSerializedType());
       this.yParity = Quantity.create(tx.getYParity());
@@ -99,6 +97,7 @@ public class PendingTransactionDetailResult implements JsonRpcResult {
               : null;
       this.r = Quantity.create(tx.getR());
       this.s = Quantity.create(tx.getS());
+      this.dsaType = null;
       this.publicKey = null;
       this.signature = null;
     }

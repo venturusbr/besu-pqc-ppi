@@ -106,8 +106,6 @@ public class TransactionPendingResult implements TransactionResult {
     this.hash = transaction.getHash().toString();
     this.input = transaction.getPayload().toString();
     this.nonce = Quantity.create(transaction.getNonce());
-    this.dsaType = transaction.getDsaType().toString();
-    this.publicKey = transaction.getPublicKey().orElse(null);
     this.raw =
         TransactionEncoder.encodeOpaqueBytes(transaction, EncodingContext.POOLED_TRANSACTION)
             .toString();
@@ -115,8 +113,22 @@ public class TransactionPendingResult implements TransactionResult {
     if (transactionType == TransactionType.FRONTIER) {
       this.type = Quantity.create(0);
       this.yParity = null;
+      this.r = Quantity.create(transaction.getR());
+      this.s = Quantity.create(transaction.getS());
       this.v = Quantity.create(transaction.getV());
-    } else {
+      this.dsaType = null;
+      this.publicKey = null;
+      this.signature = null;
+    } else if(isFlexible(transactionType)){
+      this.type = Quantity.create(transactionType.getSerializedType());
+      this.yParity = null;
+      this.r = null;
+      this.s = null;
+      this.v = null;
+      this.dsaType = String.format("0x%04X", transaction.getDsaType().get() & 0xFFFF);
+      this.publicKey = Bytes.wrap(transaction.getMaybePublicKey().get().getEncoded()).toHexString();
+      this.signature = transaction.getSignature().encodedBytes().toHexString();
+    } else{
       this.type = Quantity.create(transactionType.getSerializedType());
       this.yParity = Quantity.create(transaction.getYParity());
       this.v =
@@ -126,11 +138,13 @@ public class TransactionPendingResult implements TransactionResult {
                   || transactionType == TransactionType.BLOB)
               ? Quantity.create(transaction.getYParity())
               : null;
+      this.r = Quantity.create(transaction.getR());
+      this.s = Quantity.create(transaction.getS());
+      this.dsaType = null;
+      this.publicKey = null;
+      this.signature = null;
     }
     this.value = Quantity.create(transaction.getValue());
-    this.signature = transaction.getSignature().toString();
-    this.r = Quantity.create(transaction.getR());
-    this.s = Quantity.create(transaction.getS());
     this.versionedHashes =
         transaction
             .getVersionedHashes()
@@ -138,6 +152,13 @@ public class TransactionPendingResult implements TransactionResult {
                 hashes ->
                     hashes.stream().map(BytesHolder::getBytes).map(Bytes::toHexString).toList())
             .orElse(null);
+  }
+
+  private Boolean isFlexible(final TransactionType txType){
+    return txType == TransactionType.FLEXIBLE_ACCESS_LIST ||
+      txType == TransactionType.FLEXIBLE_EIP1559 ||
+      txType == TransactionType.FLEXIBLE_BLOB ||
+      txType == TransactionType.FLEXIBLE_DELEGATE_CODE;
   }
 
   @JsonGetter(value = "accessList")
@@ -205,7 +226,6 @@ public class TransactionPendingResult implements TransactionResult {
     return dsaType;
   }
 
-  @JsonInclude(JsonInclude.Include.NON_NULL)
   @JsonGetter(value = "signature")
   public String getSignature(){
     return signature;
