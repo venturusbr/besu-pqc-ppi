@@ -35,6 +35,8 @@ import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.key.PublicKeyHandler;
+import org.hyperledger.besu.crypto.pqc.metrics.CSVWriter;
+import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.AccessListEntry;
@@ -138,6 +140,10 @@ public class Transaction
   private final Optional<List<CodeDelegation>> maybeCodeDelegationList;
 
   private final Optional<Bytes> rawRlp;
+
+  private final CSVWriter pkrMetrics;
+
+  private final StringBuilder stringBuilder;
 
   public static Builder builder() {
     return new Builder();
@@ -284,6 +290,8 @@ public class Transaction
     this.blobsWithCommitments = blobsWithCommitments;
     this.maybeCodeDelegationList = maybeCodeDelegationList;
     this.rawRlp = rawRlp;
+    this.pkrMetrics = MetricWriters.getPkrInstance();
+    this.stringBuilder = new StringBuilder();
     hash.ifPresent(h -> this.hash = h);
     sizeForAnnouncement.ifPresent(i -> this.sizeForAnnouncement = i);
     sizeForBlockInclusion.ifPresent(i -> this.sizeForBlockInclusion = i);
@@ -300,15 +308,29 @@ public class Transaction
     return dsaType;
   }
 
+  private void saveMetrics(final long pkrStart, final long pkrEnd, final String object){
+      long pkrTime = pkrEnd - pkrStart;
+
+      String data = stringBuilder.append(pkrTime + "," + object + "\n")
+            .toString();
+      pkrMetrics.write(data);
+
+      stringBuilder.setLength(0);
+  }
+
   @Override
   public PublicKey getMountedPublicKey(){
     if(publicKey == null){
+      long startPkr = System.nanoTime();
       publicKey = PublicKeyHandler.resolvePublicKey(
         signatureAlgorithm,
         signature,
         providedPublicKey,
         getOrComputeSenderRecoveryHash()
       ).get();
+      long endPkr = System.nanoTime();
+
+      saveMetrics(startPkr, endPkr, "tx");
     }
     return publicKey;
   }
