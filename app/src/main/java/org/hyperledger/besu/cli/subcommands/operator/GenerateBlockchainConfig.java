@@ -284,8 +284,8 @@ class GenerateBlockchainConfig implements Runnable {
 
       switch (pqcAlgorithmName) {
         case "none":
-          LOG.info("Warning: No PQC Algorithm Selected");
-          break;
+          // LOG.info("Warning: No PQC Algorithm Selected");
+          // break;
         case "dilithium":
           final Dilithium3KeyPair PQCKeyPair = DILITHIUM_SIGNATURE_ALGORITHM.get().generateKeyPair();
           Dilithium3PublicKey pqcPublicKey = PQCKeyPair.getPublicKey();
