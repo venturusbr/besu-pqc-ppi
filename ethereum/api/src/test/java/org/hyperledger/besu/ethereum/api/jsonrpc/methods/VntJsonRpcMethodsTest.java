@@ -15,12 +15,12 @@
 package org.hyperledger.besu.ethereum.api.jsonrpc.methods;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hyperledger.besu.ethereum.api.jsonrpc.RpcMethod.VNT_GET_SUPPORTED_DSAS;
+import static org.hyperledger.besu.ethereum.api.jsonrpc.RpcMethod.VNT_GET_ACCOUNTS_SUPPORTED_DSAS;
 
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.ethereum.api.jsonrpc.RpcApis;
 import org.hyperledger.besu.ethereum.api.jsonrpc.internal.methods.JsonRpcMethod;
-import org.hyperledger.besu.ethereum.api.jsonrpc.internal.methods.VntGetSupportedDSAs;
+import org.hyperledger.besu.ethereum.api.jsonrpc.internal.methods.VntGetAccountsSupportedDSAs;
 
 import java.util.List;
 import java.util.Map;
@@ -36,8 +36,8 @@ public class VntJsonRpcMethodsTest {
 
     final Map<String, JsonRpcMethod> methods = group.create();
 
-    assertThat(methods.get(VNT_GET_SUPPORTED_DSAS.getMethodName()))
-        .isInstanceOf(VntGetSupportedDSAs.class);
+    assertThat(methods.get(VNT_GET_ACCOUNTS_SUPPORTED_DSAS.getMethodName()))
+        .isInstanceOf(VntGetAccountsSupportedDSAs.class);
   }
 
   @Test
@@ -65,6 +65,6 @@ public class VntJsonRpcMethodsTest {
 
     final Map<String, JsonRpcMethod> methods = group.create(List.of("VNT"));
 
-    assertThat(methods).containsKey(VNT_GET_SUPPORTED_DSAS.getMethodName());
+    assertThat(methods).containsKey(VNT_GET_ACCOUNTS_SUPPORTED_DSAS.getMethodName());
   }
 }

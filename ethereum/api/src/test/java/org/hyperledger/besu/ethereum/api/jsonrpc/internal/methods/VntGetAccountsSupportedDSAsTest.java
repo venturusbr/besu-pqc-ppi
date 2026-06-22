@@ -26,17 +26,19 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-public class VntGetSupportedDSAsTest {
+public class VntGetAccountsSupportedDSAsTest {
 
   @Test
   public void shouldReturnCorrectMethodName() {
-    final VntGetSupportedDSAs method = new VntGetSupportedDSAs(List.of(DSAParametersSet.SECP256K1));
-    assertThat(method.getName()).isEqualTo("vnt_getSupportedDSAs");
+    final VntGetAccountsSupportedDSAs method =
+        new VntGetAccountsSupportedDSAs(List.of(DSAParametersSet.SECP256K1));
+    assertThat(method.getName()).isEqualTo("vnt_getAccountsSupportedDSAs");
   }
 
   @Test
   public void shouldReturnSingleDefaultDSA() {
-    final VntGetSupportedDSAs method = new VntGetSupportedDSAs(List.of(DSAParametersSet.SECP256K1));
+    final VntGetAccountsSupportedDSAs method =
+        new VntGetAccountsSupportedDSAs(List.of(DSAParametersSet.SECP256K1));
     final JsonRpcResponse expectedResponse =
         new JsonRpcSuccessResponse(null, List.of(DSAParametersSet.SECP256K1.getName()));
 
@@ -47,13 +49,13 @@ public class VntGetSupportedDSAsTest {
 
   @Test
   public void shouldReturnMultipleDSAs() {
-    final VntGetSupportedDSAs method =
-        new VntGetSupportedDSAs(
-            List.of(DSAParametersSet.SECP256K1, DSAParametersSet.SECP256K1MLDSA44));
+    final VntGetAccountsSupportedDSAs method =
+        new VntGetAccountsSupportedDSAs(
+            List.of(DSAParametersSet.SECP256K1, DSAParametersSet.MLDSA44));
     final JsonRpcResponse expectedResponse =
         new JsonRpcSuccessResponse(
             null,
-            List.of(DSAParametersSet.SECP256K1.getName(), DSAParametersSet.SECP256K1MLDSA44.getName()));
+            List.of(DSAParametersSet.SECP256K1.getName(), DSAParametersSet.MLDSA44.getName()));
 
     final JsonRpcResponse response = method.response(request());
 
@@ -70,7 +72,7 @@ public class VntGetSupportedDSAsTest {
             DSAParametersSet.MLDSA65,
             DSAParametersSet.MLDSA87,
             DSAParametersSet.SECP256K1MLDSA44);
-    final VntGetSupportedDSAs method = new VntGetSupportedDSAs(all);
+    final VntGetAccountsSupportedDSAs method = new VntGetAccountsSupportedDSAs(all);
 
     final JsonRpcResponse response = method.response(request());
 
@@ -89,6 +91,7 @@ public class VntGetSupportedDSAsTest {
   }
 
   private JsonRpcRequestContext request() {
-    return new JsonRpcRequestContext(new JsonRpcRequest("2.0", "vnt_getSupportedDSAs", null));
+    return new JsonRpcRequestContext(
+        new JsonRpcRequest("2.0", "vnt_getAccountsSupportedDSAs", null));
   }
 }

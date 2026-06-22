@@ -23,17 +23,17 @@ import org.hyperledger.besu.ethereum.api.jsonrpc.internal.response.JsonRpcSucces
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class VntGetSupportedDSAs implements JsonRpcMethod {
+public class VntGetAccountsSupportedDSAs implements JsonRpcMethod {
 
   private final List<DSAParametersSet> accountsSupportedDSAs;
 
-  public VntGetSupportedDSAs(final List<DSAParametersSet> accountsSupportedDSAs) {
+  public VntGetAccountsSupportedDSAs(final List<DSAParametersSet> accountsSupportedDSAs) {
     this.accountsSupportedDSAs = accountsSupportedDSAs;
   }
 
   @Override
   public String getName() {
-    return RpcMethod.VNT_GET_SUPPORTED_DSAS.getMethodName();
+    return RpcMethod.VNT_GET_ACCOUNTS_SUPPORTED_DSAS.getMethodName();
   }
 
   @Override
