@@ -17,7 +17,7 @@ package org.hyperledger.besu.ethereum.api.jsonrpc.methods;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hyperledger.besu.ethereum.api.jsonrpc.RpcMethod.VNT_GET_ACCOUNTS_SUPPORTED_DSAS;
 
-import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.providers.DigitalSignatureAlgorithmProvider;
 import org.hyperledger.besu.ethereum.api.jsonrpc.RpcApis;
 import org.hyperledger.besu.ethereum.api.jsonrpc.internal.methods.JsonRpcMethod;
 import org.hyperledger.besu.ethereum.api.jsonrpc.internal.methods.VntGetAccountsSupportedDSAs;
@@ -26,13 +26,18 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class VntJsonRpcMethodsTest {
 
+  @Mock private DigitalSignatureAlgorithmProvider dsaProvider;
+
   @Test
-  public void shouldExposeGetSupportedDSAsMethod() {
-    final VntJsonRpcMethods group =
-        new VntJsonRpcMethods(List.of(DSAParametersSet.SECP256K1));
+  public void shouldExposeGetAccountsSupportedDSAsMethod() {
+    final VntJsonRpcMethods group = new VntJsonRpcMethods(dsaProvider);
 
     final Map<String, JsonRpcMethod> methods = group.create();
 
@@ -42,16 +47,14 @@ public class VntJsonRpcMethodsTest {
 
   @Test
   public void shouldReportVntApiGroup() {
-    final VntJsonRpcMethods group =
-        new VntJsonRpcMethods(List.of(DSAParametersSet.SECP256K1));
+    final VntJsonRpcMethods group = new VntJsonRpcMethods(dsaProvider);
 
     assertThat(group.getApiGroup()).isEqualTo(RpcApis.VNT.name());
   }
 
   @Test
   public void shouldReturnEmptyMapWhenVntNotEnabled() {
-    final VntJsonRpcMethods group =
-        new VntJsonRpcMethods(List.of(DSAParametersSet.SECP256K1));
+    final VntJsonRpcMethods group = new VntJsonRpcMethods(dsaProvider);
 
     final Map<String, JsonRpcMethod> methods = group.create(List.of("ETH", "NET"));
 
@@ -60,8 +63,7 @@ public class VntJsonRpcMethodsTest {
 
   @Test
   public void shouldReturnMethodsWhenVntEnabled() {
-    final VntJsonRpcMethods group =
-        new VntJsonRpcMethods(List.of(DSAParametersSet.SECP256K1, DSAParametersSet.SECP256K1MLDSA44));
+    final VntJsonRpcMethods group = new VntJsonRpcMethods(dsaProvider);
 
     final Map<String, JsonRpcMethod> methods = group.create(List.of("VNT"));
 

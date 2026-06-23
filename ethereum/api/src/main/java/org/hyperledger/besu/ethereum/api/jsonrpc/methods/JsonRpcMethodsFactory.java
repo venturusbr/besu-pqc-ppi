@@ -15,7 +15,7 @@
 package org.hyperledger.besu.ethereum.api.jsonrpc.methods;
 
 import org.hyperledger.besu.config.GenesisConfigOptions;
-import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.providers.DigitalSignatureAlgorithmProvider;
 import org.hyperledger.besu.ethereum.ProtocolContext;
 import org.hyperledger.besu.ethereum.api.ApiConfiguration;
 import org.hyperledger.besu.ethereum.api.graphql.GraphQLConfiguration;
@@ -91,7 +91,7 @@ public class JsonRpcMethodsFactory {
       final Optional<EnodeDnsConfiguration> enodeDnsConfiguration,
       final TransactionSimulator transactionSimulator,
       final EthScheduler ethScheduler,
-      final List<DSAParametersSet> accountsSupportedDSAs) {
+      final DigitalSignatureAlgorithmProvider dsaProvider) {
     final Map<String, JsonRpcMethod> enabled = new HashMap<>();
     if (!rpcApis.isEmpty()) {
       final JsonRpcMethod modules = new RpcModules(rpcApis);
@@ -163,7 +163,7 @@ public class JsonRpcMethodsFactory {
                   ethScheduler),
               new TxPoolJsonRpcMethods(transactionPool),
               new PluginsJsonRpcMethods(namedPlugins),
-              new VntJsonRpcMethods(accountsSupportedDSAs));
+              new VntJsonRpcMethods(dsaProvider));
 
       for (final JsonRpcMethods apiGroup : availableApiGroups) {
         enabled.putAll(apiGroup.create(rpcApis));

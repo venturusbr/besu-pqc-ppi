@@ -14,20 +14,19 @@
  */
 package org.hyperledger.besu.ethereum.api.jsonrpc.methods;
 
-import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.providers.DigitalSignatureAlgorithmProvider;
 import org.hyperledger.besu.ethereum.api.jsonrpc.RpcApis;
 import org.hyperledger.besu.ethereum.api.jsonrpc.internal.methods.JsonRpcMethod;
 import org.hyperledger.besu.ethereum.api.jsonrpc.internal.methods.VntGetAccountsSupportedDSAs;
 
-import java.util.List;
 import java.util.Map;
 
 public class VntJsonRpcMethods extends ApiGroupJsonRpcMethods {
 
-  private final List<DSAParametersSet> accountsSupportedDSAs;
+  private final DigitalSignatureAlgorithmProvider dsaProvider;
 
-  public VntJsonRpcMethods(final List<DSAParametersSet> accountsSupportedDSAs) {
-    this.accountsSupportedDSAs = accountsSupportedDSAs;
+  public VntJsonRpcMethods(final DigitalSignatureAlgorithmProvider dsaProvider) {
+    this.dsaProvider = dsaProvider;
   }
 
   @Override
@@ -37,6 +36,6 @@ public class VntJsonRpcMethods extends ApiGroupJsonRpcMethods {
 
   @Override
   protected Map<String, JsonRpcMethod> create() {
-    return mapOf(new VntGetAccountsSupportedDSAs(accountsSupportedDSAs));
+    return mapOf(new VntGetAccountsSupportedDSAs(dsaProvider));
   }
 }

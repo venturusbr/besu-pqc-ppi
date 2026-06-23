@@ -15,8 +15,9 @@
 package org.hyperledger.besu.ethereum.api.jsonrpc.internal.methods;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
-import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.providers.DigitalSignatureAlgorithmProvider;
 import org.hyperledger.besu.ethereum.api.jsonrpc.internal.JsonRpcRequest;
 import org.hyperledger.besu.ethereum.api.jsonrpc.internal.JsonRpcRequestContext;
 import org.hyperledger.besu.ethereum.api.jsonrpc.internal.response.JsonRpcResponse;
@@ -25,22 +26,27 @@ import org.hyperledger.besu.ethereum.api.jsonrpc.internal.response.JsonRpcSucces
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 public class VntGetAccountsSupportedDSAsTest {
+
+  @Mock private DigitalSignatureAlgorithmProvider dsaProvider;
 
   @Test
   public void shouldReturnCorrectMethodName() {
-    final VntGetAccountsSupportedDSAs method =
-        new VntGetAccountsSupportedDSAs(List.of(DSAParametersSet.SECP256K1));
+    final VntGetAccountsSupportedDSAs method = new VntGetAccountsSupportedDSAs(dsaProvider);
     assertThat(method.getName()).isEqualTo("vnt_getAccountsSupportedDSAs");
   }
 
   @Test
   public void shouldReturnSingleDefaultDSA() {
-    final VntGetAccountsSupportedDSAs method =
-        new VntGetAccountsSupportedDSAs(List.of(DSAParametersSet.SECP256K1));
+    when(dsaProvider.getAccountsSupportedDSANames()).thenReturn(List.of("SECP256K1"));
+    final VntGetAccountsSupportedDSAs method = new VntGetAccountsSupportedDSAs(dsaProvider);
     final JsonRpcResponse expectedResponse =
-        new JsonRpcSuccessResponse(null, List.of(DSAParametersSet.SECP256K1.getName()));
+        new JsonRpcSuccessResponse(null, List.of("SECP256K1"));
 
     final JsonRpcResponse response = method.response(request());
 
@@ -49,13 +55,10 @@ public class VntGetAccountsSupportedDSAsTest {
 
   @Test
   public void shouldReturnMultipleDSAs() {
-    final VntGetAccountsSupportedDSAs method =
-        new VntGetAccountsSupportedDSAs(
-            List.of(DSAParametersSet.SECP256K1, DSAParametersSet.MLDSA44));
+    when(dsaProvider.getAccountsSupportedDSANames()).thenReturn(List.of("SECP256K1", "MLDSA44"));
+    final VntGetAccountsSupportedDSAs method = new VntGetAccountsSupportedDSAs(dsaProvider);
     final JsonRpcResponse expectedResponse =
-        new JsonRpcSuccessResponse(
-            null,
-            List.of(DSAParametersSet.SECP256K1.getName(), DSAParametersSet.MLDSA44.getName()));
+        new JsonRpcSuccessResponse(null, List.of("SECP256K1", "MLDSA44"));
 
     final JsonRpcResponse response = method.response(request());
 
@@ -64,30 +67,17 @@ public class VntGetAccountsSupportedDSAsTest {
 
   @Test
   public void shouldReturnAllDSAs() {
-    final List<DSAParametersSet> all =
-        List.of(
-            DSAParametersSet.SECP256K1,
-            DSAParametersSet.SECP256R1,
-            DSAParametersSet.MLDSA44,
-            DSAParametersSet.MLDSA65,
-            DSAParametersSet.MLDSA87,
-            DSAParametersSet.SECP256K1MLDSA44);
-    final VntGetAccountsSupportedDSAs method = new VntGetAccountsSupportedDSAs(all);
+    final List<String> all =
+        List.of("SECP256K1", "SECP256R1", "MLDSA44", "MLDSA65", "MLDSA87", "SECP256K1MLDSA44");
+    when(dsaProvider.getAccountsSupportedDSANames()).thenReturn(all);
+    final VntGetAccountsSupportedDSAs method = new VntGetAccountsSupportedDSAs(dsaProvider);
 
     final JsonRpcResponse response = method.response(request());
 
     assertThat(response).isInstanceOf(JsonRpcSuccessResponse.class);
     @SuppressWarnings("unchecked")
     final List<String> result = (List<String>) ((JsonRpcSuccessResponse) response).getResult();
-    assertThat(result).hasSize(6);
-    assertThat(result)
-        .containsExactly(
-            DSAParametersSet.SECP256K1.getName(),
-            DSAParametersSet.SECP256R1.getName(),
-            DSAParametersSet.MLDSA44.getName(),
-            DSAParametersSet.MLDSA65.getName(),
-            DSAParametersSet.MLDSA87.getName(),
-            DSAParametersSet.SECP256K1MLDSA44.getName());
+    assertThat(result).containsExactlyElementsOf(all);
   }
 
   private JsonRpcRequestContext request() {

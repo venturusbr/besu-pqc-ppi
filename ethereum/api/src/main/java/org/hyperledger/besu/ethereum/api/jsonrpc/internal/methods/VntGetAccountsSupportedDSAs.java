@@ -14,21 +14,18 @@
  */
 package org.hyperledger.besu.ethereum.api.jsonrpc.internal.methods;
 
-import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.providers.DigitalSignatureAlgorithmProvider;
 import org.hyperledger.besu.ethereum.api.jsonrpc.RpcMethod;
 import org.hyperledger.besu.ethereum.api.jsonrpc.internal.JsonRpcRequestContext;
 import org.hyperledger.besu.ethereum.api.jsonrpc.internal.response.JsonRpcResponse;
 import org.hyperledger.besu.ethereum.api.jsonrpc.internal.response.JsonRpcSuccessResponse;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 public class VntGetAccountsSupportedDSAs implements JsonRpcMethod {
 
-  private final List<DSAParametersSet> accountsSupportedDSAs;
+  private final DigitalSignatureAlgorithmProvider dsaProvider;
 
-  public VntGetAccountsSupportedDSAs(final List<DSAParametersSet> accountsSupportedDSAs) {
-    this.accountsSupportedDSAs = accountsSupportedDSAs;
+  public VntGetAccountsSupportedDSAs(final DigitalSignatureAlgorithmProvider dsaProvider) {
+    this.dsaProvider = dsaProvider;
   }
 
   @Override
@@ -38,10 +35,7 @@ public class VntGetAccountsSupportedDSAs implements JsonRpcMethod {
 
   @Override
   public JsonRpcResponse response(final JsonRpcRequestContext requestContext) {
-    final List<String> dsaNames =
-        accountsSupportedDSAs.stream()
-            .map(DSAParametersSet::getName)
-            .collect(Collectors.toList());
-    return new JsonRpcSuccessResponse(requestContext.getRequest().getId(), dsaNames);
+    return new JsonRpcSuccessResponse(
+        requestContext.getRequest().getId(), dsaProvider.getAccountsSupportedDSANames());
   }
 }

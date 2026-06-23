@@ -52,7 +52,7 @@ import org.hyperledger.besu.ethereum.api.jsonrpc.internal.methods.JsonRpcMethod;
 import org.hyperledger.besu.ethereum.api.jsonrpc.ipc.JsonRpcIpcConfiguration;
 import org.hyperledger.besu.ethereum.api.jsonrpc.ipc.JsonRpcIpcService;
 import org.hyperledger.besu.ethereum.api.jsonrpc.methods.JsonRpcMethodsFactory;
-import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.providers.DigitalSignatureAlgorithmProvider;
 import org.hyperledger.besu.ethereum.api.jsonrpc.websocket.WebSocketConfiguration;
 import org.hyperledger.besu.ethereum.api.jsonrpc.websocket.WebSocketMessageHandler;
 import org.hyperledger.besu.ethereum.api.jsonrpc.websocket.WebSocketService;
@@ -194,7 +194,7 @@ public class RunnerBuilder {
   private List<SubnetInfo> allowedSubnets = new ArrayList<>();
   private boolean poaDiscoveryRetryBootnodes = true;
   private TransactionValidatorServiceImpl transactionValidatorService;
-  private List<DSAParametersSet> accountsSupportedDSAs = List.of(DSAParametersSet.SECP256K1);
+  private DigitalSignatureAlgorithmProvider dsaProvider;
 
   /** Instantiates a new Runner builder. */
   public RunnerBuilder() {}
@@ -344,8 +344,8 @@ public class RunnerBuilder {
     return this;
   }
 
-  public RunnerBuilder accountsSupportedDSAs(final List<DSAParametersSet> accountsSupportedDSAs) {
-    this.accountsSupportedDSAs = accountsSupportedDSAs;
+  public RunnerBuilder dsaProvider(final DigitalSignatureAlgorithmProvider dsaProvider) {
+    this.dsaProvider = dsaProvider;
     return this;
   }
 
@@ -847,7 +847,7 @@ public class RunnerBuilder {
               rpcEndpointServiceImpl,
               transactionSimulator,
               besuController.getProtocolManager().ethContext().getScheduler(),
-              accountsSupportedDSAs);
+              dsaProvider);
 
       jsonRpcHttpService =
           Optional.of(
@@ -904,7 +904,7 @@ public class RunnerBuilder {
               rpcEndpointServiceImpl,
               transactionSimulator,
               besuController.getProtocolManager().ethContext().getScheduler(),
-              accountsSupportedDSAs);
+              dsaProvider);
 
       final Optional<AuthenticationService> authToUse =
           engineJsonRpcConfiguration.get().isAuthenticationEnabled()
@@ -1001,7 +1001,7 @@ public class RunnerBuilder {
               rpcEndpointServiceImpl,
               transactionSimulator,
               besuController.getProtocolManager().ethContext().getScheduler(),
-              accountsSupportedDSAs);
+              dsaProvider);
 
       webSocketService =
           Optional.of(
@@ -1070,7 +1070,7 @@ public class RunnerBuilder {
               rpcEndpointServiceImpl,
               transactionSimulator,
               besuController.getProtocolManager().ethContext().getScheduler(),
-              accountsSupportedDSAs);
+              dsaProvider);
 
       final WebSocketMethodsFactory ipcMethodsFactory =
           new WebSocketMethodsFactory(subscriptionManager, ipcMethods);
@@ -1115,7 +1115,7 @@ public class RunnerBuilder {
               rpcEndpointServiceImpl,
               transactionSimulator,
               besuController.getProtocolManager().ethContext().getScheduler(),
-              accountsSupportedDSAs);
+              dsaProvider);
     } else {
       inProcessRpcMethods = Map.of();
     }
@@ -1281,7 +1281,7 @@ public class RunnerBuilder {
       final RpcEndpointServiceImpl rpcEndpointServiceImpl,
       final TransactionSimulator transactionSimulator,
       final EthScheduler ethScheduler,
-      final List<DSAParametersSet> accountsSupportedDSAs) {
+      final DigitalSignatureAlgorithmProvider dsaProvider) {
     // sync vertx for engine consensus API, to process requests in FIFO order;
     final Vertx consensusEngineServer = Vertx.vertx(new VertxOptions().setWorkerPoolSize(1));
 
@@ -1321,7 +1321,7 @@ public class RunnerBuilder {
                 enodeDnsConfiguration,
                 transactionSimulator,
                 ethScheduler,
-                accountsSupportedDSAs);
+                dsaProvider);
     methods.putAll(besuController.getAdditionalJsonRpcMethods(jsonRpcApis));
 
     final var pluginMethods =
