@@ -19,10 +19,10 @@ import org.bouncycastle.pqc.crypto.mldsa.MLDSAPublicKeyParameters;
 import org.bouncycastle.pqc.crypto.mldsa.MLDSASigner;
 import org.bouncycastle.pqc.jcajce.provider.BouncyCastlePQCProvider;
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
+import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SecureRandomProvider;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
-import org.hyperledger.besu.crypto.key.NodeKeyPair;
-import org.hyperledger.besu.crypto.key.KeyManager;
+import org.hyperledger.besu.crypto.key.KeyFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.SignatureFactory;
 import org.slf4j.Logger;
@@ -73,7 +73,7 @@ public class MLDSA implements DigitalSignatureAlgorithm{
     }
 
     @Override
-    public NodeKeyPair generateNodeKeyPair(final KeyManager keyManager) {
+    public KeyPair generateNodeKeyPair() {
         MLDSAKeyPairGenerator mldsaKpGenerator = new MLDSAKeyPairGenerator();
         KeyGenerationParameters genParams = new MLDSAKeyGenerationParameters(SecureRandomProvider.createSecureRandom(), selectedBCParameter);
 
@@ -86,7 +86,7 @@ public class MLDSA implements DigitalSignatureAlgorithm{
         Bytes rawSk = Bytes.wrap(skParams.getEncoded());
         Bytes rawPk = Bytes.wrap(pkParams.getEncoded());
 
-        NodeKeyPair kp = keyManager.buildNodeKeyPair(rawSk, rawPk, mldsaParameters);
+        KeyPair kp = KeyFactory.createKeyPair(rawSk, rawPk, mldsaParameters);
 
         return kp;
     }

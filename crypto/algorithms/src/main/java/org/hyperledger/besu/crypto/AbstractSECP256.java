@@ -45,6 +45,7 @@ import org.bouncycastle.math.ec.ECPoint;
 import org.hyperledger.besu.crypto.key.NodeKeyPair;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.key.KeyFactory;
 import org.hyperledger.besu.crypto.key.KeyManager;
 
 /** The Abstract secp256. */
@@ -213,9 +214,9 @@ public abstract class AbstractSECP256 implements SignatureAlgorithm, PublicKeyRe
   }
 
   @Override
-  public NodeKeyPair generateNodeKeyPair(final KeyManager keyManager){
+  public KeyPair generateNodeKeyPair(){
     KeyPair kp = generateKeyPair();
-    return keyManager.buildNodeKeyPair(kp.getPrivateKey().getEncodedBytes(), kp.getPublicKey().getEncodedBytes(), DSAParametersSet.SECP256K1);
+    return KeyFactory.buildNodeKeyPair(kp.getPrivateKey().getEncodedBytes(), kp.getPublicKey().getEncodedBytes(), DSAParametersSet.SECP256K1);
   }
 
   @Override

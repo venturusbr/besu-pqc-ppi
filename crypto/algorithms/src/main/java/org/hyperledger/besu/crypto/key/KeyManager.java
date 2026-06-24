@@ -9,15 +9,25 @@ import java.util.List;
 
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
+import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.config.KeyConfiguration;
 
 public class KeyManager {
     private final KeyConfiguration keyConfig;
-    private NodeKeyPair nodeKeyPair;
+    private KeyPair nodeKeyPair;
 
     public KeyManager(final KeyConfiguration keyConfig) {
         this.keyConfig = keyConfig;
+    }
+
+    public void loadOrGenerateNodeKeyPair(final DigitalSignatureAlgorithm activeDsa) {
+        try {
+            PrivateKey sk = loadPrivateKeyFromFile(activeDsa.getDsaParametersSet());
+            loadNodeKeyPairByPrivateKey(sk, activeDsa);
+        } catch (IllegalArgumentException e) {
+            this.nodeKeyPair = activeDsa.generateNodeKeyPair();
+        }
     }
 
     public void loadNodeKeyPairByPrivateKey(
@@ -25,20 +35,9 @@ public class KeyManager {
             final DigitalSignatureAlgorithm activeDsa) {
         PublicKey pk = KeyFactory.createPublicKey(sk, activeDsa.getDsaParametersSet());
 
-        NodeKeyPair keyPair = KeyFactory.createNodeKp(sk, pk);
+        KeyPair keyPair = KeyFactory.createKeyPair(sk, pk);
         
         this.nodeKeyPair = keyPair;
-    }
-
-    public NodeKeyPair buildNodeKeyPair(
-            final Bytes privateKeyBytes,
-            final Bytes publicKeyBytes,
-            final DSAParametersSet dsaParams) {
-        PrivateKey sk = KeyFactory.createPrivateKey(privateKeyBytes, dsaParams, PrivateKeyRepresentation.EXPANDED, PrivateKeyRepresentation.EXPANDED);
-
-        PublicKey pk = KeyFactory.createPublicKey(sk, dsaParams);
-
-        return KeyFactory.createNodeKp(sk, pk);
     }
 
     public PrivateKey loadPrivateKeyFromFile(final DSAParametersSet parametersSet){

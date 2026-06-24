@@ -433,8 +433,8 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
   private String pqcParameterSpec = "none";
 
   @SuppressWarnings({ "FieldCanBeFinal", "FieldMayBeFinal" }) // PicoCLI requires non-final Strings.
-  @Option(names = "--dsa-algorithm", paramLabel = "<String>", description = "Name of the DSA algorithm. (default: ${DEFAULT-VALUE})", arity = "1..1")
-  private String dsaAlgorithm = "none";
+  @Option(names = "--node-dsa", paramLabel = "<String>", description = "Name of the DSA algorithm. (default: ${DEFAULT-VALUE})", arity = "1..1")
+  private String nodeDsa = "none";
 
   @SuppressWarnings({ "FieldCanBeFinal", "FieldMayBeFinal" }) // PicoCLI requires non-final Strings.
   @Option(
@@ -446,6 +446,7 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
         "Digital signature algorithms supported by accounts.")
   private List<DSAParametersSet> accountsSupportedDSAs =
     List.of(DSAParametersSet.SECP256K1);
+  
 
   @Option(
       names = "--identity",
@@ -1328,8 +1329,8 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
 
     try {
       dsaConfig.buildAccountSupportedAlgorithms(accountsSupportedDSAs);
-      if (!dsaAlgorithm.equals("none")) {
-          dsaConfig.setNodeActiveDSA(dsaAlgorithm);
+      if (!nodeDsa.equals("none")) {
+          dsaConfig.setNodeActiveDSA(nodeDsa);
       }
     } catch (final InvalidAlgorithmParameterException e) {
       throw new RuntimeException(e);

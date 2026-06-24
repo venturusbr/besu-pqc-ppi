@@ -5,8 +5,6 @@ import java.security.PublicKey;
 
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
-import org.hyperledger.besu.crypto.key.KeyManager;
-import org.hyperledger.besu.crypto.key.NodeKeyPair;
 import org.hyperledger.besu.crypto.signature.Signature;
 
 public interface DigitalSignatureAlgorithm {
@@ -14,7 +12,7 @@ public interface DigitalSignatureAlgorithm {
 
     Boolean verify(final Bytes data, final Signature signature, final PublicKey pk);
 
-    NodeKeyPair generateNodeKeyPair(final KeyManager keyManager);
+    KeyPair generateNodeKeyPair();
 
     DSAParametersSet getDsaParametersSet();
 }
