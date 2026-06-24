@@ -72,4 +72,11 @@ public class DigitalSignatureAlgorithmConfiguration {
             final Short dsaId) {
         return accountsEnabledDSAs.get(dsaId).get();
     }
+
+    public List<String> getAccountsSupportedDSANames() {
+        return accountsEnabledDSAs.keySet().stream()
+            .map(DSAParametersSet::fromId)
+            .map(DSAParametersSet::getName)
+            .collect(Collectors.toList());
+    }
 }

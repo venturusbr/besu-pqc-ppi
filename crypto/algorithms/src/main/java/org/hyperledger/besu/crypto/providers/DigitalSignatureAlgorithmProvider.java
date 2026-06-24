@@ -2,6 +2,7 @@ package org.hyperledger.besu.crypto.providers;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.List;
 
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
@@ -38,5 +39,9 @@ public class DigitalSignatureAlgorithmProvider implements DSAProvider{
     public void loadNodeKeyPair(){
         PrivateKey sk = keyManager.loadPrivateKeyFromFile(config.getActiveDSA().getDsaParametersSet());
         keyManager.loadNodeKeyPairByPrivateKey(sk, config.getActiveDSA());
+    }
+
+    public List<String> getAccountsSupportedDSANames() {
+        return config.getAccountsSupportedDSANames();
     }
 }

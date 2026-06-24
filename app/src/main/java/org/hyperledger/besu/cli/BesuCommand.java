@@ -2508,6 +2508,7 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
             .networkingConfiguration(unstableNetworkingOptions.toDomainObject())
             .graphQLConfiguration(graphQLConfiguration)
             .jsonRpcConfiguration(jsonRpcConfiguration)
+            .dsaProvider(DSAProviderFactory.getDsaProvider())
             .engineJsonRpcConfiguration(engineJsonRpcConfiguration)
             .webSocketConfiguration(webSocketConfiguration)
             .jsonRpcIpcConfiguration(jsonRpcIpcConfiguration)
