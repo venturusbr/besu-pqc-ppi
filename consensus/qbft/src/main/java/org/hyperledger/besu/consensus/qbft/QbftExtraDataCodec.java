@@ -21,8 +21,8 @@ import org.hyperledger.besu.consensus.common.bft.BftExtraData;
 import org.hyperledger.besu.consensus.common.bft.BftExtraDataCodec;
 import org.hyperledger.besu.consensus.common.bft.Vote;
 import org.hyperledger.besu.consensus.common.validator.VoteType;
-import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPInput;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPOutput;
@@ -99,7 +99,7 @@ public class QbftExtraDataCodec extends BftExtraDataCodec {
     }
 
     final int round = rlpInput.readIntScalar();
-    final List<SECPSignature> seals =
+    final List<Signature> seals =
         rlpInput.readList(
             rlp -> SignatureAlgorithmFactory.getInstance().decodeSignature(rlp.readBytes()));
     rlpInput.leaveListLenient();

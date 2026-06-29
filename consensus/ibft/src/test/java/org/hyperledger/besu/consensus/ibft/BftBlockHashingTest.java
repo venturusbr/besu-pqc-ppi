@@ -21,7 +21,7 @@ import org.hyperledger.besu.consensus.common.bft.BftBlockHashing;
 import org.hyperledger.besu.consensus.common.bft.BftBlockHeaderFunctions;
 import org.hyperledger.besu.consensus.common.bft.BftExtraData;
 import org.hyperledger.besu.consensus.common.bft.Vote;
-import org.hyperledger.besu.crypto.SECPSignature;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.cryptoservices.NodeKey;
@@ -88,7 +88,7 @@ public class BftBlockHashingTest {
 
     BlockHeaderBuilder builder = setHeaderFieldsExceptForExtraData();
 
-    List<SECPSignature> commitSeals =
+    List<Signature> commitSeals =
         COMMITTERS_NODE_KEYS.stream()
             .map(nodeKey -> nodeKey.sign(Bytes32.wrap(dataHahsForCommittedSeal.getBytes())))
             .collect(Collectors.toList());
@@ -165,7 +165,7 @@ public class BftBlockHashingTest {
     BytesValueRLPOutput rlpForHeaderFroCommittersSigning = new BytesValueRLPOutput();
     builder.buildBlockHeader().writeTo(rlpForHeaderFroCommittersSigning);
 
-    List<SECPSignature> commitSeals =
+    List<Signature> commitSeals =
         COMMITTERS_NODE_KEYS.stream()
             .map(
                 nodeKey ->

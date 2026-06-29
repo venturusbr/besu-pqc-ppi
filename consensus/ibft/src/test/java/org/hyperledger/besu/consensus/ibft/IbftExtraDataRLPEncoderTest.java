@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.hyperledger.besu.consensus.common.bft.BftExtraData;
 import org.hyperledger.besu.consensus.common.bft.Vote;
 import org.hyperledger.besu.consensus.common.validator.VoteType;
-import org.hyperledger.besu.crypto.SECPSignature;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.datatypes.Address;
@@ -62,7 +62,7 @@ public class IbftExtraDataRLPEncoderTest {
         Arrays.asList(Address.fromHexString("1"), Address.fromHexString("2"));
     final Optional<Vote> vote = Optional.of(Vote.authVote(Address.fromHexString("1")));
     final int round = 0x00FEDCBA;
-    final List<SECPSignature> committerSeals =
+    final List<Signature> committerSeals =
         Arrays.asList(
             SIGNATURE_ALGORITHM.get().createSignature(BigInteger.ONE, BigInteger.TEN, (byte) 0),
             SIGNATURE_ALGORITHM.get().createSignature(BigInteger.TEN, BigInteger.ONE, (byte) 0));
@@ -79,7 +79,7 @@ public class IbftExtraDataRLPEncoderTest {
     final List<Address> validators = Lists.newArrayList();
     final int round = 0x00FEDCBA;
     final byte[] roundAsByteArray = new byte[] {(byte) 0x00, (byte) 0xFE, (byte) 0xDC, (byte) 0xBA};
-    final List<SECPSignature> committerSeals = Lists.newArrayList();
+    final List<Signature> committerSeals = Lists.newArrayList();
 
     // Create a byte buffer with no data.
     final byte[] vanity_bytes = new byte[32];
@@ -119,7 +119,7 @@ public class IbftExtraDataRLPEncoderTest {
   public void incorrectlyEncodedRoundThrowsRlpException() {
     final List<Address> validators = Lists.newArrayList();
     final byte[] roundAsByteArray = new byte[] {(byte) 0xFE, (byte) 0xDC, (byte) 0xBA};
-    final List<SECPSignature> committerSeals = Lists.newArrayList();
+    final List<Signature> committerSeals = Lists.newArrayList();
 
     // Create a byte buffer with no data.
     final byte[] vanity_bytes = new byte[32];
@@ -152,7 +152,7 @@ public class IbftExtraDataRLPEncoderTest {
   public void nullVoteAndListConstituteValidContent() {
     final List<Address> validators = Lists.newArrayList();
     final int round = 0x00FEDCBA;
-    final List<SECPSignature> committerSeals = Lists.newArrayList();
+    final List<Signature> committerSeals = Lists.newArrayList();
 
     // Create a byte buffer with no data.
     final byte[] vanity_bytes = new byte[32];
@@ -186,7 +186,7 @@ public class IbftExtraDataRLPEncoderTest {
     final List<Address> validators = Lists.newArrayList();
     final Optional<Vote> vote = Optional.empty();
     final int round = 0x00FEDCBA;
-    final List<SECPSignature> committerSeals = Lists.newArrayList();
+    final List<Signature> committerSeals = Lists.newArrayList();
 
     // Create a byte buffer with no data.
     final byte[] vanity_bytes = new byte[32];
@@ -206,7 +206,7 @@ public class IbftExtraDataRLPEncoderTest {
   public void emptyListConstituteValidContent() {
     final List<Address> validators = Lists.newArrayList();
     final int round = 0x00FEDCBA;
-    final List<SECPSignature> committerSeals = Lists.newArrayList();
+    final List<Signature> committerSeals = Lists.newArrayList();
 
     // Create a byte buffer with no data.
     final byte[] vanity_bytes = new byte[32];
@@ -242,7 +242,7 @@ public class IbftExtraDataRLPEncoderTest {
     final List<Address> validators = Lists.newArrayList();
     final Optional<Vote> vote = Optional.of(Vote.authVote(Address.fromHexString("1")));
     final int round = 0x00FEDCBA;
-    final List<SECPSignature> committerSeals = Lists.newArrayList();
+    final List<Signature> committerSeals = Lists.newArrayList();
 
     // Create a byte buffer with no data.
     final byte[] vanity_bytes = new byte[32];
@@ -263,7 +263,7 @@ public class IbftExtraDataRLPEncoderTest {
     final List<Address> validators =
         Arrays.asList(Address.fromHexString("1"), Address.fromHexString("2"));
     final int round = 0x00FEDCBA;
-    final List<SECPSignature> committerSeals =
+    final List<Signature> committerSeals =
         Arrays.asList(
             SIGNATURE_ALGORITHM.get().createSignature(BigInteger.ONE, BigInteger.TEN, (byte) 0),
             SIGNATURE_ALGORITHM.get().createSignature(BigInteger.TEN, BigInteger.ONE, (byte) 0));
@@ -306,7 +306,7 @@ public class IbftExtraDataRLPEncoderTest {
         Arrays.asList(Address.fromHexString("1"), Address.fromHexString("2"));
     final Optional<Vote> vote = Optional.of(Vote.authVote(Address.fromHexString("1")));
     final int round = 0x00FEDCBA;
-    final List<SECPSignature> committerSeals =
+    final List<Signature> committerSeals =
         Arrays.asList(
             SIGNATURE_ALGORITHM.get().createSignature(BigInteger.ONE, BigInteger.TEN, (byte) 0),
             SIGNATURE_ALGORITHM.get().createSignature(BigInteger.TEN, BigInteger.ONE, (byte) 0));
@@ -349,7 +349,7 @@ public class IbftExtraDataRLPEncoderTest {
         Arrays.asList(Address.fromHexString("1"), Address.fromHexString("2"));
     final Optional<Vote> vote = Optional.of(Vote.authVote(Address.fromHexString("1")));
     final int round = 0x00FEDCBA;
-    final List<SECPSignature> committerSeals =
+    final List<Signature> committerSeals =
         Arrays.asList(
             SIGNATURE_ALGORITHM.get().createSignature(BigInteger.ONE, BigInteger.TEN, (byte) 0),
             SIGNATURE_ALGORITHM.get().createSignature(BigInteger.TEN, BigInteger.ONE, (byte) 0));
@@ -387,7 +387,7 @@ public class IbftExtraDataRLPEncoderTest {
         Arrays.asList(Address.fromHexString("1"), Address.fromHexString("2"));
     final Optional<Vote> vote = Optional.of(Vote.authVote(Address.fromHexString("1")));
     final int round = 0x00FEDCBA;
-    final List<SECPSignature> committerSeals =
+    final List<Signature> committerSeals =
         Arrays.asList(
             SIGNATURE_ALGORITHM.get().createSignature(BigInteger.ONE, BigInteger.TEN, (byte) 0),
             SIGNATURE_ALGORITHM.get().createSignature(BigInteger.TEN, BigInteger.ONE, (byte) 0));
@@ -422,7 +422,7 @@ public class IbftExtraDataRLPEncoderTest {
   public void incorrectlyStructuredRlpThrowsException() {
     final List<Address> validators = Lists.newArrayList();
     final int round = 0x00FEDCBA;
-    final List<SECPSignature> committerSeals = Lists.newArrayList();
+    final List<Signature> committerSeals = Lists.newArrayList();
 
     // Create a byte buffer with no data.
     final byte[] vanity_bytes = new byte[32];
@@ -457,7 +457,7 @@ public class IbftExtraDataRLPEncoderTest {
     final Address voteRecipient = Address.fromHexString("1");
     final byte voteType = (byte) 0xAA;
     final int round = 0x00FEDCBA;
-    final List<SECPSignature> committerSeals =
+    final List<Signature> committerSeals =
         Arrays.asList(
             SIGNATURE_ALGORITHM.get().createSignature(BigInteger.ONE, BigInteger.TEN, (byte) 0),
             SIGNATURE_ALGORITHM.get().createSignature(BigInteger.TEN, BigInteger.ONE, (byte) 0));

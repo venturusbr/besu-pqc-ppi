@@ -18,9 +18,9 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import org.hyperledger.besu.consensus.common.bft.BftExtraData;
 import org.hyperledger.besu.consensus.common.bft.BftExtraDataCodec;
-import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPInput;
@@ -88,15 +88,15 @@ public class IbftExtraDataCodec extends BftExtraDataCodec {
 
     rlpInput.enterList(); // This accounts for the "root node" which contains IBFT data items.
     final Collection<Address> validators = rlpInput.readList(Address::readFrom);
-    final SECPSignature proposerSeal = parseProposerSeal(rlpInput);
-    final Collection<SECPSignature> seals =
+    final Signature proposerSeal = parseProposerSeal(rlpInput);
+    final Collection<Signature> seals =
         rlpInput.readList(rlp -> SIGNATURE_ALGORITHM.get().decodeSignature(rlp.readBytes()));
     rlpInput.leaveList();
 
     return new IbftLegacyExtraData(vanityData, seals, proposerSeal, validators);
   }
 
-  private static SECPSignature parseProposerSeal(final RLPInput rlpInput) {
+  private static Signature parseProposerSeal(final RLPInput rlpInput) {
     final Bytes data = rlpInput.readBytes();
     return data.isZero() ? null : SIGNATURE_ALGORITHM.get().decodeSignature(data);
   }

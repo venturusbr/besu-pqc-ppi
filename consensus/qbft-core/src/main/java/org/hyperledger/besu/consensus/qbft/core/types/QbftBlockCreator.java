@@ -14,7 +14,7 @@
  */
 package org.hyperledger.besu.consensus.qbft.core.types;
 
-import org.hyperledger.besu.crypto.SECPSignature;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.ethereum.mainnet.block.access.list.BlockAccessList;
 
 import java.util.Collection;
@@ -49,5 +49,5 @@ public interface QbftBlockCreator {
    * @return the block
    */
   QbftBlock createSealedBlock(
-      final QbftBlock block, final int roundNumber, final Collection<SECPSignature> commitSeals);
+      final QbftBlock block, final int roundNumber, final Collection<Signature> commitSeals);
 }

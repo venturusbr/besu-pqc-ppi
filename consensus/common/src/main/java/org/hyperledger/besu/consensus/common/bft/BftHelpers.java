@@ -14,7 +14,7 @@
  */
 package org.hyperledger.besu.consensus.common.bft;
 
-import org.hyperledger.besu.crypto.SECPSignature;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.core.Block;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
@@ -76,7 +76,7 @@ public class BftHelpers {
       final BftExtraDataCodec bftExtraDataCodec,
       final Block block,
       final int roundNumber,
-      final Collection<SECPSignature> commitSeals) {
+      final Collection<Signature> commitSeals) {
     final BlockHeader initialHeader = block.getHeader();
     final BftExtraData initialExtraData = bftExtraDataCodec.decode(initialHeader);
 
