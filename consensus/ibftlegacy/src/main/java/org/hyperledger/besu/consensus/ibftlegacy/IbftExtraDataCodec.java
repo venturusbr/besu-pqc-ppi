@@ -18,9 +18,10 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import org.hyperledger.besu.consensus.common.bft.BftExtraData;
 import org.hyperledger.besu.consensus.common.bft.BftExtraDataCodec;
-import org.hyperledger.besu.crypto.SignatureAlgorithm;
-import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
+import org.hyperledger.besu.crypto.signature.SignatureFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPInput;
@@ -28,8 +29,6 @@ import org.hyperledger.besu.ethereum.rlp.RLPInput;
 
 import java.util.Collection;
 
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
 import org.apache.tuweni.bytes.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,9 +41,6 @@ public class IbftExtraDataCodec extends BftExtraDataCodec {
 
   /** The constant EXTRA_VANITY_LENGTH. */
   public static final int EXTRA_VANITY_LENGTH = 32;
-
-  private static final Supplier<SignatureAlgorithm> SIGNATURE_ALGORITHM =
-      Suppliers.memoize(SignatureAlgorithmFactory::getInstance);
 
   private static final Logger LOG = LoggerFactory.getLogger(IbftExtraDataCodec.class);
 
@@ -89,8 +85,9 @@ public class IbftExtraDataCodec extends BftExtraDataCodec {
     rlpInput.enterList(); // This accounts for the "root node" which contains IBFT data items.
     final Collection<Address> validators = rlpInput.readList(Address::readFrom);
     final Signature proposerSeal = parseProposerSeal(rlpInput);
+    final DSAParametersSet dsaParams = DSAProviderFactory.getDsaProvider().getDsaParametersSet();
     final Collection<Signature> seals =
-        rlpInput.readList(rlp -> SIGNATURE_ALGORITHM.get().decodeSignature(rlp.readBytes()));
+        rlpInput.readList(rlp -> SignatureFactory.createSignatureFromBytes(rlp.readBytes(), dsaParams));
     rlpInput.leaveList();
 
     return new IbftLegacyExtraData(vanityData, seals, proposerSeal, validators);
@@ -98,7 +95,11 @@ public class IbftExtraDataCodec extends BftExtraDataCodec {
 
   private static Signature parseProposerSeal(final RLPInput rlpInput) {
     final Bytes data = rlpInput.readBytes();
-    return data.isZero() ? null : SIGNATURE_ALGORITHM.get().decodeSignature(data);
+    if (data.isZero()) {
+      return null;
+    }
+    final DSAParametersSet dsaParams = DSAProviderFactory.getDsaProvider().getDsaParametersSet();
+    return SignatureFactory.createSignatureFromBytes(data, dsaParams);
   }
 
   /**

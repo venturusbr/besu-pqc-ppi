@@ -16,8 +16,10 @@ package org.hyperledger.besu.consensus.ibft.payload;
 
 import org.hyperledger.besu.consensus.common.bft.payload.Payload;
 import org.hyperledger.besu.consensus.common.bft.payload.SignedData;
-import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
+import org.hyperledger.besu.crypto.signature.SignatureFactory;
 import org.hyperledger.besu.ethereum.rlp.RLPInput;
 
 /** The Payload deserializers. */
@@ -110,6 +112,7 @@ public class PayloadDeserializers {
    * @return the secp signature
    */
   protected static Signature readSignature(final RLPInput signedMessage) {
-    return signedMessage.readBytes(SignatureAlgorithmFactory.getInstance()::decodeSignature);
+    final DSAParametersSet dsaParams = DSAProviderFactory.getDsaProvider().getDsaParametersSet();
+    return signedMessage.readBytes(bytes -> SignatureFactory.createSignatureFromBytes(bytes, dsaParams));
   }
 }

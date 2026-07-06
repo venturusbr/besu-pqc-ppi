@@ -18,8 +18,10 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import org.hyperledger.besu.crypto.SECPSignature;
-import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
+import org.hyperledger.besu.crypto.signature.SignatureFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.ParsedExtraData;
@@ -143,9 +145,11 @@ public class CliqueExtraData implements ParsedExtraData {
   }
 
   private static Signature parseProposerSeal(final Bytes proposerSealRaw) {
-    return proposerSealRaw.isZero()
-        ? null
-        : SignatureAlgorithmFactory.getInstance().decodeSignature(proposerSealRaw);
+    if (proposerSealRaw.isZero()) {
+      return null;
+    }
+    final DSAParametersSet dsaParams = DSAProviderFactory.getDsaProvider().getDsaParametersSet();
+    return SignatureFactory.createSignatureFromBytes(proposerSealRaw, dsaParams);
   }
 
   private static List<Address> extractValidators(final Bytes validatorsRaw) {
