@@ -3,8 +3,6 @@ package org.hyperledger.besu.crypto.algorithms.hybrid;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
@@ -23,13 +21,11 @@ public class HybridStrongNestingConcatenation implements HybridDigitalSignatureA
     DigitalSignatureAlgorithm delegateFirstAlgorithm;
     DigitalSignatureAlgorithm delegateSecondAlgorithm;
     DSAParametersSet parametersSet;
-    ExecutorService executorService;
-                                                                 
+
     public HybridStrongNestingConcatenation(final DigitalSignatureAlgorithm firstAlgorithm, final DigitalSignatureAlgorithm secondAlgorithm, final DSAParametersSet parametersSet){
         this.delegateFirstAlgorithm = firstAlgorithm;
         this.delegateSecondAlgorithm = secondAlgorithm;
         this.parametersSet = parametersSet;
-        this.executorService = Executors.newFixedThreadPool(2);
     }
 
     @Override
@@ -54,13 +50,11 @@ public class HybridStrongNestingConcatenation implements HybridDigitalSignatureA
         Bytes dataWithFirstSignature = Bytes.concatenate(data, firstSignature.encodedBytes()); 
 
         CompletableFuture<Boolean> firstVerify = CompletableFuture.supplyAsync(() ->
-            delegateFirstAlgorithm.verify(data, firstSignature, hybridPublicKey.getFirstKey()),
-            executorService
+            delegateFirstAlgorithm.verify(data, firstSignature, hybridPublicKey.getFirstKey())
         );
 
         CompletableFuture<Boolean> secondVerify = CompletableFuture.supplyAsync(() ->
-            delegateSecondAlgorithm.verify(dataWithFirstSignature, secondSignature, hybridPublicKey.getSecondKey()),
-            executorService
+            delegateSecondAlgorithm.verify(dataWithFirstSignature, secondSignature, hybridPublicKey.getSecondKey())
         );
 
         return firstVerify.join() && secondVerify.join();
