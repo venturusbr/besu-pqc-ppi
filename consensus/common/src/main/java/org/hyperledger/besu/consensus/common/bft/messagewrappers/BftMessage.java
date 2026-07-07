@@ -19,8 +19,10 @@ import org.hyperledger.besu.consensus.common.bft.payload.Authored;
 import org.hyperledger.besu.consensus.common.bft.payload.Payload;
 import org.hyperledger.besu.consensus.common.bft.payload.RoundSpecific;
 import org.hyperledger.besu.consensus.common.bft.payload.SignedData;
-import org.hyperledger.besu.crypto.SECPSignature;
-import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
+import org.hyperledger.besu.crypto.signature.Signature;
+import org.hyperledger.besu.crypto.signature.SignatureFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPOutput;
 import org.hyperledger.besu.ethereum.rlp.RLPInput;
@@ -109,8 +111,9 @@ public class BftMessage<P extends Payload> implements Authored, RoundSpecific {
       final RLPInput rlpInput, final Function<RLPInput, T> decoder) {
     rlpInput.enterList();
     final T unsignedMessageData = decoder.apply(rlpInput);
-    final SECPSignature signature =
-        rlpInput.readBytes((SignatureAlgorithmFactory.getInstance()::decodeSignature));
+    final DSAParametersSet dsaParams = DSAProviderFactory.getDsaProvider().getActiveDsaParametersSet();
+    final Signature signature =
+        rlpInput.readBytes(bytes -> SignatureFactory.createSignatureFromBytes(bytes, dsaParams));
     rlpInput.leaveList();
 
     return SignedData.create(unsignedMessageData, signature);

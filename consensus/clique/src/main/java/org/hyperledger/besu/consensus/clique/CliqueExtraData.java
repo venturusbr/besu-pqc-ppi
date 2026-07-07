@@ -18,7 +18,10 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import org.hyperledger.besu.crypto.SECPSignature;
-import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
+import org.hyperledger.besu.crypto.signature.Signature;
+import org.hyperledger.besu.crypto.signature.SignatureFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.ParsedExtraData;
@@ -45,7 +48,7 @@ public class CliqueExtraData implements ParsedExtraData {
 
   private final Bytes vanityData;
   private final List<Address> validators;
-  private final Optional<SECPSignature> proposerSeal;
+  private final Optional<Signature> proposerSeal;
   private final Supplier<Address> proposerAddress;
 
   /**
@@ -58,7 +61,7 @@ public class CliqueExtraData implements ParsedExtraData {
    */
   public CliqueExtraData(
       final Bytes vanityData,
-      final SECPSignature proposerSeal,
+      final Signature proposerSeal,
       final List<Address> validators,
       final BlockHeader header) {
 
@@ -127,7 +130,7 @@ public class CliqueExtraData implements ParsedExtraData {
         extractValidators(input.slice(EXTRA_VANITY_LENGTH, validatorByteCount));
 
     final int proposerSealStartIndex = input.size() - SECPSignature.BYTES_REQUIRED;
-    final SECPSignature proposerSeal = parseProposerSeal(input.slice(proposerSealStartIndex));
+    final Signature proposerSeal = parseProposerSeal(input.slice(proposerSealStartIndex));
 
     return new CliqueExtraData(vanityData, proposerSeal, validators, header);
   }
@@ -141,10 +144,12 @@ public class CliqueExtraData implements ParsedExtraData {
     return proposerAddress.get();
   }
 
-  private static SECPSignature parseProposerSeal(final Bytes proposerSealRaw) {
-    return proposerSealRaw.isZero()
-        ? null
-        : SignatureAlgorithmFactory.getInstance().decodeSignature(proposerSealRaw);
+  private static Signature parseProposerSeal(final Bytes proposerSealRaw) {
+    if (proposerSealRaw.isZero()) {
+      return null;
+    }
+    final DSAParametersSet dsaParams = DSAProviderFactory.getDsaProvider().getActiveDsaParametersSet();
+    return SignatureFactory.createSignatureFromBytes(proposerSealRaw, dsaParams);
   }
 
   private static List<Address> extractValidators(final Bytes validatorsRaw) {
@@ -180,14 +185,14 @@ public class CliqueExtraData implements ParsedExtraData {
   private static Bytes encode(
       final Bytes vanityData,
       final List<Address> validators,
-      final Optional<SECPSignature> proposerSeal) {
+      final Optional<Signature> proposerSeal) {
     final Bytes validatorData =
         Bytes.concatenate(validators.stream().map(Address::getBytes).toList());
     return Bytes.concatenate(
         vanityData,
         validatorData,
         proposerSeal
-            .map(SECPSignature::encodedBytes)
+            .map(Signature::encodedBytes)
             .orElse(Bytes.wrap(new byte[SECPSignature.BYTES_REQUIRED])));
   }
 
@@ -205,7 +210,7 @@ public class CliqueExtraData implements ParsedExtraData {
    *
    * @return the proposer seal
    */
-  public Optional<SECPSignature> getProposerSeal() {
+  public Optional<Signature> getProposerSeal() {
     return proposerSeal;
   }
 

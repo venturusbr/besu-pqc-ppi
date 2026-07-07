@@ -16,7 +16,7 @@ package org.hyperledger.besu.consensus.ibftlegacy;
 
 import org.hyperledger.besu.consensus.common.bft.BftBlockHeaderFunctions;
 import org.hyperledger.besu.consensus.common.bft.BftExtraData;
-import org.hyperledger.besu.crypto.SECPSignature;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
@@ -126,7 +126,7 @@ public class IbftBlockHashing {
   }
 
   private static Bytes encodeExtraDataWithoutCommittedSeals(
-      final BftExtraData ibftExtraData, final SECPSignature proposerSeal) {
+      final BftExtraData ibftExtraData, final Signature proposerSeal) {
     final BytesValueRLPOutput extraDataEncoding = new BytesValueRLPOutput();
     extraDataEncoding.startList();
     extraDataEncoding.writeList(

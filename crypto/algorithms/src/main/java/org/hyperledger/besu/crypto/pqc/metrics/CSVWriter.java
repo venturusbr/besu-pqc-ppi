@@ -27,7 +27,7 @@ public class CSVWriter {
         FILE_PATH = buildPath(filePath);
         try {
             File signFile = new File(FILE_PATH);
-            this.executor = Executors.newCachedThreadPool();
+            this.executor = Executors.newSingleThreadExecutor();
             if (!signFile.exists()) {
                 signFile.createNewFile();
                 initializeTable(header);

@@ -17,7 +17,7 @@ package org.hyperledger.besu.consensus.common.bft;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
-import org.hyperledger.besu.crypto.SECPSignature;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
 import org.hyperledger.besu.datatypes.Address;
@@ -98,7 +98,7 @@ public class BftExtraDataFixture {
 
     // if useDifferentRoundNumbersForCommittedSeals is true then each committed seal will be
     // calculated for an extraData field with a different round number
-    List<SECPSignature> commitSeals =
+    List<Signature> commitSeals =
         IntStream.range(0, committerNodeKeys.size())
             .mapToObj(
                 i -> {

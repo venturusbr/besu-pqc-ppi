@@ -14,15 +14,14 @@
  */
 package org.hyperledger.besu.consensus.common.bft.payload;
 
-import org.hyperledger.besu.crypto.SECPSignature;
-import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.SignatureValidationContext;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.core.Util;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPOutput;
 import org.hyperledger.besu.ethereum.rlp.RLPOutput;
 
-import java.math.BigInteger;
 import java.util.Objects;
 import java.util.StringJoiner;
 
@@ -35,11 +34,11 @@ import org.apache.tuweni.bytes.Bytes;
  */
 public class SignedData<M extends Payload> implements Authored {
 
-  private static final BigInteger HALF_CURVE_ORDER =
-      SignatureAlgorithmFactory.getInstance().getHalfCurveOrder();
+  private static final SignatureValidationContext DISALLOW_MALLEABILITY =
+      new SignatureValidationContext(true);
 
   private final Address sender;
-  private final SECPSignature signature;
+  private final Signature signature;
   private final M unsignedPayload;
 
   /**
@@ -52,13 +51,13 @@ public class SignedData<M extends Payload> implements Authored {
    * @throws IllegalArgumentException if the signature is invalid
    */
   public static <T extends Payload> SignedData<T> create(
-      final T payload, final SECPSignature signature) {
+      final T payload, final Signature signature) {
     final Hash msgHash = payload.hashForSignature();
     return new SignedData<>(payload, Util.signatureToAddress(signature, msgHash), signature);
   }
 
-  private SignedData(final M unsignedPayload, final Address sender, final SECPSignature signature) {
-    if (!(signature.getS().compareTo(HALF_CURVE_ORDER) <= 0)) {
+  private SignedData(final M unsignedPayload, final Address sender, final Signature signature) {
+    if (!signature.isValid(DISALLOW_MALLEABILITY)) {
       throw new IllegalArgumentException("Signature is invalid");
     }
     this.unsignedPayload = unsignedPayload;

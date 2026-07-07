@@ -27,7 +27,7 @@ import org.hyperledger.besu.consensus.ibft.messagewrappers.RoundChange;
 import org.hyperledger.besu.consensus.ibft.payload.MessageFactory;
 import org.hyperledger.besu.consensus.ibft.payload.RoundChangeCertificate;
 import org.hyperledger.besu.consensus.ibft.statemachine.PreparedRoundArtifacts;
-import org.hyperledger.besu.crypto.SECPSignature;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.core.Block;
 import org.hyperledger.besu.ethereum.mainnet.block.access.list.BlockAccessList;
@@ -112,7 +112,7 @@ public class IbftMessageTransmitter {
   public void multicastCommit(
       final ConsensusRoundIdentifier roundIdentifier,
       final Hash digest,
-      final SECPSignature commitSeal) {
+      final Signature commitSeal) {
     try {
       final Commit data = messageFactory.createCommit(roundIdentifier, digest, commitSeal);
 

@@ -16,8 +16,10 @@ package org.hyperledger.besu.consensus.ibft.payload;
 
 import org.hyperledger.besu.consensus.common.bft.payload.Payload;
 import org.hyperledger.besu.consensus.common.bft.payload.SignedData;
-import org.hyperledger.besu.crypto.SECPSignature;
-import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
+import org.hyperledger.besu.crypto.signature.Signature;
+import org.hyperledger.besu.crypto.signature.SignatureFactory;
 import org.hyperledger.besu.ethereum.rlp.RLPInput;
 
 /** The Payload deserializers. */
@@ -35,7 +37,7 @@ public class PayloadDeserializers {
 
     rlpInput.enterList();
     final ProposalPayload unsignedMessageData = ProposalPayload.readFrom(rlpInput);
-    final SECPSignature signature = readSignature(rlpInput);
+    final Signature signature = readSignature(rlpInput);
     rlpInput.leaveList();
 
     return from(unsignedMessageData, signature);
@@ -51,7 +53,7 @@ public class PayloadDeserializers {
 
     rlpInput.enterList();
     final PreparePayload unsignedMessageData = PreparePayload.readFrom(rlpInput);
-    final SECPSignature signature = readSignature(rlpInput);
+    final Signature signature = readSignature(rlpInput);
     rlpInput.leaveList();
 
     return from(unsignedMessageData, signature);
@@ -67,7 +69,7 @@ public class PayloadDeserializers {
 
     rlpInput.enterList();
     final CommitPayload unsignedMessageData = CommitPayload.readFrom(rlpInput);
-    final SECPSignature signature = readSignature(rlpInput);
+    final Signature signature = readSignature(rlpInput);
     rlpInput.leaveList();
 
     return from(unsignedMessageData, signature);
@@ -84,7 +86,7 @@ public class PayloadDeserializers {
 
     rlpInput.enterList();
     final RoundChangePayload unsignedMessageData = RoundChangePayload.readFrom(rlpInput);
-    final SECPSignature signature = readSignature(rlpInput);
+    final Signature signature = readSignature(rlpInput);
     rlpInput.leaveList();
 
     return from(unsignedMessageData, signature);
@@ -99,7 +101,7 @@ public class PayloadDeserializers {
    * @return the signed data
    */
   protected static <M extends Payload> SignedData<M> from(
-      final M unsignedMessageData, final SECPSignature signature) {
+      final M unsignedMessageData, final Signature signature) {
     return SignedData.create(unsignedMessageData, signature);
   }
 
@@ -109,7 +111,8 @@ public class PayloadDeserializers {
    * @param signedMessage the signed message
    * @return the secp signature
    */
-  protected static SECPSignature readSignature(final RLPInput signedMessage) {
-    return signedMessage.readBytes(SignatureAlgorithmFactory.getInstance()::decodeSignature);
+  protected static Signature readSignature(final RLPInput signedMessage) {
+    final DSAParametersSet dsaParams = DSAProviderFactory.getDsaProvider().getActiveDsaParametersSet();
+    return signedMessage.readBytes(bytes -> SignatureFactory.createSignatureFromBytes(bytes, dsaParams));
   }
 }

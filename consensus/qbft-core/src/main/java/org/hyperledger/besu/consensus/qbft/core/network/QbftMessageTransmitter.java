@@ -30,7 +30,7 @@ import org.hyperledger.besu.consensus.qbft.core.payload.PreparePayload;
 import org.hyperledger.besu.consensus.qbft.core.payload.RoundChangePayload;
 import org.hyperledger.besu.consensus.qbft.core.statemachine.PreparedCertificate;
 import org.hyperledger.besu.consensus.qbft.core.types.QbftBlock;
-import org.hyperledger.besu.crypto.SECPSignature;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.mainnet.block.access.list.BlockAccessList;
 import org.hyperledger.besu.plugin.services.securitymodule.SecurityModuleException;
@@ -117,7 +117,7 @@ public class QbftMessageTransmitter {
   public void multicastCommit(
       final ConsensusRoundIdentifier roundIdentifier,
       final Hash digest,
-      final SECPSignature commitSeal) {
+      final Signature commitSeal) {
     try {
       final Commit data = messageFactory.createCommit(roundIdentifier, digest, commitSeal);
 

@@ -29,7 +29,7 @@ import org.hyperledger.besu.consensus.ibft.messagewrappers.Proposal;
 import org.hyperledger.besu.consensus.ibft.network.IbftMessageTransmitter;
 import org.hyperledger.besu.consensus.ibft.payload.MessageFactory;
 import org.hyperledger.besu.consensus.ibft.payload.RoundChangeCertificate;
-import org.hyperledger.besu.crypto.SECPSignature;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.ProtocolContext;
@@ -255,7 +255,7 @@ public class IbftRound {
     if (blockAccepted) {
       final Block block = roundState.getProposedBlock().get();
 
-      final SECPSignature commitSeal;
+      final Signature commitSeal;
       try {
         commitSeal = createCommitSeal(block);
       } catch (final SecurityModuleException e) {
@@ -357,7 +357,7 @@ public class IbftRound {
     }
   }
 
-  private SECPSignature createCommitSeal(final Block block) {
+  private Signature createCommitSeal(final Block block) {
     final BlockHeader proposedHeader = block.getHeader();
     final BftExtraData extraData = bftExtraDataCodec.decode(proposedHeader);
     final Hash commitHash =

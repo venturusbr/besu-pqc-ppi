@@ -15,7 +15,7 @@
 package org.hyperledger.besu.consensus.ibftlegacy;
 
 import org.hyperledger.besu.consensus.common.bft.BftExtraData;
-import org.hyperledger.besu.crypto.SECPSignature;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.Address;
 
 import java.util.Collection;
@@ -26,7 +26,7 @@ import org.apache.tuweni.bytes.Bytes;
 /** The Ibft Legacy extra data. */
 public class IbftLegacyExtraData extends BftExtraData {
 
-  private final SECPSignature proposerSeal;
+  private final Signature proposerSeal;
 
   /**
    * Instantiates a new Bft extra data.
@@ -38,8 +38,8 @@ public class IbftLegacyExtraData extends BftExtraData {
    */
   public IbftLegacyExtraData(
       final Bytes vanityData,
-      final Collection<SECPSignature> seals,
-      final SECPSignature proposerSeal,
+      final Collection<Signature> seals,
+      final Signature proposerSeal,
       final Collection<Address> validators) {
     super(vanityData, seals, Optional.empty(), 0, validators);
     this.proposerSeal = proposerSeal;
@@ -50,7 +50,7 @@ public class IbftLegacyExtraData extends BftExtraData {
    *
    * @return the proposer seal
    */
-  public SECPSignature getProposerSeal() {
+  public Signature getProposerSeal() {
     return proposerSeal;
   }
 

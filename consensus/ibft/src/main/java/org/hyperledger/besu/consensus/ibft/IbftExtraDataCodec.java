@@ -21,8 +21,10 @@ import org.hyperledger.besu.consensus.common.bft.BftExtraData;
 import org.hyperledger.besu.consensus.common.bft.BftExtraDataCodec;
 import org.hyperledger.besu.consensus.common.bft.Vote;
 import org.hyperledger.besu.consensus.common.validator.VoteType;
-import org.hyperledger.besu.crypto.SECPSignature;
-import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
+import org.hyperledger.besu.crypto.signature.Signature;
+import org.hyperledger.besu.crypto.signature.SignatureFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPInput;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPOutput;
@@ -97,9 +99,10 @@ public class IbftExtraDataCodec extends BftExtraDataCodec {
       vote = Optional.of(decodeVote(rlpInput));
     }
     final int round = rlpInput.readInt();
-    final List<SECPSignature> seals =
+    final DSAParametersSet dsaParams = DSAProviderFactory.getDsaProvider().getActiveDsaParametersSet();
+    final List<Signature> seals =
         rlpInput.readList(
-            rlp -> SignatureAlgorithmFactory.getInstance().decodeSignature(rlp.readBytes()));
+            rlp -> SignatureFactory.createSignatureFromBytes(rlp.readBytes(), dsaParams));
     rlpInput.leaveList();
 
     return new BftExtraData(vanityData, seals, vote, round, validators);

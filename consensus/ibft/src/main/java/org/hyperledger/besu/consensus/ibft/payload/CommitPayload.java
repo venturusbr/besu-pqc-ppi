@@ -17,8 +17,10 @@ package org.hyperledger.besu.consensus.ibft.payload;
 import org.hyperledger.besu.consensus.common.bft.ConsensusRoundIdentifier;
 import org.hyperledger.besu.consensus.common.bft.payload.Payload;
 import org.hyperledger.besu.consensus.ibft.messagedata.IbftV2;
-import org.hyperledger.besu.crypto.SECPSignature;
-import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
+import org.hyperledger.besu.crypto.signature.Signature;
+import org.hyperledger.besu.crypto.signature.SignatureFactory;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.rlp.RLPInput;
 import org.hyperledger.besu.ethereum.rlp.RLPOutput;
@@ -31,7 +33,7 @@ public class CommitPayload extends IbftPayload {
   private static final int TYPE = IbftV2.COMMIT;
   private final ConsensusRoundIdentifier roundIdentifier;
   private final Hash digest;
-  private final SECPSignature commitSeal;
+  private final Signature commitSeal;
 
   /**
    * Instantiates a new Commit payload.
@@ -43,7 +45,7 @@ public class CommitPayload extends IbftPayload {
   public CommitPayload(
       final ConsensusRoundIdentifier roundIdentifier,
       final Hash digest,
-      final SECPSignature commitSeal) {
+      final Signature commitSeal) {
     this.roundIdentifier = roundIdentifier;
     this.digest = digest;
     this.commitSeal = commitSeal;
@@ -59,8 +61,9 @@ public class CommitPayload extends IbftPayload {
     rlpInput.enterList();
     final ConsensusRoundIdentifier roundIdentifier = ConsensusRoundIdentifier.readFrom(rlpInput);
     final Hash digest = Payload.readDigest(rlpInput);
-    final SECPSignature commitSeal =
-        rlpInput.readBytes(SignatureAlgorithmFactory.getInstance()::decodeSignature);
+    final DSAParametersSet dsaParams = DSAProviderFactory.getDsaProvider().getActiveDsaParametersSet();
+    final Signature commitSeal =
+        rlpInput.readBytes(bytes -> SignatureFactory.createSignatureFromBytes(bytes, dsaParams));
     rlpInput.leaveList();
 
     return new CommitPayload(roundIdentifier, digest, commitSeal);
@@ -94,7 +97,7 @@ public class CommitPayload extends IbftPayload {
    *
    * @return the commit seal
    */
-  public SECPSignature getCommitSeal() {
+  public Signature getCommitSeal() {
     return commitSeal;
   }
 
