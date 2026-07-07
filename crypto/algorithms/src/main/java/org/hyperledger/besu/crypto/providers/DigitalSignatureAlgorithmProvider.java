@@ -28,7 +28,7 @@ public class DigitalSignatureAlgorithmProvider implements DSAProvider{
     }
 
     @Override
-    public DSAParametersSet getDsaParametersSet() {
+    public DSAParametersSet getActiveDsaParametersSet() {
         final DigitalSignatureAlgorithm activeDSA = config.getActiveDSA();
         if (activeDSA != null) {
             return activeDSA.getDsaParametersSet();

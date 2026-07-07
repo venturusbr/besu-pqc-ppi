@@ -111,7 +111,7 @@ public class BftMessage<P extends Payload> implements Authored, RoundSpecific {
       final RLPInput rlpInput, final Function<RLPInput, T> decoder) {
     rlpInput.enterList();
     final T unsignedMessageData = decoder.apply(rlpInput);
-    final DSAParametersSet dsaParams = DSAProviderFactory.getDsaProvider().getDsaParametersSet();
+    final DSAParametersSet dsaParams = DSAProviderFactory.getDsaProvider().getActiveDsaParametersSet();
     final Signature signature =
         rlpInput.readBytes(bytes -> SignatureFactory.createSignatureFromBytes(bytes, dsaParams));
     rlpInput.leaveList();

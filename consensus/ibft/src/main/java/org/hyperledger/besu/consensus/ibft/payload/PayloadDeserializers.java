@@ -112,7 +112,7 @@ public class PayloadDeserializers {
    * @return the secp signature
    */
   protected static Signature readSignature(final RLPInput signedMessage) {
-    final DSAParametersSet dsaParams = DSAProviderFactory.getDsaProvider().getDsaParametersSet();
+    final DSAParametersSet dsaParams = DSAProviderFactory.getDsaProvider().getActiveDsaParametersSet();
     return signedMessage.readBytes(bytes -> SignatureFactory.createSignatureFromBytes(bytes, dsaParams));
   }
 }

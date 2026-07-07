@@ -9,7 +9,7 @@ import org.hyperledger.besu.crypto.signature.Signature;
 
 public interface DSAProvider {
     DigitalSignatureAlgorithm getAccountEnabledDSAById(final Short dsaId);
-    DSAParametersSet getDsaParametersSet();
+    DSAParametersSet getActiveDsaParametersSet();
     Signature signMessage(final Bytes data);
     Boolean verifySignature(final Bytes data, final Signature signature, final PublicKey pk);
     void loadNodeKeyPair();
