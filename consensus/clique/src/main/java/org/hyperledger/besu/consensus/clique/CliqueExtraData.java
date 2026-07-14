@@ -148,7 +148,7 @@ public class CliqueExtraData implements ParsedExtraData {
     if (proposerSealRaw.isZero()) {
       return null;
     }
-    final DSAParametersSet dsaParams = DSAProviderFactory.getDsaProvider().getActiveDsaParametersSet();
+    final DSAParametersSet dsaParams = DSAProviderFactory.getVerifierProvider().getActiveDsaParametersSet();
     return SignatureFactory.createSignatureFromBytes(proposerSealRaw, dsaParams);
   }
 

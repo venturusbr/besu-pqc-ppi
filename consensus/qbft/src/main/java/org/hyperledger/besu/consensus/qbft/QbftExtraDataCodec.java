@@ -101,7 +101,7 @@ public class QbftExtraDataCodec extends BftExtraDataCodec {
     }
 
     final int round = rlpInput.readIntScalar();
-    final DSAParametersSet dsaParams = DSAProviderFactory.getDsaProvider().getActiveDsaParametersSet();
+    final DSAParametersSet dsaParams = DSAProviderFactory.getVerifierProvider().getActiveDsaParametersSet();
     final List<Signature> seals =
         rlpInput.readList(
             rlp -> SignatureFactory.createSignatureFromBytes(rlp.readBytes(), dsaParams));

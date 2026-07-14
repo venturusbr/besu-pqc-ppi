@@ -40,7 +40,7 @@ public class PublicKeyDecoder {
       final RLPInput in) {
     
     final DigitalSignatureAlgorithm dsa =
-            DSAProviderFactory.getDsaProvider().getAccountEnabledDSAById(dsaType);
+            DSAProviderFactory.getVerifierProvider().getAccountEnabledDSAById(dsaType);
 
     if (!(dsa instanceof HybridDigitalSignatureAlgorithm)) {
       if (isRecoverable(dsa)) {

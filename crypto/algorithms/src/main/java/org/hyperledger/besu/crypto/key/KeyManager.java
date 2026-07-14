@@ -21,18 +21,8 @@ public class KeyManager {
         this.keyConfig = keyConfig;
     }
 
-    public void loadOrGenerateNodeKeyPair(final DigitalSignatureAlgorithm activeDsa) {
-        try {
-            PrivateKey sk = loadPrivateKeyFromFile(activeDsa.getDsaParametersSet());
-            loadNodeKeyPairByPrivateKey(sk, activeDsa);
-        } catch (IllegalArgumentException e) {
-            this.nodeKeyPair = activeDsa.generateNodeKeyPair();
-        }
-    }
-
-    public void loadNodeKeyPairByPrivateKey(
-            final PrivateKey sk,
-            final DigitalSignatureAlgorithm activeDsa) {
+    public void loadNodeKeyPairByPrivateKey(final DigitalSignatureAlgorithm activeDsa) {
+        PrivateKey sk = loadPrivateKeyFromFile(activeDsa.getDsaParametersSet());
         PublicKey pk = KeyFactory.createPublicKey(sk, activeDsa.getDsaParametersSet());
 
         KeyPair keyPair = KeyFactory.createKeyPair(sk, pk);

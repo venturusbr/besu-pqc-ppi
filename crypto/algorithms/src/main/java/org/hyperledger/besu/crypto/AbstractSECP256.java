@@ -216,7 +216,7 @@ public abstract class AbstractSECP256 implements SignatureAlgorithm, PublicKeyRe
   @Override
   public KeyPair generateNodeKeyPair(){
     KeyPair kp = generateKeyPair();
-    return KeyFactory.buildNodeKeyPair(kp.getPrivateKey().getEncodedBytes(), kp.getPublicKey().getEncodedBytes(), DSAParametersSet.SECP256K1);
+    return KeyFactory.createKeyPair(Bytes.wrap(kp.getPrivateKey().getEncoded()), Bytes.wrap(kp.getPublicKey().getEncoded()), DSAParametersSet.SECP256K1);
   }
 
   @Override
@@ -356,14 +356,16 @@ public abstract class AbstractSECP256 implements SignatureAlgorithm, PublicKeyRe
   public SECPSignature sign(final Bytes32 dataHash, final KeyPair keyPair) {
     final ECDSASigner signer = new ECDSASigner(getKCalculator());
 
+    Bytes skBytes = Bytes.wrap(keyPair.getPrivateKey().getEncoded());
+
     final ECPrivateKeyParameters privKey =
         new ECPrivateKeyParameters(
-            keyPair.getPrivateKey().getEncodedBytes().toUnsignedBigInteger(), curve);
+            skBytes.toUnsignedBigInteger(), curve);
     signer.init(true, privKey);
 
     final BigInteger[] components = signer.generateSignature(dataHash.toArrayUnsafe());
 
-    return normaliseSignature(components[0], components[1], keyPair.getPublicKey(), dataHash);
+    return normaliseSignature(components[0], components[1], keyPair.getSECPPublicKey(), dataHash);
   }
 
   /**

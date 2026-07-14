@@ -85,7 +85,7 @@ public class IbftExtraDataCodec extends BftExtraDataCodec {
     rlpInput.enterList(); // This accounts for the "root node" which contains IBFT data items.
     final Collection<Address> validators = rlpInput.readList(Address::readFrom);
     final Signature proposerSeal = parseProposerSeal(rlpInput);
-    final DSAParametersSet dsaParams = DSAProviderFactory.getDsaProvider().getActiveDsaParametersSet();
+    final DSAParametersSet dsaParams = DSAProviderFactory.getVerifierProvider().getActiveDsaParametersSet();
     final Collection<Signature> seals =
         rlpInput.readList(rlp -> SignatureFactory.createSignatureFromBytes(rlp.readBytes(), dsaParams));
     rlpInput.leaveList();
@@ -98,7 +98,7 @@ public class IbftExtraDataCodec extends BftExtraDataCodec {
     if (data.isZero()) {
       return null;
     }
-    final DSAParametersSet dsaParams = DSAProviderFactory.getDsaProvider().getActiveDsaParametersSet();
+    final DSAParametersSet dsaParams = DSAProviderFactory.getVerifierProvider().getActiveDsaParametersSet();
     return SignatureFactory.createSignatureFromBytes(data, dsaParams);
   }
 

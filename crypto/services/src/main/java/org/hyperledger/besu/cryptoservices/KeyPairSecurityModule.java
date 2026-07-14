@@ -16,16 +16,11 @@ package org.hyperledger.besu.cryptoservices;
 
 import org.hyperledger.besu.crypto.ECPointUtil;
 import org.hyperledger.besu.crypto.KeyPair;
+import org.hyperledger.besu.crypto.SECPPrivateKey;
 import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
-import org.hyperledger.besu.crypto.pqc.PqcSignature;
-import org.hyperledger.besu.crypto.pqc.PqcSignatureAlgorithm;
-import org.hyperledger.besu.crypto.pqc.PqcSignatureFactory;
-import org.hyperledger.besu.crypto.pqc.keys.PqcKeyPair;
-import org.hyperledger.besu.crypto.pqc.metrics.CSVWriter;
-import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
 import org.hyperledger.besu.plugin.services.securitymodule.SecurityModule;
 import org.hyperledger.besu.plugin.services.securitymodule.SecurityModuleException;
 import org.hyperledger.besu.plugin.services.securitymodule.data.PublicKey;
@@ -45,9 +40,7 @@ public class KeyPairSecurityModule implements SecurityModule {
   private final KeyPair keyPair;
   private final PublicKey publicKey;
   private final SignatureAlgorithm signatureAlgorithm = SignatureAlgorithmFactory.getInstance();
-  private final PqcSignatureAlgorithm pqcSignatureAlgorithm;
-  private final CSVWriter signWriter;
-  private final StringBuilder stringBuilder;
+
   /**
    * Instantiates a new Key pair security module.
    *
@@ -55,12 +48,7 @@ public class KeyPairSecurityModule implements SecurityModule {
    */
   public KeyPairSecurityModule(final KeyPair keyPair) {
     this.keyPair = keyPair;
-    this.publicKey = convertPublicKey(keyPair.getPublicKey());
-    this.pqcSignatureAlgorithm = !SignatureAlgorithmFactory.getPqcAlgorithmName().equals("none")
-      ? SignatureAlgorithmFactory.getPqcGenericInstance()
-      : null;
-    this.signWriter = MetricWriters.getSignInstance();
-    this.stringBuilder = new StringBuilder();
+    this.publicKey = convertPublicKey((SECPPublicKey) keyPair.getPublicKey());
   }
 
   private PublicKey convertPublicKey(final SECPPublicKey publicKey) {
@@ -73,50 +61,10 @@ public class KeyPairSecurityModule implements SecurityModule {
     }
   }
 
-  private void signWithPqc(final long startSecpSign, final long endSecpSign, final SECPSignature signature, final String finality){
-    byte[] secpSignatureEncoded = signature.encodedBytes().toArray();
-              
-    long startPqcSign = System.nanoTime();
-    PqcSignature pqcSignature = PqcSignatureFactory.createSignature(PqcKeyPair.getPrivKey(), secpSignatureEncoded, pqcSignatureAlgorithm.getAlgorithmName());
-    long endPqcSign = System.nanoTime();
-
-    long secpTime = endSecpSign - startSecpSign;
-    long pqcTime = endPqcSign - startPqcSign;
-
-    String data = stringBuilder.append(pqcTime + "," + (pqcTime + secpTime) + "," + pqcSignature.getEncoded().length + "," + secpSignatureEncoded.length + "," + finality + "\n").toString();
-    signWriter.write(data);
-
-    stringBuilder.setLength(0);
-  }
-
   @Override
   public Signature sign(final Bytes32 dataHash) throws SecurityModuleException {
     try {
-      long startSecpSign = System.nanoTime();
       final SECPSignature signature = signatureAlgorithm.sign(dataHash, keyPair);
-      long endSecpSign = System.nanoTime();
-
-      if(pqcSignatureAlgorithm != null) {
-        signWithPqc(startSecpSign, endSecpSign, signature, "");
-      }
-
-      return new SignatureImpl(signature);
-    } catch (final Exception e) {
-      throw new SecurityModuleException("Unexpected error while signing: " + e.getMessage(), e);
-    }
-  }
-
-  @Override
-  public Signature sign(final Bytes32 dataHash, final String finality) throws SecurityModuleException {
-    try {
-      long startSecpSign = System.nanoTime();
-      final SECPSignature signature = signatureAlgorithm.sign(dataHash, keyPair);
-      long endSecpSign = System.nanoTime();
-
-      if(pqcSignatureAlgorithm != null) {
-        signWithPqc(startSecpSign, endSecpSign, signature, finality);
-      }
-
       return new SignatureImpl(signature);
     } catch (final Exception e) {
       throw new SecurityModuleException("Unexpected error while signing: " + e.getMessage(), e);
@@ -135,7 +83,7 @@ public class KeyPairSecurityModule implements SecurityModule {
       final Bytes encodedECPoint = ECPointUtil.getEncodedBytes(partyKey.getW());
       final SECPPublicKey secp256KPartyKey = signatureAlgorithm.createPublicKey(encodedECPoint);
       return signatureAlgorithm.calculateECDHKeyAgreement(
-          keyPair.getPrivateKey(), secp256KPartyKey);
+          (SECPPrivateKey) keyPair.getPrivateKey(), secp256KPartyKey);
     } catch (final Exception e) {
       throw new SecurityModuleException(
           "Unexpected error while calculating ECDH Key Agreement: " + e.getMessage(), e);
@@ -165,6 +113,7 @@ public class KeyPairSecurityModule implements SecurityModule {
       return signature.getS();
     }
   }
+
 
   private static class PublicKeyImpl implements PublicKey {
     private final ECPoint w;

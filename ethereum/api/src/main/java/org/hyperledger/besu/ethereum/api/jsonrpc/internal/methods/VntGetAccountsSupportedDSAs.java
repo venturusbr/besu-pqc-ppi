@@ -14,7 +14,7 @@
  */
 package org.hyperledger.besu.ethereum.api.jsonrpc.internal.methods;
 
-import org.hyperledger.besu.crypto.providers.DigitalSignatureAlgorithmProvider;
+import org.hyperledger.besu.crypto.providers.VerifierProvider;
 import org.hyperledger.besu.ethereum.api.jsonrpc.RpcMethod;
 import org.hyperledger.besu.ethereum.api.jsonrpc.internal.JsonRpcRequestContext;
 import org.hyperledger.besu.ethereum.api.jsonrpc.internal.response.JsonRpcResponse;
@@ -22,9 +22,9 @@ import org.hyperledger.besu.ethereum.api.jsonrpc.internal.response.JsonRpcSucces
 
 public class VntGetAccountsSupportedDSAs implements JsonRpcMethod {
 
-  private final DigitalSignatureAlgorithmProvider dsaProvider;
+  private final VerifierProvider dsaProvider;
 
-  public VntGetAccountsSupportedDSAs(final DigitalSignatureAlgorithmProvider dsaProvider) {
+  public VntGetAccountsSupportedDSAs(final VerifierProvider dsaProvider) {
     this.dsaProvider = dsaProvider;
   }
 

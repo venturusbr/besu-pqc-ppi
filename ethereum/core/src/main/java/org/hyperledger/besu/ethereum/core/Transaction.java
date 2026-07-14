@@ -297,7 +297,7 @@ public class Transaction
     sizeForBlockInclusion.ifPresent(i -> this.sizeForBlockInclusion = i);
 
     if(dsaType.isPresent()){
-      this.signatureAlgorithm = DSAProviderFactory.getDsaProvider().getAccountEnabledDSAById(dsaType.get());
+      this.signatureAlgorithm = DSAProviderFactory.getVerifierProvider().getAccountEnabledDSAById(dsaType.get());
     } else {
       this.signatureAlgorithm = SignatureAlgorithmFactory.getInstance();
     }
@@ -1838,7 +1838,7 @@ public class Transaction
       signature(computeSignature(keys));
       sender(
           Address.extract(
-              Bytes32.wrap(Hash.hash(keys.getPublicKey().getEncodedBytes()).getBytes())));
+              Bytes32.wrap(Hash.hash(Bytes.wrap(keys.getPublicKey().getEncoded())).getBytes())));
       return build();
     }
 

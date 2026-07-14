@@ -63,13 +63,11 @@ public class HybridStrongNestingConcatenation implements HybridDigitalSignatureA
     @Override
     public KeyPair generateNodeKeyPair() {
         CompletableFuture<KeyPair> firstFuture = CompletableFuture.supplyAsync(
-            () -> delegateFirstAlgorithm.generateNodeKeyPair(),
-            executorService
+            () -> delegateFirstAlgorithm.generateNodeKeyPair()
         );
 
         CompletableFuture<KeyPair> secondFuture = CompletableFuture.supplyAsync(
-            () -> delegateSecondAlgorithm.generateNodeKeyPair(),
-            executorService
+            () -> delegateSecondAlgorithm.generateNodeKeyPair()
         );
 
         KeyPair firstKeyPair = firstFuture.join();

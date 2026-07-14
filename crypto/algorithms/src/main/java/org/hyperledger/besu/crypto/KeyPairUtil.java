@@ -28,6 +28,8 @@ import java.util.List;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.io.Resources;
+
+import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.AbstractCrystalsDilithium3;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3KeyPair;
@@ -389,7 +391,7 @@ public class KeyPairUtil {
     final Path tempPath = Files.createTempFile(privateKeyDir.toPath(), ".tmp", "");
     Files.write(
         tempPath,
-        keyPair.getPrivateKey().getEncodedBytes().toString().getBytes(StandardCharsets.UTF_8));
+        Bytes.wrap(keyPair.getPrivateKey().getEncoded()).toString().getBytes(StandardCharsets.UTF_8));
     Files.move(tempPath, file.toPath(), REPLACE_EXISTING, ATOMIC_MOVE);
   }
 

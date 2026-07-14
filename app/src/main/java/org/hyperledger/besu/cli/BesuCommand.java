@@ -98,6 +98,7 @@ import org.hyperledger.besu.consensus.merge.blockcreation.MergeCoordinator;
 import org.hyperledger.besu.controller.BesuController;
 import org.hyperledger.besu.controller.BesuControllerBuilder;
 import org.hyperledger.besu.crypto.Blake2bfMessageDigest;
+import org.hyperledger.besu.crypto.HybridDigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.KeyPairUtil;
 import org.hyperledger.besu.crypto.SECP256R1;
@@ -105,6 +106,8 @@ import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.SignatureAlgorithmType;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.config.DigitalSignatureAlgorithmConfiguration;
+import org.hyperledger.besu.crypto.config.KeyConfiguration;
+import org.hyperledger.besu.crypto.key.PrivateKeyRepresentation;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3KeyPair;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3PrivateKey;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3PublicKey;
@@ -117,8 +120,11 @@ import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusPrivateKey;
 import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusPublicKey;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.providers.DigitalSignatureAlgorithmProvider;
+import org.hyperledger.besu.crypto.providers.KeyManagementProvider;
+import org.hyperledger.besu.crypto.providers.NodeKeyProvider;
 import org.hyperledger.besu.cryptoservices.KeyPairSecurityModule;
 import org.hyperledger.besu.cryptoservices.NodeKey;
+import org.hyperledger.besu.cryptoservices.SecurityModuleAdapter;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
@@ -434,7 +440,7 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
 
   @SuppressWarnings({ "FieldCanBeFinal", "FieldMayBeFinal" }) // PicoCLI requires non-final Strings.
   @Option(names = "--node-dsa", paramLabel = "<String>", description = "Name of the DSA algorithm. (default: ${DEFAULT-VALUE})", arity = "1..1")
-  private String nodeDsa = "none";
+  private String nodeDsa = DEFAULT_NODE_DSA;
 
   @SuppressWarnings({ "FieldCanBeFinal", "FieldMayBeFinal" }) // PicoCLI requires non-final Strings.
   @Option(
@@ -1325,48 +1331,8 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
   }
 
   private SecurityModule defaultSecurityModule() {
-    DigitalSignatureAlgorithmConfiguration dsaConfig = new DigitalSignatureAlgorithmConfiguration();
-
-    try {
-      dsaConfig.buildAccountSupportedAlgorithms(accountsSupportedDSAs);
-      if (!nodeDsa.equals("none")) {
-          dsaConfig.setNodeActiveDSA(nodeDsa);
-      }
-    } catch (final InvalidAlgorithmParameterException e) {
-      throw new RuntimeException(e);
-    }
-      
-    DigitalSignatureAlgorithmProvider dsaProvider = new DigitalSignatureAlgorithmProvider(dsaConfig, null);
-    DSAProviderFactory.setDsaProvider(dsaProvider);
-    
-    if (!pqcAlgorithmName.equals("none"))
-      SignatureAlgorithmFactory.setpqcAlgorithmName(pqcAlgorithmName);
-    SignatureAlgorithmFactory.setPqcParameterSpecIndex(pqcParameterSpec);
-
-    switch (pqcAlgorithmName) {
-      case "none":
-        System.out.println("Warning: Running Without PQC Algorithm");
-        break;
-      case "dilithium":
-        Dilithium3KeyPair dilithiumKp = loadPqcKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile());
-        PqcKeyPair.setKeys(dilithiumKp.getPrivateKey().getCrystalsDilithiumPrivateKeyFromEncoded(),
-            dilithiumKp.getPublicKey().getCrystalsDilithiumPublicKeyFromEncoded());
-        break;
-      case "sphincsplus":
-        SphincsPlusKeyPair sphincsKp = loadSphincsKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile());
-        PqcKeyPair.setKeys(sphincsKp.getPrivateKey().getSphincsPlusPrivateKeyFromEncoded(),
-            sphincsKp.getPublicKey().getSphincsPlusPublicKeyFromEncoded());
-        break;
-      case "falcon":
-        FalconKeyPair falconKp = loadFalconKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile());
-        PqcKeyPair.setKeys(falconKp.getPrivateKey().getFalconPrivateKeyFromEncoded(),
-            falconKp.getPublicKey().getFalconPublicKeyFromEncoded());
-        break;
-      default:
-        throw new IllegalArgumentException("PQC algorithm Name not identified.");
-    }
-
     keyPair = loadKeyPair(nodePrivateKeyFileOption.getNodePrivateKeyFile());
+
     return new KeyPairSecurityModule(keyPair);
   }
 
@@ -2212,7 +2178,7 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
             .dataStorageConfiguration(getDataStorageConfiguration())
             .miningParameters(miningParametersSupplier.get())
             .transactionPoolConfiguration(buildTransactionPoolConfiguration())
-            .nodeKey(new NodeKey(securityModule()))
+            .nodeKey(new NodeKey(nodeKeyProvider()))
             .metricsSystem((ObservableMetricsSystem) besuComponent.getMetricsSystem())
             .messagePermissioningProviders(permissioningService.getMessagePermissioningProviders())
             .clock(Clock.systemUTC())
@@ -2509,7 +2475,7 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
             .networkingConfiguration(unstableNetworkingOptions.toDomainObject())
             .graphQLConfiguration(graphQLConfiguration)
             .jsonRpcConfiguration(jsonRpcConfiguration)
-            .dsaProvider(DSAProviderFactory.getDsaProvider())
+            .verifierProvider(DSAProviderFactory.getVerifierProvider())
             .engineJsonRpcConfiguration(engineJsonRpcConfiguration)
             .webSocketConfiguration(webSocketConfiguration)
             .jsonRpcIpcConfiguration(jsonRpcIpcConfiguration)
@@ -2667,6 +2633,34 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
    */
   public Path dataDir() {
     return dataPath.toAbsolutePath();
+  }
+
+  private NodeKeyProvider nodeKeyProvider() {
+    DigitalSignatureAlgorithmConfiguration dsaConfig = new DigitalSignatureAlgorithmConfiguration();
+
+    try {
+      dsaConfig.buildAccountSupportedAlgorithms(accountsSupportedDSAs);
+      dsaConfig.setNodeActiveDSA(nodeDsa);
+    } catch (final InvalidAlgorithmParameterException e) {
+      throw new RuntimeException(e);
+    }
+
+    KeyConfiguration keyConfig;
+    if(dsaConfig.getNodeActiveDSA() instanceof HybridDigitalSignatureAlgorithm){
+      keyConfig = KeyConfiguration.createHybridKeyConfig(node, PrivateKeyRepresentation.EXPANDED, PrivateKeyRepresentation.EXPANDED);
+    } else {
+      keyConfig = KeyConfiguration.createSingleKeyConfig(nodePrivateKeyFileOption.getNodePrivateKeyFile(), PrivateKeyRepresentation.EXPANDED);
+    }
+
+    DSAProviderFactory.setDsaProvider(dsaConfig, keyConfig);
+
+    if(!nodeDsa.equals(DEFAULT_NODE_DSA)){
+      KeyManagementProvider keyManagementProvider = DSAProviderFactory.getKeyManagementProvider();
+      keyManagementProvider.loadNodeKeyPair();
+
+      return DSAProviderFactory.getNodeKeyProvider();
+    }
+    return new SecurityModuleAdapter(securityModule());
   }
 
   private SecurityModule securityModule() {
