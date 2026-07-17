@@ -182,7 +182,7 @@ public class DefaultP2PNetwork implements P2PNetwork {
     this.natService = natService;
     this.maintainedPeers = maintainedPeers;
 
-    this.nodeId = nodeKey.getPublicKey().getEncodedBytes();
+    this.nodeId = Bytes.wrap(nodeKey.getPublicKey().getEncoded());
     this.peerPermissions = peerPermissions;
     this.vertx = vertx;
 

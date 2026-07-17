@@ -22,6 +22,7 @@ import org.hyperledger.besu.consensus.clique.CliqueContext;
 import org.hyperledger.besu.consensus.clique.CliqueExtraData;
 import org.hyperledger.besu.consensus.common.EpochManager;
 import org.hyperledger.besu.consensus.common.validator.ValidatorVote;
+import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.ProtocolContext;
@@ -68,9 +69,10 @@ public class CliqueBlockCreator extends AbstractBlockCreator {
       final NodeKey nodeKey,
       final EpochManager epochManager,
       final EthScheduler ethScheduler) {
+        //TODO: remove SECP dependency
     super(
         miningConfiguration,
-        (__, ___) -> Util.publicKeyToAddress(nodeKey.getPublicKey()),
+        (__, ___) -> Util.publicKeyToAddress((SECPPublicKey) nodeKey.getPublicKey()),
         extraDataCalculator,
         transactionPool,
         protocolContext,
@@ -120,11 +122,12 @@ public class CliqueBlockCreator extends AbstractBlockCreator {
       checkState(
           cliqueContext.getValidatorProvider().getVoteProviderAtHead().isPresent(),
           "Clique requires a vote provider");
+          // TODO: remove SECP dependency
       return cliqueContext
           .getValidatorProvider()
           .getVoteProviderAtHead()
           .get()
-          .getVoteAfterBlock(parentHeader, Util.publicKeyToAddress(nodeKey.getPublicKey()));
+          .getVoteAfterBlock(parentHeader, Util.publicKeyToAddress((SECPPublicKey) nodeKey.getPublicKey()));
     }
   }
 
@@ -142,7 +145,7 @@ public class CliqueBlockCreator extends AbstractBlockCreator {
         CliqueBlockHashing.calculateDataHashForProposerSeal(headerToSign, extraData);
     return new CliqueExtraData(
         extraData.getVanityData(),
-        nodeKey.sign(Bytes32.wrap(hashToSign.getBytes())),
+        nodeKey.sign(Bytes32.wrap(hashToSign.getBytes()), "clique-block-header"),
         extraData.getValidators(),
         headerToSign);
   }

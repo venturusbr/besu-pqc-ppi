@@ -14,6 +14,7 @@
  */
 package org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet;
 
+import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.enrrequest.EnrRequestPacketData;
 import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.enrrequest.EnrRequestPacketDataRlpWriter;
 import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.enrresponse.EnrResponsePacketData;
@@ -63,7 +64,8 @@ public class PacketSerializer {
   }
 
   public Buffer encode(final Packet packet) {
-    final Bytes encodedSignature = packetSignatureEncoder.encodeSignature(packet.getSignature());
+    // TODO: remove SECP dependency
+    final Bytes encodedSignature = packetSignatureEncoder.encodeSignature((SECPSignature) packet.getSignature());
     final BytesValueRLPOutput encodedData = new BytesValueRLPOutput();
     switch (packet.getType()) {
       case PING ->

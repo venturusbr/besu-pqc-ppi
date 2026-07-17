@@ -148,7 +148,7 @@ public class IbftBesuControllerBuilder extends BesuControllerBuilder {
     final BftExecutors bftExecutors =
         BftExecutors.create(metricsSystem, BftExecutors.ConsensusType.IBFT);
 
-    final Address localAddress = Util.publicKeyToAddress(nodeKey.getPublicKey());
+    final Address localAddress = Address.extract(nodeKey.getPublicKey());
     final BftProtocolSchedule bftProtocolSchedule = (BftProtocolSchedule) protocolSchedule;
     final BftBlockCreatorFactory<?> blockCreatorFactory =
         new BftBlockCreatorFactory<>(
@@ -180,7 +180,7 @@ public class IbftBesuControllerBuilder extends BesuControllerBuilder {
         new BftFinalState(
             validatorProvider,
             nodeKey,
-            Util.publicKeyToAddress(nodeKey.getPublicKey()),
+            Address.extract(nodeKey.getPublicKey()),
             proposerSelector,
             uniqueMessageMulticaster,
             new RoundTimer(

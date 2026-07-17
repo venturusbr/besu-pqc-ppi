@@ -167,6 +167,7 @@ public final class PeerDiscoveryAgentFactoryV5 implements PeerDiscoveryAgentFact
       return signature.slice(0, 64);
     }
 
+    // TODO: remove this. Should be moved to a crypto context class
     /**
      * Derives the compressed public key corresponding to the private key held by this module.
      *
@@ -175,7 +176,7 @@ public final class PeerDiscoveryAgentFactoryV5 implements PeerDiscoveryAgentFact
     @Override
     public Bytes deriveCompressedPublicKeyFromPrivate() {
       return Bytes.wrap(
-          signatureAlgorithm.publicKeyAsEcPoint(nodeKey.getPublicKey()).getEncoded(true));
+          signatureAlgorithm.publicKeyAsEcPoint((SECPPublicKey) nodeKey.getPublicKey()).getEncoded(true));
     }
   }
 }

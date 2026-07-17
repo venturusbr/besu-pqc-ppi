@@ -431,14 +431,6 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
   private final Boolean genesisStateHashCacheEnabled = false;
 
   @SuppressWarnings({ "FieldCanBeFinal", "FieldMayBeFinal" }) // PicoCLI requires non-final Strings.
-  @Option(names = "--pqc-algorithm-name", paramLabel = DefaultCommandValues.MANDATORY_PATH_FORMAT_HELP, description = "Name of the pqc algorithm. (default: ${DEFAULT-VALUE})", arity = "1..1")
-  private String pqcAlgorithmName = "none";
-
-  @SuppressWarnings({ "FieldCanBeFinal", "FieldMayBeFinal" }) // PicoCLI requires non-final Strings.
-  @Option(names = "--pqc-parameter-spec", paramLabel = "<String>", description = "Name of the pqc parameter spec. (default: ${DEFAULT-VALUE})", arity = "1..1")
-  private String pqcParameterSpec = "none";
-
-  @SuppressWarnings({ "FieldCanBeFinal", "FieldMayBeFinal" }) // PicoCLI requires non-final Strings.
   @Option(names = "--node-dsa", paramLabel = "<String>", description = "Name of the DSA algorithm. (default: ${DEFAULT-VALUE})", arity = "1..1")
   private String nodeDsa = DEFAULT_NODE_DSA;
 
@@ -2647,7 +2639,7 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
 
     KeyConfiguration keyConfig;
     if(dsaConfig.getNodeActiveDSA() instanceof HybridDigitalSignatureAlgorithm){
-      keyConfig = KeyConfiguration.createHybridKeyConfig(node, PrivateKeyRepresentation.EXPANDED, PrivateKeyRepresentation.EXPANDED);
+      keyConfig = KeyConfiguration.createHybridKeyConfig(nodePrivateKeyFileOption.getNodePrivateKeyFile(), PrivateKeyRepresentation.EXPANDED, PrivateKeyRepresentation.EXPANDED);
     } else {
       keyConfig = KeyConfiguration.createSingleKeyConfig(nodePrivateKeyFileOption.getNodePrivateKeyFile(), PrivateKeyRepresentation.EXPANDED);
     }

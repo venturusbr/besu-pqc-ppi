@@ -17,6 +17,7 @@ package org.hyperledger.besu.ethereum.p2p.rlpx.handshake.ecies;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import org.hyperledger.besu.crypto.KeyPair;
+import org.hyperledger.besu.crypto.SECPPrivateKey;
 import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
@@ -53,6 +54,8 @@ import org.bouncycastle.util.Pack;
  * the IV.
  */
 public class ECIESEncryptionEngine {
+
+  //TODO: remove SECP dependency
 
   public static final int ENCRYPTION_OVERHEAD = 113;
 
@@ -123,8 +126,8 @@ public class ECIESEncryptionEngine {
     final byte[] ivb = ECIESHandshaker.random(CIPHER_BLOCK_SIZE).toArray();
 
     return new ECIESEncryptionEngine(
-        signatureAlgorithm.calculateECDHKeyAgreement(ephKeyPair.getPrivateKey(), pubKey),
-        ephKeyPair.getPublicKey(),
+        signatureAlgorithm.calculateECDHKeyAgreement((SECPPrivateKey) ephKeyPair.getPrivateKey(), pubKey),
+        (SECPPublicKey) ephKeyPair.getPublicKey(),
         ivb);
   }
 

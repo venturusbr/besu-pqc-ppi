@@ -690,7 +690,7 @@ public class RunnerBuilder {
 
     final TransactionSimulator transactionSimulator = besuController.getTransactionSimulator();
 
-    final Bytes localNodeId = nodeKey.getPublicKey().getEncodedBytes();
+    final Bytes localNodeId = Bytes.wrap(nodeKey.getPublicKey().getEncoded());
     final Optional<NodePermissioningController> nodePermissioningController =
         buildNodePermissioningController(
             bootnodes, synchronizer, transactionSimulator, localNodeId, context.getBlockchain());

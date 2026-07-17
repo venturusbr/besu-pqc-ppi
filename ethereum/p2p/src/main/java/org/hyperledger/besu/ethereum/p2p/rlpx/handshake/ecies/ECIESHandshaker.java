@@ -19,6 +19,7 @@ import static org.apache.tuweni.bytes.Bytes.concatenate;
 import static org.hyperledger.besu.crypto.Hash.keccak256;
 
 import org.hyperledger.besu.crypto.KeyPair;
+import org.hyperledger.besu.crypto.SECPPrivateKey;
 import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SecureRandomProvider;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
@@ -133,11 +134,11 @@ public class ECIESHandshaker implements Handshaker {
     if (version4) {
       initiatorMsg =
           InitiatorHandshakeMessageV4.create(
-              nodeKey.getPublicKey(), ephKeyPair, staticSharedSecret, initiatorNonce);
+              (SECPPublicKey) nodeKey.getPublicKey(), ephKeyPair, staticSharedSecret, initiatorNonce);
     } else {
       initiatorMsg =
           InitiatorHandshakeMessageV1.create(
-              nodeKey.getPublicKey(), ephKeyPair, staticSharedSecret, initiatorNonce, false);
+              (SECPPublicKey) nodeKey.getPublicKey(), ephKeyPair, staticSharedSecret, initiatorNonce, false);
     }
     try {
       if (version4) {
@@ -266,13 +267,13 @@ public class ECIESHandshaker implements Handshaker {
 
       LOG.trace(
           "[{}] Received initiator's ECIES handshake message: {}",
-          nodeKey.getPublicKey().getEncodedBytes(),
+          nodeKey.getPublicKey().getEncoded(),
           initiatorMsg);
 
       // Extract the initiator's data.
       initiatorNonce = initiatorMsg.getNonce();
-      partyPubKey = initiatorMsg.getPubKey();
-      partyEphPubKey = initiatorMsg.getEphPubKey();
+      partyPubKey = (SECPPublicKey) initiatorMsg.getPubKey();
+      partyEphPubKey = (SECPPublicKey) initiatorMsg.getEphPubKey();
 
       checkState(
           keccak256(partyEphPubKey.getEncodedBytes()).equals(initiatorMsg.getEphPubKeyHash()),
@@ -281,10 +282,10 @@ public class ECIESHandshaker implements Handshaker {
       // Build the response message.
       if (version4) {
         responderMsg =
-            ResponderHandshakeMessageV4.create(ephKeyPair.getPublicKey(), responderNonce);
+            ResponderHandshakeMessageV4.create((SECPPublicKey) ephKeyPair.getPublicKey(), responderNonce);
       } else {
         responderMsg =
-            ResponderHandshakeMessageV1.create(ephKeyPair.getPublicKey(), responderNonce, false);
+            ResponderHandshakeMessageV1.create((SECPPublicKey) ephKeyPair.getPublicKey(), responderNonce, false);
       }
 
       LOG.trace(
@@ -356,10 +357,11 @@ public class ECIESHandshaker implements Handshaker {
     return partyPubKey;
   }
 
+  // TODO: remove SECP dependency
   /** Computes the secrets from the two exchanged messages. */
   void computeSecrets() {
     final Bytes agreedSecret =
-        signatureAlgorithm.calculateECDHKeyAgreement(ephKeyPair.getPrivateKey(), partyEphPubKey);
+        signatureAlgorithm.calculateECDHKeyAgreement((SECPPrivateKey) ephKeyPair.getPrivateKey(), partyEphPubKey);
 
     final Bytes sharedSecret =
         keccak256(

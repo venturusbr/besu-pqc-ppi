@@ -22,6 +22,7 @@ import org.hyperledger.besu.ethereum.rlp.RLP;
 import org.hyperledger.besu.ethereum.rlp.RLPException;
 import org.hyperledger.besu.ethereum.rlp.RLPInput;
 
+import java.security.PublicKey;
 import java.util.concurrent.ExecutionException;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -163,8 +164,8 @@ public class Address extends BytesHolder {
    * @param publicKey the public key
    * @return the address
    */
-  public static Address extract(final SECPPublicKey publicKey) {
-    return Address.extract(keccak256(publicKey.getEncodedBytes()));
+  public static Address extract(final PublicKey publicKey) {
+    return Address.extract(keccak256(Bytes.wrap(publicKey.getEncoded())));
   }
 
   /**

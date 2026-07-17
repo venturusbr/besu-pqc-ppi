@@ -106,7 +106,7 @@ public abstract class PeerDiscoveryAgentV4 implements PeerDiscoveryAgent {
     this.config = config;
     this.nodeKey = nodeKey;
 
-    this.id = nodeKey.getPublicKey().getEncodedBytes();
+    this.id = Bytes.wrap(nodeKey.getPublicKey().getEncoded());
 
     this.forkIdManager = forkIdManager;
     this.rlpxAgent = rlpxAgent;

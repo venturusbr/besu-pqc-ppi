@@ -18,6 +18,7 @@ import org.hyperledger.besu.config.CliqueConfigOptions;
 import org.hyperledger.besu.config.GenesisConfigOptions;
 import org.hyperledger.besu.consensus.common.EpochManager;
 import org.hyperledger.besu.consensus.common.ForksSchedule;
+import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -82,7 +83,8 @@ public class CliqueProtocolSchedule {
 
     final CliqueConfigOptions cliqueConfig = config.getCliqueConfigOptions();
 
-    final Address localNodeAddress = Util.publicKeyToAddress(nodeKey.getPublicKey());
+    // TODO: remove SECP dependency
+    final Address localNodeAddress = Util.publicKeyToAddress((SECPPublicKey) nodeKey.getPublicKey());
 
     if (cliqueConfig.getEpochLength() <= 0) {
       throw new IllegalArgumentException("Epoch length in config must be greater than zero");

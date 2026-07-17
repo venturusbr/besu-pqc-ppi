@@ -14,10 +14,10 @@
  */
 package org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet;
 
-import org.hyperledger.besu.crypto.SECPPublicKey;
-import org.hyperledger.besu.crypto.SECPSignature;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.PacketType;
 
+import java.security.PublicKey;
 import java.util.Optional;
 
 import org.apache.tuweni.bytes.Bytes;
@@ -25,20 +25,20 @@ import org.apache.tuweni.bytes.Bytes;
 public class Packet {
   public static final int PACKET_TYPE_INDEX = 97;
   public static final int PACKET_DATA_INDEX = 98;
-  public static final int SIGNATURE_INDEX = 32;
+  public static final int SIGNATURE_INDEX = 32; // TODO: change this limit
 
   private final PacketType type;
   private final PacketData data;
   private final Bytes hash;
-  private final SECPSignature signature;
-  private final SECPPublicKey publicKey;
+  private final Signature signature;
+  private final PublicKey publicKey;
 
   Packet(
       final PacketType type,
       final PacketData data,
       final Bytes hash,
-      final SECPSignature signature,
-      final SECPPublicKey publicKey) {
+      final Signature signature,
+      final PublicKey publicKey) {
     this.type = type;
     this.data = data;
     this.hash = hash;
@@ -59,7 +59,7 @@ public class Packet {
   }
 
   public Bytes getNodeId() {
-    return publicKey.getEncodedBytes();
+    return Bytes.wrap(publicKey.getEncoded());
   }
 
   public PacketType getType() {
@@ -70,7 +70,7 @@ public class Packet {
     return hash;
   }
 
-  public SECPSignature getSignature() {
+  public Signature getSignature() {
     return signature;
   }
 

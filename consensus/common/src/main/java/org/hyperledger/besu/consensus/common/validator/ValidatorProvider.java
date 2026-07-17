@@ -14,6 +14,7 @@
  */
 package org.hyperledger.besu.consensus.common.validator;
 
+import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
@@ -70,6 +71,7 @@ public interface ValidatorProvider {
     return getVoteProviderAtHead();
   }
 
+  // TODO: remove SECP dependency
   /**
    * Determines if this node is a validator
    *
@@ -77,6 +79,6 @@ public interface ValidatorProvider {
    * @return true if this node is a validator
    */
   default boolean nodeIsValidator(final NodeKey nodekey) {
-    return this.getValidatorsAtHead().contains(Util.publicKeyToAddress(nodekey.getPublicKey()));
+    return this.getValidatorsAtHead().contains(Util.publicKeyToAddress((SECPPublicKey)nodekey.getPublicKey()));
   }
 }
