@@ -42,11 +42,9 @@ import org.bouncycastle.jcajce.provider.asymmetric.ec.KeyPairGeneratorSpi;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.math.ec.ECAlgorithms;
 import org.bouncycastle.math.ec.ECPoint;
-import org.hyperledger.besu.crypto.key.NodeKeyPair;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.KeyFactory;
-import org.hyperledger.besu.crypto.key.KeyManager;
 
 /** The Abstract secp256. */
 public abstract class AbstractSECP256 implements SignatureAlgorithm, PublicKeyRecoverable {
@@ -68,7 +66,6 @@ public abstract class AbstractSECP256 implements SignatureAlgorithm, PublicKeyRe
 
   /** The Prime. */
   final BigInteger prime;
-
   /**
    * Instantiates a new Abstract secp 256.
    *

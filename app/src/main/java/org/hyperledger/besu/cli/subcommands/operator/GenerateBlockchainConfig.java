@@ -240,7 +240,6 @@ class GenerateBlockchainConfig implements Runnable {
       PrivateKey privateKey = keyPair.getPrivateKey();
       PublicKey publicKey = keyPair.getPublicKey();
       final Address nodeAddress = Address.extract(publicKey);
-
       writeKeypair(Bytes.wrap(publicKey.getEncoded()), Bytes.wrap(privateKey.getEncoded()), nodeAddress);
     } catch (final IOException e) {
       LOG.error("An error occurred while trying to generate node keypair.", e);
