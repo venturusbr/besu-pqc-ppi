@@ -18,6 +18,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.math.BigInteger;
 import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -28,8 +30,8 @@ import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey;
 /** The Key pair class. */
 public class KeyPair {
 
-  private final SECPPrivateKey privateKey;
-  private final SECPPublicKey publicKey;
+  private final PrivateKey privateKey;
+  private final PublicKey publicKey;
 
   /**
    * Instantiates a new Key pair.
@@ -37,7 +39,7 @@ public class KeyPair {
    * @param privateKey the private key
    * @param publicKey the public key
    */
-  public KeyPair(final SECPPrivateKey privateKey, final SECPPublicKey publicKey) {
+  public KeyPair(final PrivateKey privateKey, final PublicKey publicKey) {
     checkNotNull(privateKey);
     checkNotNull(publicKey);
     this.privateKey = privateKey;
@@ -56,7 +58,7 @@ public class KeyPair {
       final SECPPrivateKey privateKey, final ECDomainParameters curve, final String algorithm) {
     return new KeyPair(privateKey, SECPPublicKey.create(privateKey, curve, algorithm));
   }
-
+  
   /**
    * Generate key pair.
    *
@@ -112,7 +114,7 @@ public class KeyPair {
    *
    * @return the private key
    */
-  public SECPPrivateKey getPrivateKey() {
+  public PrivateKey getPrivateKey() {
     return privateKey;
   }
 
@@ -121,7 +123,25 @@ public class KeyPair {
    *
    * @return the public key
    */
-  public SECPPublicKey getPublicKey() {
+  public PublicKey getPublicKey() {
     return publicKey;
+  }
+
+  /**
+   * Gets SECP private key (temporary).
+   *
+   * @return the private key
+   */
+  public SECPPrivateKey getSECPPrivateKey() {
+    return (SECPPrivateKey) privateKey;
+  }
+
+  /**
+   * Gets SECP public key (temporary).
+   *
+   * @return the public key
+   */
+  public SECPPublicKey getSECPPublicKey() {
+    return (SECPPublicKey) publicKey;
   }
 }

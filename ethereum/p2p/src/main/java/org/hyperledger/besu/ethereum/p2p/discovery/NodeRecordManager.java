@@ -91,7 +91,7 @@ public class NodeRecordManager {
 
     this.variablesStorage = storageProvider.createVariablesStorage();
     this.nodeKey = nodeKey;
-    this.nodeId = nodeKey.getPublicKey().getEncodedBytes();
+    this.nodeId = Bytes.wrap(nodeKey.getPublicKey().getEncoded());
     this.forkIdSupplier = () -> forkIdManager.getForkIdForChainHead().getForkIdAsBytesList();
     this.natService = natService;
   }

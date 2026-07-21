@@ -14,12 +14,11 @@ import com.google.common.collect.ImmutableMap;
 
 public class DigitalSignatureAlgorithmConfiguration {
     private static final Logger LOG = LoggerFactory.getLogger(DigitalSignatureAlgorithmConfiguration.class);
-    private final SupportedAlgorithms supportedAlgorithms;
+    private static final SupportedAlgorithms supportedAlgorithms = new SupportedAlgorithms();
     private DigitalSignatureAlgorithm nodeActiveDSA;
     private ImmutableMap<Short, Supplier<DigitalSignatureAlgorithm>> accountsEnabledDSAs;
 
     public DigitalSignatureAlgorithmConfiguration() {
-        this.supportedAlgorithms = new SupportedAlgorithms();
         this.nodeActiveDSA = null;
     }
 
@@ -31,10 +30,10 @@ public class DigitalSignatureAlgorithmConfiguration {
                 "Algorithm name provided is not supported");
         }
 
-        this.nodeActiveDSA = supportedAlgorithms.getDSA(algorithmName).get();
+        this.nodeActiveDSA = supportedAlgorithms.getDSAByName(algorithmName).get();
     }
 
-    public DigitalSignatureAlgorithm getActiveDSA() {
+    public DigitalSignatureAlgorithm getNodeActiveDSA() {
         return nodeActiveDSA;
     }
 
@@ -49,7 +48,7 @@ public class DigitalSignatureAlgorithmConfiguration {
             if (supportedAlgorithms.supports(param.getName())) {
                 builder.put(
                     param.getId(),
-                    supportedAlgorithms.getDSA(param.getName()));
+                    supportedAlgorithms.getDSAByName(param.getName()));
                 continue;
             }
 
@@ -71,6 +70,10 @@ public class DigitalSignatureAlgorithmConfiguration {
     public DigitalSignatureAlgorithm getEnabledDSA(
             final Short dsaId) {
         return accountsEnabledDSAs.get(dsaId).get();
+    }
+
+    public DigitalSignatureAlgorithm getSupportedDSA(final String dsaName){
+        return supportedAlgorithms.getDSAByName(dsaName).get();
     }
 
     public List<String> getAccountsSupportedDSANames() {

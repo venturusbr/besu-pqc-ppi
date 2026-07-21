@@ -43,7 +43,7 @@ public class PublicKeyEncoder {
         checkNotNull(publicKey, "publicKey must not be null");
 
         final DigitalSignatureAlgorithm dsa =
-            DSAProviderFactory.getDsaProvider().getAccountEnabledDSAById(dsaType);
+            DSAProviderFactory.getVerifierProvider().getAccountEnabledDSAById(dsaType);
 
         if (publicKey instanceof CompositePublicKey compositePk) {
             if (!(dsa instanceof HybridDigitalSignatureAlgorithm hybridDsa)) {

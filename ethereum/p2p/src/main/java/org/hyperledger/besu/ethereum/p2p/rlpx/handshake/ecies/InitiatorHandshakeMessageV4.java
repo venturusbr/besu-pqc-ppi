@@ -20,6 +20,7 @@ import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPInput;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPOutput;
@@ -27,18 +28,22 @@ import org.hyperledger.besu.ethereum.rlp.RLPInput;
 
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
+
+import java.security.PublicKey;
+
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 
+// TODO: remove SECP Dependency
 public final class InitiatorHandshakeMessageV4 implements InitiatorHandshakeMessage {
 
   public static final int VERSION = 4;
   private static final Supplier<SignatureAlgorithm> SIGNATURE_ALGORITHM =
       Suppliers.memoize(SignatureAlgorithmFactory::getInstance);
 
-  private final SECPPublicKey pubKey;
-  private final SECPSignature signature;
-  private final SECPPublicKey ephPubKey;
+  private final PublicKey pubKey;
+  private final Signature signature;
+  private final PublicKey ephPubKey;
   private final Bytes32 ephPubKeyHash;
   private final Bytes32 nonce;
 
@@ -50,7 +55,7 @@ public final class InitiatorHandshakeMessageV4 implements InitiatorHandshakeMess
     return new InitiatorHandshakeMessageV4(
         ourPubKey,
         SIGNATURE_ALGORITHM.get().sign(staticSharedSecret.xor(nonce), ephKeyPair),
-        ephKeyPair.getPublicKey(),
+        (SECPPublicKey)ephKeyPair.getPublicKey(),
         nonce);
   }
 
@@ -94,7 +99,7 @@ public final class InitiatorHandshakeMessageV4 implements InitiatorHandshakeMess
     final BytesValueRLPOutput temp = new BytesValueRLPOutput();
     temp.startList();
     temp.writeBytes(signature.encodedBytes());
-    temp.writeBytes(pubKey.getEncodedBytes());
+    temp.writeBytes(Bytes.wrap(pubKey.getEncoded()));
     temp.writeBytes(nonce);
     temp.writeIntScalar(VERSION);
     temp.endList();
@@ -107,12 +112,12 @@ public final class InitiatorHandshakeMessageV4 implements InitiatorHandshakeMess
   }
 
   @Override
-  public SECPPublicKey getPubKey() {
+  public PublicKey getPubKey() {
     return pubKey;
   }
 
   @Override
-  public SECPPublicKey getEphPubKey() {
+  public PublicKey getEphPubKey() {
     return ephPubKey;
   }
 

@@ -9,10 +9,28 @@ public class KeyConfiguration {
     private final PrivateKeyRepresentation firstDSASkRepresentation;
     private final PrivateKeyRepresentation secondDSASkRepresentation;
 
-    public KeyConfiguration(final PrivateKeyRepresentation firstDSASkRepresentation, final PrivateKeyRepresentation secondDSASKeyRepresentation, final File nodePrivateKeyFile){
+    private KeyConfiguration(final PrivateKeyRepresentation firstDSASkRepresentation, final PrivateKeyRepresentation secondDSASKeyRepresentation, final File nodePrivateKeyFile){
         this.firstDSASkRepresentation = firstDSASkRepresentation;
         this.secondDSASkRepresentation = secondDSASKeyRepresentation;
         this.nodePrivateKeyFile = nodePrivateKeyFile;
+    }
+
+    public static KeyConfiguration createSingleKeyConfig(
+            final File nodePrivateKeyFile,
+            final PrivateKeyRepresentation representation) {
+        return new KeyConfiguration(representation, null, nodePrivateKeyFile);
+    }
+
+    // algoritmo híbrido — duas representações
+    public static KeyConfiguration createHybridKeyConfig(
+            final File nodePrivateKeyFile,
+            final PrivateKeyRepresentation first,
+            final PrivateKeyRepresentation second) {
+        return new KeyConfiguration(first, second, nodePrivateKeyFile);
+    }
+
+    public boolean isHybrid() {
+        return secondDSASkRepresentation != null;
     }
 
     public File getNodePrivateKeyFile(){

@@ -62,6 +62,8 @@ import io.vertx.core.Vertx;
 import io.vertx.core.datagram.DatagramPacket;
 import io.vertx.core.datagram.DatagramSocket;
 import io.vertx.core.datagram.DatagramSocketOptions;
+
+import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.rlp.EndOfRLPException;
 import org.ethereum.beacon.discovery.util.DecodeException;
 import org.slf4j.Logger;
@@ -122,7 +124,7 @@ public class VertxPeerDiscoveryAgent extends PeerDiscoveryAgentV4 {
       final ForkIdManager forkIdManager,
       final RlpxAgent rlpxAgent) {
     PacketPackage packetPackage = DaggerPacketPackage.create();
-    PeerTable peerTable = new PeerTable(nodeKey.getPublicKey().getEncodedBytes());
+    PeerTable peerTable = new PeerTable(Bytes.wrap(nodeKey.getPublicKey().getEncoded()));
     NodeRecordManager nodeRecordManager =
         new NodeRecordManager(storageProvider, nodeKey, forkIdManager, natService);
     return new VertxPeerDiscoveryAgent(

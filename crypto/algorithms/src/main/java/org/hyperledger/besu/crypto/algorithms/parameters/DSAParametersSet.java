@@ -24,6 +24,10 @@ public enum DSAParametersSet {
         Arrays.stream(values())
               .collect(Collectors.toMap(DSAParametersSet::getId, e -> e));
 
+    private static final Map<String, DSAParametersSet> BY_NAME =
+        Arrays.stream(values())
+            .collect(Collectors.toMap(DSAParametersSet::getName, e -> e));
+
     DSAParametersSet(final Short id, final String name, final Integer privateKeyLength, final Integer publicKeyLength,
             final Integer signatureLength, final Integer seedLength) {
         this.id = id;
@@ -32,6 +36,14 @@ public enum DSAParametersSet {
         this.privateKeyLength = privateKeyLength;
         this.signatureLength = signatureLength;
         this.seedLength = seedLength;
+    }
+
+    public static DSAParametersSet fromName(final String name) {
+        DSAParametersSet set = BY_NAME.get(name);
+        if (set == null) {
+            throw new IllegalArgumentException("Unknown DSAParametersSet name: " + name);
+        }
+        return set;
     }
 
     public static DSAParametersSet fromId(final Short id) {

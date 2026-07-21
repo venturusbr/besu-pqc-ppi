@@ -30,7 +30,7 @@ public class SupportedAlgorithms {
                         new MLDSA(DSAParametersSet.MLDSA44),
                         DSAParametersSet.SECP256K1MLDSA44));
 
-    public Supplier<DigitalSignatureAlgorithm> getDSA(final String algorithmName) {
+    public Supplier<DigitalSignatureAlgorithm> getDSAByName(final String algorithmName) {
         return DSA_ALGORITHMS.get(algorithmName);
     }
 

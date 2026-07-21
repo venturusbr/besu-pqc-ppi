@@ -201,7 +201,7 @@ public class QbftBesuControllerBuilder extends BesuControllerBuilder {
         BftExecutors.create(metricsSystem, BftExecutors.ConsensusType.QBFT);
     final QbftBlockCodec blockEncoder = new QbftBlockCodecAdaptor(qbftExtraDataCodec);
 
-    final Address localAddress = Util.publicKeyToAddress(nodeKey.getPublicKey());
+    final Address localAddress = Address.extract(nodeKey.getPublicKey());
     final BftProtocolSchedule bftProtocolSchedule = (BftProtocolSchedule) protocolSchedule;
     QbftProtocolSchedule qbftProtocolSchedule =
         new QbftProtocolScheduleAdaptor(bftProtocolSchedule, protocolContext);
@@ -247,7 +247,7 @@ public class QbftBesuControllerBuilder extends BesuControllerBuilder {
         new QbftFinalStateImpl(
             validatorProvider,
             nodeKey,
-            Util.publicKeyToAddress(nodeKey.getPublicKey()),
+            Address.extract(nodeKey.getPublicKey()),
             proposerSelector,
             uniqueMessageMulticaster,
             new RoundTimer(

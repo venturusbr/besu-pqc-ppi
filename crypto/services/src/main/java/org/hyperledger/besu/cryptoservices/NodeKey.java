@@ -14,29 +14,29 @@
  */
 package org.hyperledger.besu.cryptoservices;
 
-import org.hyperledger.besu.crypto.ECPointUtil;
-import org.hyperledger.besu.crypto.SECPPublicKey;
-import org.hyperledger.besu.crypto.SECPSignature;
-import org.hyperledger.besu.crypto.SignatureAlgorithm;
-import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
-import org.hyperledger.besu.plugin.services.securitymodule.SecurityModule;
-import org.hyperledger.besu.plugin.services.securitymodule.data.Signature;
+import org.hyperledger.besu.crypto.pqc.metrics.CSVWriter;
+import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
+import org.hyperledger.besu.crypto.providers.NodeKeyProvider;
+import org.hyperledger.besu.crypto.signature.Signature;
+
+import java.security.PublicKey;
 
 import org.apache.tuweni.bytes.Bytes32;
-
 /** The Node key. */
 public class NodeKey {
-
-  private final SecurityModule securityModule;
-  private final SignatureAlgorithm signatureAlgorithm = SignatureAlgorithmFactory.getInstance();
+  private final NodeKeyProvider nodeKeyProvider;
+  private final CSVWriter signWriter;
+  private final StringBuilder stringBuilder;
 
   /**
    * Instantiates a new Node key.
    *
-   * @param securityModule the security module
+   * @param nodeKeyProvider the key provider.
    */
-  public NodeKey(final SecurityModule securityModule) {
-    this.securityModule = securityModule;
+  public NodeKey(final NodeKeyProvider nodeKeyProvider) {
+    this.nodeKeyProvider = nodeKeyProvider;
+    this.signWriter = MetricWriters.getSignInstance();
+    this.stringBuilder = new StringBuilder();
   }
 
   /**
@@ -45,18 +45,15 @@ public class NodeKey {
    * @param dataHash the data hash
    * @return the secp signature
    */
-  public SECPSignature sign(final Bytes32 dataHash) {
-    final Signature signature = securityModule.sign(dataHash);
+  public Signature sign(final Bytes32 dataHash, final String finality) {
 
-    return signatureAlgorithm.normaliseSignature(
-        signature.getR(), signature.getS(), getPublicKey(), dataHash);
-  }
+    long startSign = System.nanoTime();
+    Signature signature = nodeKeyProvider.sign(dataHash);
+    long endSign = System.nanoTime();
+    
+    writeSignMetrics(startSign, endSign, finality, signature.encodedBytes().size());
 
-  public SECPSignature sign(final Bytes32 dataHash, final String finality) {
-    final Signature signature = securityModule.sign(dataHash, finality);
-
-    return signatureAlgorithm.normaliseSignature(
-        signature.getR(), signature.getS(), getPublicKey(), dataHash);
+    return signature;
   }
 
   /**
@@ -64,10 +61,10 @@ public class NodeKey {
    *
    * @return the public key
    */
-  public SECPPublicKey getPublicKey() {
-    return signatureAlgorithm.createPublicKey(
-        ECPointUtil.getEncodedBytes(securityModule.getPublicKey().getW()));
+  public PublicKey getPublicKey() {
+    return nodeKeyProvider.getPublicKey();
   }
+
 
   /**
    * Calculate ecdh key agreement.
@@ -75,8 +72,15 @@ public class NodeKey {
    * @param partyKey the party key
    * @return the bytes32
    */
-  public Bytes32 calculateECDHKeyAgreement(final SECPPublicKey partyKey) {
-    return securityModule.calculateECDHKeyAgreement(
-        () -> ECPointUtil.fromBouncyCastleECPoint(signatureAlgorithm.publicKeyAsEcPoint(partyKey)));
+  public Bytes32 calculateECDHKeyAgreement(final PublicKey partyKey) {
+    return nodeKeyProvider.calculateECDHKeyAgreement(partyKey);
+  }
+
+  private void writeSignMetrics(final long startTime, final long endTime, final String finality, final Integer signatureLength){
+    long totalTime = endTime - startTime;
+
+    String data = stringBuilder.append(totalTime + "," + signatureLength + "," + finality + "\n").toString();
+    signWriter.write(data);
+    stringBuilder.setLength(0);
   }
 }

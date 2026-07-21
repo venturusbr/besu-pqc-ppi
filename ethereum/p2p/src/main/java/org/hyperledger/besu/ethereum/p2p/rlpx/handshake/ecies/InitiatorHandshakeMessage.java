@@ -14,7 +14,7 @@
  */
 package org.hyperledger.besu.ethereum.p2p.rlpx.handshake.ecies;
 
-import org.hyperledger.besu.crypto.SECPPublicKey;
+import java.security.PublicKey;
 
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -25,9 +25,9 @@ public interface InitiatorHandshakeMessage {
 
   Bytes32 getNonce();
 
-  SECPPublicKey getPubKey();
+  PublicKey getPubKey();
 
-  SECPPublicKey getEphPubKey();
+  PublicKey getEphPubKey();
 
   Bytes32 getEphPubKeyHash();
 }

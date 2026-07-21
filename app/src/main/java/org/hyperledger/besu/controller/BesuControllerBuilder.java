@@ -16,6 +16,7 @@ package org.hyperledger.besu.controller;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.chainimport.BlockHeadersCachePreload;
 import org.hyperledger.besu.components.BesuComponent;
 import org.hyperledger.besu.config.CheckpointConfigOptions;
@@ -715,7 +716,7 @@ public abstract class BesuControllerBuilder implements MiningConfigurationOverri
             metricsSystem,
             maxMessageSize,
             messagePermissioningProviders,
-            nodeKey.getPublicKey().getEncodedBytes(),
+            Bytes.wrap(nodeKey.getPublicKey().getEncoded()),
             maxPeers,
             maxRemotelyInitiatedPeers,
             randomPeerPriority,

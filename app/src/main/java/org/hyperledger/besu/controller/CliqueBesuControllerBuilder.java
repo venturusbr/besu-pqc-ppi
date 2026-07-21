@@ -61,7 +61,7 @@ public class CliqueBesuControllerBuilder extends BesuControllerBuilder {
 
   @Override
   protected void prepForBuild() {
-    localAddress = Util.publicKeyToAddress(nodeKey.getPublicKey());
+    localAddress = Address.extract(nodeKey.getPublicKey());
     final CliqueConfigOptions cliqueConfig = genesisConfigOptions.getCliqueConfigOptions();
     final long blocksPerEpoch = cliqueConfig.getEpochLength();
 
@@ -180,7 +180,7 @@ public class CliqueBesuControllerBuilder extends BesuControllerBuilder {
     fromCli.setMiningEnabled(true);
 
     final Address localValidatorAddress =
-        nodeKey != null ? Util.publicKeyToAddress(nodeKey.getPublicKey()) : null;
+        nodeKey != null ? Address.extract(nodeKey.getPublicKey()) : null;
     if (localValidatorAddress != null) {
       fromCli.setCoinbase(localValidatorAddress);
     }

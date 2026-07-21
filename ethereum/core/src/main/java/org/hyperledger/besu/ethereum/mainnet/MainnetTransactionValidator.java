@@ -31,7 +31,7 @@ import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.pqc.metrics.CSVWriter;
 import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
-import org.hyperledger.besu.crypto.providers.DigitalSignatureAlgorithmProvider;
+import org.hyperledger.besu.crypto.providers.VerifierProvider;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.BlobType;
 import org.hyperledger.besu.datatypes.CodeDelegation;
@@ -73,7 +73,7 @@ public class MainnetTransactionValidator implements TransactionValidator {
   private final int maxInitcodeSize;
   private final MainnetBlobsValidator blobsValidator;
 
-  private final DigitalSignatureAlgorithmProvider dsaProvider;
+  private final VerifierProvider dsaProvider;
 
   private final CSVWriter verifyWriter;
 
@@ -96,7 +96,7 @@ public class MainnetTransactionValidator implements TransactionValidator {
     this.acceptedTransactionTypes = acceptedTransactionTypes;
     this.maxInitcodeSize = maxInitcodeSize;
     this.blobsValidator = new MainnetBlobsValidator(acceptedBlobVersions, gasLimitCalculator, gasCalculator);
-    this.dsaProvider = DSAProviderFactory.getDsaProvider();
+    this.dsaProvider = DSAProviderFactory.getVerifierProvider();
     this.verifyWriter = MetricWriters.getVerifyInstance();
     this.stringBuilder = new StringBuilder();
   }

@@ -338,7 +338,7 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
     }
 
     Optional<PublicKey> publicKey = PublicKeyHandler.resolvePublicKey(
-        DSAProviderFactory.getDsaProvider().getAccountEnabledDSAById(dsaType.get()),
+        DSAProviderFactory.getVerifierProvider().getAccountEnabledDSAById(dsaType.get()),
         signature,
         maybePublicKey,
         hash

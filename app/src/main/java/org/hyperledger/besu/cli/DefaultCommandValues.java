@@ -14,6 +14,7 @@
  */
 package org.hyperledger.besu.cli;
 
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.ethereum.api.jsonrpc.authentication.JwtAlgorithm;
 import org.hyperledger.besu.ethereum.p2p.config.RlpxConfiguration;
 import org.hyperledger.besu.nat.NatMethod;
@@ -118,6 +119,9 @@ public interface DefaultCommandValues {
 
   /** The constant DEFAULT_SECURITY_MODULE. */
   String DEFAULT_SECURITY_MODULE = "localfile";
+
+  /** The constant DEFAULT_NODE_DSA. */
+  String DEFAULT_NODE_DSA = DSAParametersSet.SECP256K1.getName();
 
   /** The constant DEFAULT_KEYSTORE_TYPE. */
   String DEFAULT_KEYSTORE_TYPE = "JKS";

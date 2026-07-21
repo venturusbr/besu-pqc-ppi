@@ -15,9 +15,9 @@
 package org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet;
 
 import org.hyperledger.besu.crypto.Hash;
-import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.ethereum.p2p.discovery.PeerDiscoveryPacketDecodingException;
 import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.PacketType;
@@ -36,6 +36,7 @@ import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.pong.P
 import org.hyperledger.besu.ethereum.rlp.RLP;
 
 import java.math.BigInteger;
+import java.security.PublicKey;
 import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -94,12 +95,12 @@ public class PacketFactory {
               }
             });
 
-    SECPSignature signature = nodeKey.sign(Hash.keccak256(Bytes.wrap(typeBytes, dataBytes)), "packet");
+    Signature signature = nodeKey.sign(Hash.keccak256(Bytes.wrap(typeBytes, dataBytes)), "packet");
     Bytes32 hash =
         Hash.keccak256(
             Bytes.concatenate(
-                packetSignatureEncoder.encodeSignature(signature), typeBytes, dataBytes));
-    SECPPublicKey publicKey = nodeKey.getPublicKey();
+                packetSignatureEncoder.encodeSignature((SECPSignature) signature), typeBytes, dataBytes));
+    PublicKey publicKey = nodeKey.getPublicKey();
 
     return new Packet(type, data, hash, signature, publicKey);
   }
@@ -119,11 +120,11 @@ public class PacketFactory {
       throw new PeerDiscoveryPacketDecodingException(
           "Integrity check failed: non-matching hashes.");
     }
-
-    SECPSignature signature = decodeSignature(encodedSignature);
-    SECPPublicKey publicKey =
+    /*TODO: resolve publicKey without PKR and Signature decoder */
+    Signature signature = decodeSignature(encodedSignature);
+    PublicKey publicKey =
         signatureAlgorithm
-            .recoverPublicKeyFromSignature(Hash.keccak256(signedPayload), signature)
+            .recoverPublicKeyFromSignature(Hash.keccak256(signedPayload), (SECPSignature) signature)
             .orElseThrow(
                 () ->
                     new PeerDiscoveryPacketDecodingException(

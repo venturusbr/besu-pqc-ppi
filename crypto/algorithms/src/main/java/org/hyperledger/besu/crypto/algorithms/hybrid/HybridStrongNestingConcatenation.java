@@ -7,9 +7,9 @@ import java.util.concurrent.CompletableFuture;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.HybridDigitalSignatureAlgorithm;
+import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
-import org.hyperledger.besu.crypto.key.KeyManager;
-import org.hyperledger.besu.crypto.key.NodeKeyPair;
+import org.hyperledger.besu.crypto.key.KeyFactory;
 import org.hyperledger.besu.crypto.key.types.CompositePrivateKey;
 import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
 import org.hyperledger.besu.crypto.signature.Signature;
@@ -61,13 +61,19 @@ public class HybridStrongNestingConcatenation implements HybridDigitalSignatureA
     }
 
     @Override
-    public NodeKeyPair generateNodeKeyPair(final KeyManager keyManager) {
-        // TODO
-        // NodeKeyPair firstKeyPair = delegateFirstAlgorithm.generateKeyPair();
-        // NodeKeyPair secondKeyPair = delegateSecondAlgorithm.generateKeyPair();
+    public KeyPair generateNodeKeyPair() {
+        CompletableFuture<KeyPair> firstFuture = CompletableFuture.supplyAsync(
+            () -> delegateFirstAlgorithm.generateNodeKeyPair()
+        );
 
+        CompletableFuture<KeyPair> secondFuture = CompletableFuture.supplyAsync(
+            () -> delegateSecondAlgorithm.generateNodeKeyPair()
+        );
 
-        return null;
+        KeyPair firstKeyPair = firstFuture.join();
+        KeyPair secondKeyPair = secondFuture.join();
+
+        return KeyFactory.createHybridKeyPair(firstKeyPair, secondKeyPair);
     }
 
     @Override

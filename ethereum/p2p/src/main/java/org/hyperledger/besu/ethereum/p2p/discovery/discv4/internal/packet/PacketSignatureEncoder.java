@@ -23,6 +23,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.units.bigints.UInt256;
 
+// TODO: delete this class
 @Singleton
 public class PacketSignatureEncoder {
 

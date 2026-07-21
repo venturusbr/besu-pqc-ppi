@@ -27,6 +27,7 @@ import org.hyperledger.besu.cli.util.VersionProvider;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.SignatureAlgorithmType;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.core.Util;
 
 import java.io.BufferedWriter;
@@ -140,7 +141,7 @@ public class PublicKeySubCommand implements Runnable {
     @Override
     public void run() {
       configureEcCurve(ecCurve, parentCommand.spec.commandLine());
-      run(addressExportFile, keyPair -> Util.publicKeyToAddress(keyPair.getPublicKey()).toString());
+      run(addressExportFile, keyPair -> Address.extract(keyPair.getPublicKey()).toString());
     }
   }
 

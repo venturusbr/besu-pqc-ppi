@@ -1,15 +1,16 @@
 package org.hyperledger.besu.crypto.key;
 
 import java.math.BigInteger;
-import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Optional;
 
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
 import org.hyperledger.besu.crypto.SECPPublicKey;
+import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
 import org.hyperledger.besu.crypto.key.types.CompositePrivateKey;
@@ -54,8 +55,7 @@ public class KeyFactory {
             case SECP256K1:
             case SECP256R1:
                 SECPPrivateKey secpSk = (SECPPrivateKey) privateKey;
-                BigInteger keyInteger = secpSk.getD();
-                pk = SECPPublicKey.create(keyInteger, paramsSet.getName());
+                pk = SignatureAlgorithmFactory.getInstance().createPublicKey(secpSk);
                 break;
             case MLDSA44:
             case MLDSA65:
@@ -129,11 +129,25 @@ public class KeyFactory {
         return CompositePublicKey.create(firstPk, secondPk);
     }
 
-    public static NodeKeyPair createNodeKpFromKeyPair(final KeyPair kp){
-        return createNodeKp(kp.getPrivate(),kp.getPublic());
+    public static KeyPair createKeyPair(final PrivateKey privateKey, final PublicKey publicKey){
+        return new KeyPair(privateKey, publicKey);
     }
 
-    public static NodeKeyPair createNodeKp(final PrivateKey privateKey, final PublicKey publicKey){
-        return new NodeKeyPair(privateKey, publicKey);
+    public static KeyPair createKeyPair(
+            final Bytes privateKeyBytes,
+            final Bytes publicKeyBytes,
+            final DSAParametersSet dsaParams) {
+        PrivateKey sk = createPrivateKey(privateKeyBytes, dsaParams, PrivateKeyRepresentation.EXPANDED, PrivateKeyRepresentation.EXPANDED);
+
+        PublicKey pk = createPublicKey(sk, dsaParams);
+
+        return createKeyPair(sk, pk);
+    }
+
+    public static KeyPair createHybridKeyPair(final KeyPair firstKp, final KeyPair secondKp){
+        PrivateKey hybridSk = CompositePrivateKey.create(firstKp.getPrivateKey(), secondKp.getPrivateKey());
+        PublicKey hybridPk = CompositePublicKey.create(firstKp.getPublicKey(), secondKp.getPublicKey());
+
+        return createKeyPair(hybridSk, hybridPk);
     }
 }

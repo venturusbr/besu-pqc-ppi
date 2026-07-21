@@ -122,7 +122,7 @@ public class PlainHandshaker implements Handshaker {
       initiatorMsg = message.getData();
       LOG.trace(
           "[{}] Received initiator's plain handshake message: {}",
-          nodeKey.getPublicKey().getEncodedBytes(),
+          Bytes.wrap(nodeKey.getPublicKey().getEncoded()),
           initiatorMsg);
 
       partyPubKey = SignatureAlgorithmFactory.getInstance().createPublicKey(message.getData());
