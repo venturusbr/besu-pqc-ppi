@@ -18,11 +18,12 @@ import org.hyperledger.besu.consensus.common.bft.ConsensusRoundIdentifier;
 import org.hyperledger.besu.consensus.common.bft.payload.SignedData;
 import org.hyperledger.besu.consensus.qbft.core.messagewrappers.Commit;
 import org.hyperledger.besu.consensus.qbft.core.payload.CommitPayload;
+import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
-import org.hyperledger.besu.ethereum.core.Util;
 
 import java.util.Collection;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,10 +101,14 @@ public class CommitValidator {
       return false;
     }
 
-    final Address commitSealCreator =
-        Util.signatureToAddress(payload.getCommitSeal(), expectedCommitDigest);
+    final Optional<Address> commitSealCreator =
+        Address.signatureToAddress(
+            SignatureAlgorithmFactory.getInstance(),
+            payload.getCommitSeal(),
+            Optional.empty(),
+            expectedCommitDigest);
 
-    if (!commitSealCreator.equals(signedPayload.getAuthor())) {
+    if (commitSealCreator.isEmpty() || !commitSealCreator.get().equals(signedPayload.getAuthor())) {
       LOG.info(
           "{}: Seal was not created by the message transmitter {} was {}",
           ERROR_PREFIX,

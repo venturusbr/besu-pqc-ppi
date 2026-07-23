@@ -20,9 +20,9 @@ import org.hyperledger.besu.consensus.common.bft.payload.SignedData;
 import org.hyperledger.besu.consensus.ibft.payload.CommitPayload;
 import org.hyperledger.besu.consensus.ibft.payload.PreparePayload;
 import org.hyperledger.besu.consensus.ibft.payload.ProposalPayload;
+import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
-import org.hyperledger.besu.ethereum.core.Util;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -147,10 +147,14 @@ public class SignedDataValidator {
     }
 
     final Hash proposedBlockDigest = proposal.get().getPayload().getDigest();
-    final Address commitSealCreator =
-        Util.signatureToAddress(msg.getPayload().getCommitSeal(), proposedBlockDigest);
+    final Optional<Address> commitSealCreator =
+        Address.signatureToAddress(
+            SignatureAlgorithmFactory.getInstance(),
+            msg.getPayload().getCommitSeal(),
+            Optional.empty(),
+            proposedBlockDigest);
 
-    if (!commitSealCreator.equals(msg.getAuthor())) {
+    if (commitSealCreator.isEmpty() || !commitSealCreator.get().equals(msg.getAuthor())) {
       LOG.info("Invalid Commit message. Seal was not created by the message transmitter.");
       return false;
     }
