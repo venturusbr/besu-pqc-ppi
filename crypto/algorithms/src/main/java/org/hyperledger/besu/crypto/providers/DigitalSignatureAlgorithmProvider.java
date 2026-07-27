@@ -75,7 +75,7 @@ public class DigitalSignatureAlgorithmProvider implements NodeKeyProvider, KeyMa
         return keyManager.getNodePublicKey();
     }
 
-    // we need to decide what to do with this method, maybe move to a component that handle key exchange
+    // TODO: we need to decide what to do with this method, maybe move to a component that handle key exchange
     @Override
     public Bytes32 calculateECDHKeyAgreement(final PublicKey partyKey) throws NodeKeyException {
         try {
