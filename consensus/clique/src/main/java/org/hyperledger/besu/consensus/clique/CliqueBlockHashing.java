@@ -64,11 +64,10 @@ public class CliqueBlockHashing {
     }
     final Hash proposerHash = calculateDataHashForProposerSeal(header, cliqueExtraData);
     return Address.signatureToAddress(
-            DSAProviderFactory.getActiveDSA(),
-            cliqueExtraData.getProposerSeal().get(),
-            Optional.empty(),
-            proposerHash)
-        .orElse(null);
+        DSAProviderFactory.getActiveDSA(),
+        cliqueExtraData.getProposerSeal().get(),
+        Optional.empty(),
+        proposerHash);
   }
 
   private static Bytes serializeHeaderWithoutProposerSeal(

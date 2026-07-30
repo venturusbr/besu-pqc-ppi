@@ -106,11 +106,10 @@ public class IbftBlockHashing {
       final BlockHeader header, final IbftLegacyExtraData ibftExtraData) {
     final Hash proposerHash = calculateDataHashForProposerSeal(header, ibftExtraData);
     return Address.signatureToAddress(
-            DSAProviderFactory.getActiveDSA(),
-            ibftExtraData.getProposerSeal(),
-            Optional.empty(),
-            proposerHash)
-        .orElse(null);
+        DSAProviderFactory.getActiveDSA(),
+        ibftExtraData.getProposerSeal(),
+        Optional.empty(),
+        proposerHash);
   }
 
   /**
@@ -129,8 +128,7 @@ public class IbftBlockHashing {
         .map(
             p ->
                 Address.signatureToAddress(
-                        DSAProviderFactory.getActiveDSA(), p, Optional.empty(), committerHash)
-                    .orElse(null))
+                    DSAProviderFactory.getActiveDSA(), p, Optional.empty(), committerHash))
         .collect(Collectors.toList());
   }
 

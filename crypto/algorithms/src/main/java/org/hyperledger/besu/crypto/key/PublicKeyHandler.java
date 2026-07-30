@@ -74,11 +74,8 @@ public class PublicKeyHandler {
                     () -> new IllegalStateException("Cannot recover public key"));
         }
 
-        if (maybePartialPk == null) {
-            throw new IllegalStateException(
-                "Public key must be provided when algorithm does not support PKR");
-        }
-
-        return maybePartialPk.get();
+        return maybePartialPk.orElseThrow(
+            () -> new IllegalStateException(
+                "Public key must be provided when algorithm does not support PKR"));
     }
 }

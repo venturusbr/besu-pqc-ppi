@@ -106,8 +106,7 @@ public class BftBlockHashing {
         .map(
             p ->
                 Address.signatureToAddress(
-                        DSAProviderFactory.getActiveDSA(), p, Optional.empty(), committerHash)
-                    .orElse(null))
+                    DSAProviderFactory.getActiveDSA(), p, Optional.empty(), committerHash))
         .collect(Collectors.toList());
   }
 

@@ -101,14 +101,14 @@ public class CommitValidator {
       return false;
     }
 
-    final Optional<Address> commitSealCreator =
+    final Address commitSealCreator =
         Address.signatureToAddress(
             DSAProviderFactory.getActiveDSA(),
             payload.getCommitSeal(),
             Optional.empty(),
             expectedCommitDigest);
 
-    if (commitSealCreator.isEmpty() || !commitSealCreator.get().equals(signedPayload.getAuthor())) {
+    if (!commitSealCreator.equals(signedPayload.getAuthor())) {
       LOG.info(
           "{}: Seal was not created by the message transmitter {} was {}",
           ERROR_PREFIX,

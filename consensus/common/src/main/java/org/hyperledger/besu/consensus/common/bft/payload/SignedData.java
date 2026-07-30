@@ -56,8 +56,7 @@ public class SignedData<M extends Payload> implements Authored {
     final Hash msgHash = payload.hashForSignature();
     final Address sender =
         Address.signatureToAddress(
-                DSAProviderFactory.getActiveDSA(), signature, Optional.empty(), msgHash)
-            .orElse(null);
+            DSAProviderFactory.getActiveDSA(), signature, Optional.empty(), msgHash);
     return new SignedData<>(payload, sender, signature);
   }
 

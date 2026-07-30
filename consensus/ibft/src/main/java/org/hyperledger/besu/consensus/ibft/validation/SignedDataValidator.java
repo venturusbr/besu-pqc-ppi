@@ -147,14 +147,14 @@ public class SignedDataValidator {
     }
 
     final Hash proposedBlockDigest = proposal.get().getPayload().getDigest();
-    final Optional<Address> commitSealCreator =
+    final Address commitSealCreator =
         Address.signatureToAddress(
             DSAProviderFactory.getActiveDSA(),
             msg.getPayload().getCommitSeal(),
             Optional.empty(),
             proposedBlockDigest);
 
-    if (commitSealCreator.isEmpty() || !commitSealCreator.get().equals(msg.getAuthor())) {
+    if (!commitSealCreator.equals(msg.getAuthor())) {
       LOG.info("Invalid Commit message. Seal was not created by the message transmitter.");
       return false;
     }
