@@ -18,7 +18,7 @@ import org.hyperledger.besu.consensus.common.bft.ConsensusRoundIdentifier;
 import org.hyperledger.besu.consensus.common.bft.payload.SignedData;
 import org.hyperledger.besu.consensus.qbft.core.messagewrappers.Commit;
 import org.hyperledger.besu.consensus.qbft.core.payload.CommitPayload;
-import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 
@@ -103,7 +103,7 @@ public class CommitValidator {
 
     final Optional<Address> commitSealCreator =
         Address.signatureToAddress(
-            SignatureAlgorithmFactory.getInstance(),
+            DSAProviderFactory.getActiveDSA(),
             payload.getCommitSeal(),
             Optional.empty(),
             expectedCommitDigest);

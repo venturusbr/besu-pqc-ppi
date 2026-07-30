@@ -14,7 +14,7 @@
  */
 package org.hyperledger.besu.consensus.common.bft;
 
-import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
@@ -106,7 +106,7 @@ public class BftBlockHashing {
         .map(
             p ->
                 Address.signatureToAddress(
-                        SignatureAlgorithmFactory.getInstance(), p, Optional.empty(), committerHash)
+                        DSAProviderFactory.getActiveDSA(), p, Optional.empty(), committerHash)
                     .orElse(null))
         .collect(Collectors.toList());
   }

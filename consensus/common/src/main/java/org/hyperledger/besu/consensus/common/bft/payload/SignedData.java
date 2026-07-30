@@ -14,8 +14,8 @@
  */
 package org.hyperledger.besu.consensus.common.bft.payload;
 
-import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.SignatureValidationContext;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
@@ -56,7 +56,7 @@ public class SignedData<M extends Payload> implements Authored {
     final Hash msgHash = payload.hashForSignature();
     final Address sender =
         Address.signatureToAddress(
-                SignatureAlgorithmFactory.getInstance(), signature, Optional.empty(), msgHash)
+                DSAProviderFactory.getActiveDSA(), signature, Optional.empty(), msgHash)
             .orElse(null);
     return new SignedData<>(payload, sender, signature);
   }

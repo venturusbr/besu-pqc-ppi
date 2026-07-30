@@ -65,6 +65,11 @@ public class DigitalSignatureAlgorithmProvider implements NodeKeyProvider, KeyMa
     }
 
     @Override
+    public DigitalSignatureAlgorithm getActiveDSA() {
+        return config.getNodeActiveDSA();
+    }
+
+    @Override
     public PublicKey getPublicKey() {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'getPublicKey'");

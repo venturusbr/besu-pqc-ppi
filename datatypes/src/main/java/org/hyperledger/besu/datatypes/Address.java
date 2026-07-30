@@ -18,7 +18,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static org.hyperledger.besu.crypto.Hash.keccak256;
 
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
-import org.hyperledger.besu.crypto.PublicKeyRecoverable;
 import org.hyperledger.besu.crypto.key.PublicKeyHandler;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.ethereum.rlp.RLP;
@@ -173,19 +172,18 @@ public class Address extends BytesHolder {
   }
 
   /**
-   * Converts a signature to the {@link Address} of its signer, resolving the public key first:
+   * Converts a signature to the {@link Address} of its signer, by resolving the public key --
    * recovering it when {@code signatureAlgorithm} supports public key recovery, or otherwise
-   * trusting {@code maybePartialPk} and cryptographically verifying it against {@code signature}
-   * and {@code dataHash}, since resolution alone performs no such check for non-recoverable
-   * algorithms.
+   * trusting {@code maybePartialPk} -- and extracting the address from it. This does not verify
+   * the signature; callers that need that guarantee must verify it themselves (e.g. via {@link
+   * org.hyperledger.besu.crypto.providers.VerifierProvider}) before trusting the returned address.
    *
    * @param signatureAlgorithm the algorithm that produced the signature
    * @param signature the signature from which an address is to be extracted
    * @param maybePartialPk the public key to use when the algorithm cannot recover one from the
    *     signature
    * @param dataHash the hash of the data which was signed
-   * @return the address of the signer, or empty if the public key could not be resolved or the
-   *     signature does not verify against it
+   * @return the address of the signer, or empty if the public key could not be resolved
    */
   public static Optional<Address> signatureToAddress(
       final DigitalSignatureAlgorithm signatureAlgorithm,
@@ -202,17 +200,8 @@ public class Address extends BytesHolder {
     } catch (final RuntimeException e) {
       return Optional.empty();
     }
-    if (maybePublicKey.isEmpty()) {
-      return Optional.empty();
-    }
 
-    final PublicKey publicKey = maybePublicKey.get();
-    if (!(signatureAlgorithm instanceof PublicKeyRecoverable)
-        && !Boolean.TRUE.equals(signatureAlgorithm.verify(dataHashBytes, signature, publicKey))) {
-      return Optional.empty();
-    }
-
-    return Optional.of(Address.extract(publicKey));
+    return maybePublicKey.map(Address::extract);
   }
 
   /**

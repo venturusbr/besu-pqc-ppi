@@ -16,7 +16,7 @@ package org.hyperledger.besu.consensus.ibftlegacy;
 
 import org.hyperledger.besu.consensus.common.bft.BftBlockHeaderFunctions;
 import org.hyperledger.besu.consensus.common.bft.BftExtraData;
-import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
@@ -106,7 +106,7 @@ public class IbftBlockHashing {
       final BlockHeader header, final IbftLegacyExtraData ibftExtraData) {
     final Hash proposerHash = calculateDataHashForProposerSeal(header, ibftExtraData);
     return Address.signatureToAddress(
-            SignatureAlgorithmFactory.getInstance(),
+            DSAProviderFactory.getActiveDSA(),
             ibftExtraData.getProposerSeal(),
             Optional.empty(),
             proposerHash)
@@ -129,7 +129,7 @@ public class IbftBlockHashing {
         .map(
             p ->
                 Address.signatureToAddress(
-                        SignatureAlgorithmFactory.getInstance(), p, Optional.empty(), committerHash)
+                        DSAProviderFactory.getActiveDSA(), p, Optional.empty(), committerHash)
                     .orElse(null))
         .collect(Collectors.toList());
   }
