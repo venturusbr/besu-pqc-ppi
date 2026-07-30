@@ -16,15 +16,16 @@ package org.hyperledger.besu.consensus.ibftlegacy;
 
 import org.hyperledger.besu.consensus.common.bft.BftBlockHeaderFunctions;
 import org.hyperledger.besu.consensus.common.bft.BftExtraData;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.BlockHeaderBuilder;
-import org.hyperledger.besu.ethereum.core.Util;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPOutput;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -104,8 +105,11 @@ public class IbftBlockHashing {
   public static Address recoverProposerAddress(
       final BlockHeader header, final IbftLegacyExtraData ibftExtraData) {
     final Hash proposerHash = calculateDataHashForProposerSeal(header, ibftExtraData);
-    Address addr = Util.signatureToAddress(ibftExtraData.getProposerSeal(), proposerHash);
-    return addr;
+    return Address.signatureToAddress(
+        DSAProviderFactory.getActiveDSA(),
+        ibftExtraData.getProposerSeal(),
+        Optional.empty(),
+        proposerHash);
   }
 
   /**
@@ -121,7 +125,10 @@ public class IbftBlockHashing {
         IbftBlockHashing.calculateDataHashForCommittedSeal(header, ibftExtraData);
 
     return ibftExtraData.getSeals().stream()
-        .map(p -> Util.signatureToAddress(p, committerHash))
+        .map(
+            p ->
+                Address.signatureToAddress(
+                    DSAProviderFactory.getActiveDSA(), p, Optional.empty(), committerHash))
         .collect(Collectors.toList());
   }
 

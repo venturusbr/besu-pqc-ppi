@@ -13,4 +13,13 @@ public interface VerifierProvider {
     DSAParametersSet getActiveDsaParametersSet();
     Boolean verifySignature(final Bytes data, final Signature signature, final PublicKey pk);
     List<String> getAccountsSupportedDSANames();
+
+    /**
+     * Returns the {@link DigitalSignatureAlgorithm} this node is currently configured to use
+     * (e.g. via the node's active DSA configuration), as opposed to a per-account/transaction DSA
+     * looked up by id.
+     *
+     * @return the node's active digital signature algorithm
+     */
+    DigitalSignatureAlgorithm getActiveDSA();
 }

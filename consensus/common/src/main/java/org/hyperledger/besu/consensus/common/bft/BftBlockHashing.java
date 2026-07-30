@@ -14,14 +14,15 @@
  */
 package org.hyperledger.besu.consensus.common.bft;
 
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.BlockHeaderBuilder;
-import org.hyperledger.besu.ethereum.core.Util;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPOutput;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -102,7 +103,10 @@ public class BftBlockHashing {
     final Hash committerHash = calculateDataHashForCommittedSeal(header, bftExtraData);
 
     return bftExtraData.getSeals().stream()
-        .map(p -> Util.signatureToAddress(p, committerHash))
+        .map(
+            p ->
+                Address.signatureToAddress(
+                    DSAProviderFactory.getActiveDSA(), p, Optional.empty(), committerHash))
         .collect(Collectors.toList());
   }
 

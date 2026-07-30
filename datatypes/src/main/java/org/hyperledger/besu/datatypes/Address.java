@@ -17,12 +17,15 @@ package org.hyperledger.besu.datatypes;
 import static com.google.common.base.Preconditions.checkArgument;
 import static org.hyperledger.besu.crypto.Hash.keccak256;
 
-import org.hyperledger.besu.crypto.SECPPublicKey;
+import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
+import org.hyperledger.besu.crypto.key.PublicKeyHandler;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.ethereum.rlp.RLP;
 import org.hyperledger.besu.ethereum.rlp.RLPException;
 import org.hyperledger.besu.ethereum.rlp.RLPInput;
 
 import java.security.PublicKey;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -166,6 +169,37 @@ public class Address extends BytesHolder {
    */
   public static Address extract(final PublicKey publicKey) {
     return Address.extract(keccak256(Bytes.wrap(publicKey.getEncoded())));
+  }
+
+  /**
+   * Converts a signature to the {@link Address} of its signer, by resolving the public key --
+   * recovering it when {@code signatureAlgorithm} supports public key recovery, or otherwise
+   * trusting {@code maybePartialPk} -- and extracting the address from it. This does not verify
+   * the signature; callers that need that guarantee must verify it themselves (e.g. via {@link
+   * org.hyperledger.besu.crypto.providers.VerifierProvider}) before trusting the returned address.
+   *
+   * @param signatureAlgorithm the algorithm that produced the signature
+   * @param signature the signature from which an address is to be extracted
+   * @param maybePartialPk the public key to use when the algorithm cannot recover one from the
+   *     signature
+   * @param dataHash the hash of the data which was signed
+   * @return the address of the signer
+   * @throws IllegalStateException if the public key could not be resolved (e.g. recovery failed,
+   *     or no partial public key was provided for a non-recoverable algorithm)
+   */
+  public static Address signatureToAddress(
+      final DigitalSignatureAlgorithm signatureAlgorithm,
+      final Signature signature,
+      final Optional<PublicKey> maybePartialPk,
+      final Hash dataHash) {
+    final Bytes32 dataHashBytes = Bytes32.wrap(dataHash.getBytes());
+
+    final PublicKey publicKey =
+        PublicKeyHandler.resolvePublicKey(
+                signatureAlgorithm, signature, maybePartialPk, dataHashBytes)
+            .get();
+
+    return Address.extract(publicKey);
   }
 
   /**

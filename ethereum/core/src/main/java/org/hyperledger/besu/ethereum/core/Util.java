@@ -15,9 +15,6 @@
 package org.hyperledger.besu.ethereum.core;
 
 import org.hyperledger.besu.crypto.SECPPublicKey;
-import org.hyperledger.besu.crypto.SECPSignature;
-import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
-import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.rlp.RLP;
@@ -32,24 +29,6 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 
 public class Util {
-
-  /**
-   * Converts a Signature to an Address, underlying math requires the hash of the data used to
-   * create the signature.
-   *
-   * @param seal the signature from which an address is to be extracted
-   * @param dataHash the hash of the data which was signed.
-   * @return The Address of the Ethereum node which signed the data defined by the supplied dataHash
-   */
-  public static Address signatureToAddress(final Signature seal, final Hash dataHash) {
-    if (!(seal instanceof SECPSignature)) {
-      return null;
-    }
-    return SignatureAlgorithmFactory.getInstance()
-        .recoverPublicKeyFromSignature(Bytes32.wrap(dataHash.getBytes()), (SECPSignature) seal)
-        .map(Util::publicKeyToAddress)
-        .orElse(null);
-  }
 
   public static Address publicKeyToAddress(final SECPPublicKey publicKey) {
     return publicKeyToAddress(publicKey.getEncodedBytes());

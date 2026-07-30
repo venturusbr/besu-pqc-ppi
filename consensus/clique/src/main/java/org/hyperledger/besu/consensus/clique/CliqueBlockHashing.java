@@ -15,12 +15,13 @@
 package org.hyperledger.besu.consensus.clique;
 
 import org.hyperledger.besu.crypto.SECPSignature;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
-import org.hyperledger.besu.ethereum.core.Util;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPOutput;
 
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.apache.tuweni.bytes.Bytes;
@@ -62,7 +63,11 @@ public class CliqueBlockHashing {
           "Supplied cliqueExtraData does not include a proposer " + "seal");
     }
     final Hash proposerHash = calculateDataHashForProposerSeal(header, cliqueExtraData);
-    return Util.signatureToAddress(cliqueExtraData.getProposerSeal().get(), proposerHash);
+    return Address.signatureToAddress(
+        DSAProviderFactory.getActiveDSA(),
+        cliqueExtraData.getProposerSeal().get(),
+        Optional.empty(),
+        proposerHash);
   }
 
   private static Bytes serializeHeaderWithoutProposerSeal(
