@@ -219,7 +219,7 @@ public class QbftController implements QbftEventHandler {
     }
 
     if (processMessage(bftMessage, message)) {
-      gossiper.send(message, isReplayed);
+      gossiper.send(message, bftMessage.getAuthor(), isReplayed);
       handleMessage.accept(bftMessage);
     }
   }
