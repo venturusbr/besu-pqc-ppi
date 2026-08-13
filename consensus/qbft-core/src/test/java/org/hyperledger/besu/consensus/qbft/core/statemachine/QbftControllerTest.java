@@ -165,11 +165,11 @@ public class QbftControllerTest {
     verify(blockHeightManager, atLeastOnce()).getChainHeight();
     verify(blockHeightManager, never()).handleProposalPayload(proposal);
     verify(blockHeightManager).handlePreparePayload(prepare);
-    verify(qbftGossiper).send(prepareMessage, true);
+    verify(qbftGossiper).send(prepareMessage, validator, true);
     verify(blockHeightManager).handleCommitPayload(commit);
-    verify(qbftGossiper).send(commitMessage, true);
+    verify(qbftGossiper).send(commitMessage, validator, true);
     verify(blockHeightManager).handleRoundChangePayload(roundChange);
-    verify(qbftGossiper).send(roundChangeMessage, true);
+    verify(qbftGossiper).send(roundChangeMessage, validator, true);
   }
 
   @Test
@@ -194,13 +194,13 @@ public class QbftControllerTest {
     verify(blockHeightManager, atLeastOnce()).getChainHeight();
     verify(futureMessageBuffer, times(2)).retrieveMessagesForHeight(5L);
     verify(blockHeightManager).handleProposalPayload(proposal);
-    verify(qbftGossiper).send(proposalMessage, true);
+    verify(qbftGossiper).send(proposalMessage, validator, true);
     verify(blockHeightManager).handlePreparePayload(prepare);
-    verify(qbftGossiper).send(prepareMessage, true);
+    verify(qbftGossiper).send(prepareMessage, validator, true);
     verify(blockHeightManager).handleCommitPayload(commit);
-    verify(qbftGossiper).send(commitMessage, true);
+    verify(qbftGossiper).send(commitMessage, validator, true);
     verify(blockHeightManager).handleRoundChangePayload(roundChange);
-    verify(qbftGossiper).send(roundChangeMessage, true);
+    verify(qbftGossiper).send(roundChangeMessage, validator, true);
   }
 
   @Test
@@ -250,7 +250,7 @@ public class QbftControllerTest {
 
     verify(futureMessageBuffer, never()).addMessage(anyLong(), any());
     verify(blockHeightManager).handleProposalPayload(proposal);
-    verify(qbftGossiper).send(proposalMessage, false);
+    verify(qbftGossiper).send(proposalMessage, validator, false);
     verify(blockHeightManager, atLeastOnce()).getChainHeight();
     verifyNoMoreInteractions(blockHeightManager);
   }
@@ -264,7 +264,7 @@ public class QbftControllerTest {
 
     verify(futureMessageBuffer, never()).addMessage(anyLong(), any());
     verify(blockHeightManager).handlePreparePayload(prepare);
-    verify(qbftGossiper).send(prepareMessage, false);
+    verify(qbftGossiper).send(prepareMessage, validator, false);
     verify(blockHeightManager, atLeastOnce()).getChainHeight();
     verifyNoMoreInteractions(blockHeightManager);
   }
@@ -278,7 +278,7 @@ public class QbftControllerTest {
 
     verify(futureMessageBuffer, never()).addMessage(anyLong(), any());
     verify(blockHeightManager).handleCommitPayload(commit);
-    verify(qbftGossiper).send(commitMessage, false);
+    verify(qbftGossiper).send(commitMessage, validator, false);
     verify(blockHeightManager, atLeastOnce()).getChainHeight();
     verifyNoMoreInteractions(blockHeightManager);
   }
@@ -292,7 +292,7 @@ public class QbftControllerTest {
 
     verify(futureMessageBuffer, never()).addMessage(anyLong(), any());
     verify(blockHeightManager).handleRoundChangePayload(roundChange);
-    verify(qbftGossiper).send(roundChangeMessage, false);
+    verify(qbftGossiper).send(roundChangeMessage, validator, false);
     verify(blockHeightManager, atLeastOnce()).getChainHeight();
     verifyNoMoreInteractions(blockHeightManager);
   }

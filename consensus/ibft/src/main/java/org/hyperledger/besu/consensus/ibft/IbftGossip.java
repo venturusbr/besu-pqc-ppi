@@ -16,12 +16,6 @@ package org.hyperledger.besu.consensus.ibft;
 
 import org.hyperledger.besu.consensus.common.bft.Gossiper;
 import org.hyperledger.besu.consensus.common.bft.network.ValidatorMulticaster;
-import org.hyperledger.besu.consensus.common.bft.payload.Authored;
-import org.hyperledger.besu.consensus.ibft.messagedata.CommitMessageData;
-import org.hyperledger.besu.consensus.ibft.messagedata.IbftV2;
-import org.hyperledger.besu.consensus.ibft.messagedata.PrepareMessageData;
-import org.hyperledger.besu.consensus.ibft.messagedata.ProposalMessageData;
-import org.hyperledger.besu.consensus.ibft.messagedata.RoundChangeMessageData;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.p2p.rlpx.wire.Message;
 import org.hyperledger.besu.ethereum.p2p.rlpx.wire.MessageData;
@@ -48,31 +42,13 @@ public class IbftGossip implements Gossiper {
    * Retransmit a given IBFT message to other known validators nodes
    *
    * @param message The raw message to be gossiped
+   * @param author The author of the message, already known to the caller from its own decode
    */
   @Override
-  public void send(final Message message) {
+  public void send(final Message message, final Address author) {
     final MessageData messageData = message.getData();
-    final Authored decodedMessage;
-    switch (messageData.getCode()) {
-      case IbftV2.PROPOSAL:
-        decodedMessage = ProposalMessageData.fromMessageData(messageData).decode();
-        break;
-      case IbftV2.PREPARE:
-        decodedMessage = PrepareMessageData.fromMessageData(messageData).decode();
-        break;
-      case IbftV2.COMMIT:
-        decodedMessage = CommitMessageData.fromMessageData(messageData).decode();
-        break;
-      case IbftV2.ROUND_CHANGE:
-        decodedMessage = RoundChangeMessageData.fromMessageData(messageData).decode();
-        break;
-      default:
-        throw new IllegalArgumentException(
-            "Received message does not conform to any recognised IBFT message structure.");
-    }
     final List<Address> excludeAddressesList =
-        Lists.newArrayList(
-            message.getConnection().getPeerInfo().getAddress(), decodedMessage.getAuthor());
+        Lists.newArrayList(message.getConnection().getPeerInfo().getAddress(), author);
 
     multicaster.send(messageData, excludeAddressesList);
   }

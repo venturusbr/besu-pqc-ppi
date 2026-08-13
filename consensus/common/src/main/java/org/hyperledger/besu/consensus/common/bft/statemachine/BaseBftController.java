@@ -136,7 +136,7 @@ public abstract class BaseBftController implements BftEventHandler {
     }
 
     if (processMessage(bftMessage, message)) {
-      gossiper.send(message);
+      gossiper.send(message, bftMessage.getAuthor());
       handleMessage.accept(bftMessage);
     }
   }

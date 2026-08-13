@@ -14,6 +14,7 @@
  */
 package org.hyperledger.besu.consensus.common.bft;
 
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.p2p.rlpx.wire.Message;
 
 /** The interface Gossiper. */
@@ -23,6 +24,8 @@ public interface Gossiper {
    * Send.
    *
    * @param message the message
+   * @param author the author of the message, used to exclude it from the rebroadcast. Supplied by
+   *     the caller so the gossiper does not have to decode the message a second time.
    */
-  void send(Message message);
+  void send(Message message, Address author);
 }

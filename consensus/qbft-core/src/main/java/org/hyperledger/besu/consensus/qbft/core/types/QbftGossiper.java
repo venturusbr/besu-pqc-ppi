@@ -14,6 +14,8 @@
  */
 package org.hyperledger.besu.consensus.qbft.core.types;
 
+import org.hyperledger.besu.datatypes.Address;
+
 /** Responsible for rebroadcasting QBFT messages to known validators */
 public interface QbftGossiper {
 
@@ -21,7 +23,9 @@ public interface QbftGossiper {
    * Send a QBFT message to other QBFT validators
    *
    * @param message the QBFT message to send
+   * @param author the author of the message, used to exclude it from the rebroadcast. Supplied by
+   *     the caller so the gossiper does not have to decode the message a second time.
    * @param isReplay true if this message is being replayed from the future message buffer
    */
-  void send(final QbftMessage message, final boolean isReplay);
+  void send(final QbftMessage message, final Address author, final boolean isReplay);
 }

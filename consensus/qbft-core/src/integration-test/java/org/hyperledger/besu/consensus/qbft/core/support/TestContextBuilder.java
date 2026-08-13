@@ -309,7 +309,7 @@ public class TestContextBuilder {
 
     final QbftGossiper gossiper =
         useGossip
-            ? new QbftGossiperImpl(uniqueMulticaster, blockEncoder)
+            ? new QbftGossiperImpl(uniqueMulticaster)
             : mock(QbftGossiper.class);
 
     final StubbedSynchronizerUpdater synchronizerUpdater = new StubbedSynchronizerUpdater();
