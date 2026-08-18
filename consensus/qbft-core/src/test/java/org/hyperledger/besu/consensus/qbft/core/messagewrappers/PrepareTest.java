@@ -24,7 +24,6 @@ import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
-import org.hyperledger.besu.ethereum.core.Util;
 
 import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Test;
@@ -34,7 +33,7 @@ public class PrepareTest {
   @Test
   public void canRoundTripAPrepareMessage() {
     final NodeKey nodeKey = NodeKeyUtils.generate();
-    final Address addr = Util.publicKeyToAddress(nodeKey.getPublicKey());
+    final Address addr = Address.extract(nodeKey.getPublicKey());
 
     final PreparePayload preparePayload =
         new PreparePayload(new ConsensusRoundIdentifier(1, 1), Hash.ZERO);
@@ -42,7 +41,7 @@ public class PrepareTest {
     final SignedData<PreparePayload> signedPreparePayload =
         SignedData.create(
             preparePayload,
-            nodeKey.sign(Bytes32.wrap(preparePayload.hashForSignature().getBytes())));
+            nodeKey.sign(Bytes32.wrap(preparePayload.hashForSignature().getBytes()), "seal"));
 
     final Prepare prepareMsg = new Prepare(signedPreparePayload);
 

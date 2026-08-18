@@ -23,7 +23,6 @@ import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
-import org.hyperledger.besu.ethereum.core.Util;
 
 import java.util.List;
 import java.util.Optional;
@@ -38,7 +37,7 @@ public class BftExtraDataFixture {
   public static BftExtraData createExtraData(
       final BlockHeader header, final BftExtraDataCodec bftExtraDataCodec) {
     final NodeKey proposerNodeKey = NodeKeyUtils.generate();
-    final Address proposerAddress = Util.publicKeyToAddress(proposerNodeKey.getPublicKey());
+    final Address proposerAddress = Address.extract(proposerNodeKey.getPublicKey());
     final List<Address> validators = singletonList(proposerAddress);
 
     return createExtraData(
@@ -122,7 +121,7 @@ public class BftExtraDataFixture {
 
                   return committerNodeKeys
                       .get(i)
-                      .sign(Bytes32.wrap(headerHashForCommitters.getBytes()));
+                      .sign(Bytes32.wrap(headerHashForCommitters.getBytes()), "seal");
                 })
             .collect(Collectors.toList());
 

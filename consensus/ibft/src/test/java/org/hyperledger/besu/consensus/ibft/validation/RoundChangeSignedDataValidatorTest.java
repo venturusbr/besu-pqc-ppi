@@ -34,7 +34,6 @@ import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.core.Block;
-import org.hyperledger.besu.ethereum.core.Util;
 
 import java.util.Collections;
 import java.util.List;
@@ -71,8 +70,8 @@ public class RoundChangeSignedDataValidatorTest {
 
   @BeforeEach
   public void setup() {
-    validators.add(Util.publicKeyToAddress(proposerKey.getPublicKey()));
-    validators.add(Util.publicKeyToAddress(validatorKey.getPublicKey()));
+    validators.add(Address.extract(proposerKey.getPublicKey()));
+    validators.add(Address.extract(validatorKey.getPublicKey()));
 
     when(block.getHash()).thenReturn(Hash.fromHexStringLenient("1"));
     when(validatorFactory.createAt(any())).thenReturn(basicValidator);

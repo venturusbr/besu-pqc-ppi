@@ -71,7 +71,6 @@ import org.hyperledger.besu.ethereum.core.BlockBody;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.BlockHeaderTestFixture;
 import org.hyperledger.besu.ethereum.core.MiningConfiguration;
-import org.hyperledger.besu.ethereum.core.Util;
 import org.hyperledger.besu.ethereum.mainnet.BalConfiguration;
 import org.hyperledger.besu.ethereum.mainnet.DefaultProtocolSchedule;
 import org.hyperledger.besu.ethereum.mainnet.ProtocolSchedule;
@@ -145,7 +144,7 @@ public class IbftBlockHeightManagerTest {
   public void setup() {
     for (int i = 0; i < 3; i++) {
       final NodeKey nodeKey = NodeKeyUtils.generate();
-      validators.add(Util.publicKeyToAddress(nodeKey.getPublicKey()));
+      validators.add(Address.extract(nodeKey.getPublicKey()));
       validatorMessageFactory.add(new MessageFactory(nodeKey));
     }
 

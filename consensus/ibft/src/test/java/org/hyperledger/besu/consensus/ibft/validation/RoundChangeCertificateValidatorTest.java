@@ -36,7 +36,6 @@ import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.core.Block;
-import org.hyperledger.besu.ethereum.core.Util;
 
 import java.util.Collections;
 import java.util.List;
@@ -69,9 +68,9 @@ public class RoundChangeCertificateValidatorTest {
 
   @BeforeEach
   public void setup() {
-    validators.add(Util.publicKeyToAddress(proposerKey.getPublicKey()));
-    validators.add(Util.publicKeyToAddress(validatorKey.getPublicKey()));
-    validators.add(Util.publicKeyToAddress(otherValidatorKey.getPublicKey()));
+    validators.add(Address.extract(proposerKey.getPublicKey()));
+    validators.add(Address.extract(validatorKey.getPublicKey()));
+    validators.add(Address.extract(otherValidatorKey.getPublicKey()));
 
     proposedBlock =
         ProposedBlockHelpers.createProposalBlock(validators, roundIdentifier, bftExtraDataEncoder);

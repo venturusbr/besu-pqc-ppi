@@ -30,7 +30,6 @@ import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.core.Block;
-import org.hyperledger.besu.ethereum.core.Util;
 
 import java.util.List;
 import java.util.Optional;
@@ -62,12 +61,12 @@ public class SignedDataValidatorTest {
 
   @BeforeEach
   public void setup() {
-    validators.add(Util.publicKeyToAddress(proposerKey.getPublicKey()));
-    validators.add(Util.publicKeyToAddress(validatorKey.getPublicKey()));
+    validators.add(Address.extract(proposerKey.getPublicKey()));
+    validators.add(Address.extract(validatorKey.getPublicKey()));
 
     validator =
         new SignedDataValidator(
-            validators, Util.publicKeyToAddress(proposerKey.getPublicKey()), roundIdentifier);
+            validators, Address.extract(proposerKey.getPublicKey()), roundIdentifier);
 
     when(block.getHash()).thenReturn(Hash.fromHexStringLenient("1"));
   }
@@ -83,7 +82,7 @@ public class SignedDataValidatorTest {
   public void receivingACommitMessageBeforeProposalFails() {
     final Commit commitMsg =
         proposerMessageFactory.createCommit(
-            roundIdentifier, Hash.ZERO, proposerKey.sign(Bytes32.wrap(block.getHash().getBytes())));
+            roundIdentifier, Hash.ZERO, proposerKey.sign(Bytes32.wrap(block.getHash().getBytes()), "seal"));
 
     assertThat(validator.validateCommit(commitMsg.getSignedPayload())).isFalse();
   }
@@ -135,7 +134,7 @@ public class SignedDataValidatorTest {
         validatorMessageFactory.createCommit(
             invalidRoundIdentifier,
             block.getHash(),
-            proposerKey.sign(Bytes32.wrap(block.getHash().getBytes())));
+            proposerKey.sign(Bytes32.wrap(block.getHash().getBytes()), "seal"));
 
     assertThat(validator.validateProposal(proposalMsg.getSignedPayload())).isTrue();
     assertThat(validator.validatePrepare(prepareMsg.getSignedPayload())).isFalse();
@@ -162,7 +161,7 @@ public class SignedDataValidatorTest {
         proposerMessageFactory.createCommit(
             roundIdentifier,
             block.getHash(),
-            nonValidatorKey.sign(Bytes32.wrap(block.getHash().getBytes())));
+            nonValidatorKey.sign(Bytes32.wrap(block.getHash().getBytes()), "seal"));
 
     assertThat(validator.validateProposal(proposalMsg.getSignedPayload())).isTrue();
     assertThat(validator.validateCommit(commitMsg.getSignedPayload())).isFalse();
@@ -177,13 +176,13 @@ public class SignedDataValidatorTest {
         proposerMessageFactory.createCommit(
             roundIdentifier,
             block.getHash(),
-            proposerKey.sign(Bytes32.wrap(block.getHash().getBytes())));
+            proposerKey.sign(Bytes32.wrap(block.getHash().getBytes()), "seal"));
 
     final Commit validatorCommitMsg =
         validatorMessageFactory.createCommit(
             roundIdentifier,
             block.getHash(),
-            validatorKey.sign(Bytes32.wrap(block.getHash().getBytes())));
+            validatorKey.sign(Bytes32.wrap(block.getHash().getBytes()), "seal"));
 
     assertThat(validator.validateProposal(proposalMsg.getSignedPayload())).isTrue();
     assertThat(validator.validateCommit(proposerCommitMsg.getSignedPayload())).isTrue();

@@ -375,7 +375,7 @@ public class QbftRoundTest {
     final RoundState roundState = new RoundState(roundIdentifier, QUORUM_SIZE, messageValidator);
     final NodeKey throwingNodeKey = mock(NodeKey.class);
     final MessageFactory throwingMessageFactory = new MessageFactory(throwingNodeKey, blockEncoder);
-    when(throwingNodeKey.sign(any())).thenThrow(new SecurityModuleException("Hsm is Offline"));
+    when(throwingNodeKey.sign(any(), any())).thenThrow(new SecurityModuleException("Hsm is Offline"));
 
     final QbftRound round =
         new QbftRound(

@@ -16,7 +16,7 @@ package org.hyperledger.besu.consensus.common.bft.inttest;
 
 import org.hyperledger.besu.consensus.common.bft.EventMultiplexer;
 import org.hyperledger.besu.consensus.common.bft.events.BftEvents;
-import org.hyperledger.besu.crypto.SECPSignature;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
@@ -46,7 +46,7 @@ public abstract class DefaultValidatorPeer {
       final NodeParams nodeParams, final EventMultiplexer localEventMultiplexer) {
     this.nodeKey = nodeParams.getNodeKey();
     this.nodeAddress = nodeParams.getAddress();
-    final Bytes nodeId = nodeKey.getPublicKey().getEncodedBytes();
+    final Bytes nodeId = Bytes.wrap(nodeKey.getPublicKey().getEncoded());
     this.peerConnection = StubbedPeerConnection.create(nodeId);
     this.localEventMultiplexer = localEventMultiplexer;
   }
@@ -63,8 +63,8 @@ public abstract class DefaultValidatorPeer {
     return peerConnection;
   }
 
-  public SECPSignature getBlockSignature(final Hash digest) {
-    return nodeKey.sign(Bytes32.wrap(digest.getBytes()));
+  public Signature getBlockSignature(final Hash digest) {
+    return nodeKey.sign(Bytes32.wrap(digest.getBytes()), "seal");
   }
 
   public void handleReceivedMessage(final MessageData message) {

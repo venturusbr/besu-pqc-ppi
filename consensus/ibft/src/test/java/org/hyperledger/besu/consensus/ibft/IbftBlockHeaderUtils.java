@@ -27,7 +27,6 @@ import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.BlockHeaderTestFixture;
 import org.hyperledger.besu.ethereum.core.Difficulty;
-import org.hyperledger.besu.ethereum.core.Util;
 
 import java.util.List;
 import java.util.Optional;
@@ -93,7 +92,7 @@ public class IbftBlockHeaderUtils {
     builder.mixHash(
         Hash.fromHexString("0x63746963616c2062797a616e74696e65206661756c7420746f6c6572616e6365"));
     builder.difficulty(Difficulty.ONE);
-    builder.coinbase(Util.publicKeyToAddress(proposerNodeKey.getPublicKey()));
+    builder.coinbase(Address.extract(proposerNodeKey.getPublicKey()));
     builder.blockHeaderFunctions(BftBlockHeaderFunctions.forCommittedSeal(ibftExtraDataEncoder));
 
     if (modifier != null) {

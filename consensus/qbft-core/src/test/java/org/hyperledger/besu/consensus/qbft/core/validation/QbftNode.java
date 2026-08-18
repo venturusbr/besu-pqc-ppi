@@ -19,7 +19,6 @@ import org.hyperledger.besu.consensus.qbft.core.types.QbftBlockCodec;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.ethereum.core.Util;
 
 public class QbftNode {
 
@@ -32,7 +31,7 @@ public class QbftNode {
   }
 
   public Address getAddress() {
-    return Util.publicKeyToAddress(nodeKey.getPublicKey());
+    return Address.extract(nodeKey.getPublicKey());
   }
 
   public MessageFactory getMessageFactory() {

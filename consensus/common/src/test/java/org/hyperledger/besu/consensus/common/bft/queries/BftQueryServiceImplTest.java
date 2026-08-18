@@ -106,7 +106,7 @@ public class BftQueryServiceImplTest {
 
     final List<Address> signers =
         signingKeys.stream()
-            .map(nodeKey -> Util.publicKeyToAddress(nodeKey.getPublicKey()))
+            .map(nodeKey -> Address.extract(nodeKey.getPublicKey()))
             .collect(Collectors.toList());
     when(bftBlockInterface.getCommitters(any())).thenReturn(signers);
 
@@ -142,7 +142,7 @@ public class BftQueryServiceImplTest {
 
     final List<Address> validators =
         signingKeys.stream()
-            .map(nodeKey -> Util.publicKeyToAddress(nodeKey.getPublicKey()))
+            .map(nodeKey -> Address.extract(nodeKey.getPublicKey()))
             .collect(Collectors.toList());
     when(validatorProvider.getValidatorsAtHead()).thenReturn(validators);
 

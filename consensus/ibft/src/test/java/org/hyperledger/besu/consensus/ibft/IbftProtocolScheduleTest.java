@@ -143,7 +143,7 @@ public class IbftProtocolScheduleTest {
 
     @Provides
     Address provideProposerAddress(final NodeKey proposerNodeKey) {
-      return Util.publicKeyToAddress(proposerNodeKey.getPublicKey());
+      return Address.extract(proposerNodeKey.getPublicKey());
     }
 
     @Provides

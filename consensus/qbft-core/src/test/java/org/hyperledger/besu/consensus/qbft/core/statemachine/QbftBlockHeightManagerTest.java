@@ -62,7 +62,6 @@ import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
-import org.hyperledger.besu.ethereum.core.Util;
 import org.hyperledger.besu.ethereum.p2p.rlpx.wire.MessageData;
 import org.hyperledger.besu.util.Subscribers;
 
@@ -88,7 +87,7 @@ import org.mockito.quality.Strictness;
 public class QbftBlockHeightManagerTest {
 
   private final NodeKey nodeKey = NodeKeyUtils.generate();
-  private final Address localAddress = Util.publicKeyToAddress(nodeKey.getPublicKey());
+  private final Address localAddress = Address.extract(nodeKey.getPublicKey());
   private final QbftBlockHeaderTestFixture headerTestFixture = new QbftBlockHeaderTestFixture();
   private MessageFactory messageFactory;
 
@@ -124,7 +123,7 @@ public class QbftBlockHeightManagerTest {
 
     for (int i = 0; i < 3; i++) {
       final NodeKey nodeKey = NodeKeyUtils.generate();
-      validators.add(Util.publicKeyToAddress(nodeKey.getPublicKey()));
+      validators.add(Address.extract(nodeKey.getPublicKey()));
       validatorMessageFactory.add(new MessageFactory(nodeKey, blockEncoder));
     }
 
