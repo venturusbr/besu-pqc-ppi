@@ -2,6 +2,7 @@ package org.hyperledger.besu.crypto.providers;
 
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.config.DigitalSignatureAlgorithmConfiguration;
 import org.hyperledger.besu.crypto.config.KeyConfiguration;
 
@@ -38,5 +39,19 @@ public class DSAProviderFactory {
     }
     final DigitalSignatureAlgorithm activeDSA = nodeDsaProvider.getActiveDSA();
     return activeDSA != null ? activeDSA : SignatureAlgorithmFactory.getInstance();
+  }
+
+  /**
+   * Returns the node's active {@link DSAParametersSet}, falling back to the default signature
+   * algorithm's parameters when no DSA provider has been configured (e.g. in unit tests, which
+   * never call {@link #setDsaProvider}). Never returns null.
+   *
+   * @return the active DSA parameters set
+   */
+  public static DSAParametersSet getActiveDsaParametersSet() {
+    if (nodeDsaProvider == null) {
+      return SignatureAlgorithmFactory.getInstance().getDsaParametersSet();
+    }
+    return nodeDsaProvider.getActiveDsaParametersSet();
   }
 }

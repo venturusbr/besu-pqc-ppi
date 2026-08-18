@@ -61,7 +61,7 @@ public class CommitPayload extends QbftPayload {
     rlpInput.enterList();
     final ConsensusRoundIdentifier roundIdentifier = readConsensusRound(rlpInput);
     final Hash digest = Payload.readDigest(rlpInput);
-    final DSAParametersSet dsaParams = DSAProviderFactory.getVerifierProvider().getActiveDsaParametersSet();
+    final DSAParametersSet dsaParams = DSAProviderFactory.getActiveDsaParametersSet();
     final Signature commitSeal =
         rlpInput.readBytes(bytes -> SignatureFactory.createSignatureFromBytes(bytes, dsaParams));
     rlpInput.leaveList();

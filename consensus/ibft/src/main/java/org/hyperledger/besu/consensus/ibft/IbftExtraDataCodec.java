@@ -99,7 +99,7 @@ public class IbftExtraDataCodec extends BftExtraDataCodec {
       vote = Optional.of(decodeVote(rlpInput));
     }
     final int round = rlpInput.readInt();
-    final DSAParametersSet dsaParams = DSAProviderFactory.getVerifierProvider().getActiveDsaParametersSet();
+    final DSAParametersSet dsaParams = DSAProviderFactory.getActiveDsaParametersSet();
     final List<Signature> seals =
         rlpInput.readList(
             rlp -> SignatureFactory.createSignatureFromBytes(rlp.readBytes(), dsaParams));
