@@ -26,10 +26,8 @@ import org.hyperledger.besu.consensus.common.bft.BftContext;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.ProtocolContext;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
-import org.hyperledger.besu.ethereum.core.Util;
 
 import java.util.Collections;
 import java.util.List;
@@ -37,7 +35,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import com.google.common.collect.Lists;
-import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Test;
 
 public class BftCommitSealsValidationRuleTest {
@@ -53,7 +50,7 @@ public class BftCommitSealsValidationRuleTest {
 
     final List<Address> committerAddresses =
         committerNodeKeys.stream()
-            .map(nodeKey -> Util.publicKeyToAddress(nodeKey.getPublicKey()))
+            .map(nodeKey -> Address.extract(nodeKey.getPublicKey()))
             .sorted()
             .collect(Collectors.toList());
 
@@ -68,9 +65,7 @@ public class BftCommitSealsValidationRuleTest {
   @Test
   public void insufficientCommitSealsFailsValidation() {
     final NodeKey committerNodeKey = NodeKeyUtils.generate();
-    final Address committerAddress =
-        Address.extract(
-            Bytes32.wrap(Hash.hash(committerNodeKey.getPublicKey().getEncodedBytes()).getBytes()));
+    final Address committerAddress = Address.extract(committerNodeKey.getPublicKey());
 
     final List<Address> validators = singletonList(committerAddress);
     final BftContext bftContext = setupContextWithValidators(validators);
@@ -84,7 +79,7 @@ public class BftCommitSealsValidationRuleTest {
   @Test
   public void committerNotInValidatorListFailsValidation() {
     final NodeKey committerNodeKey = NodeKeyUtils.generate();
-    final Address committerAddress = Util.publicKeyToAddress(committerNodeKey.getPublicKey());
+    final Address committerAddress = Address.extract(committerNodeKey.getPublicKey());
 
     final List<Address> validators = singletonList(committerAddress);
 
@@ -95,7 +90,7 @@ public class BftCommitSealsValidationRuleTest {
     final ProtocolContext context =
         new ProtocolContext.Builder().withConsensusContext(bftContext).build();
     when(bftContext.getBlockInterface().getCommitters(any()))
-        .thenReturn(singletonList(Util.publicKeyToAddress(nonValidatorNodeKey.getPublicKey())));
+        .thenReturn(singletonList(Address.extract(nonValidatorNodeKey.getPublicKey())));
 
     assertThat(commitSealsValidationRule.validate(blockHeader, null, context)).isFalse();
   }
@@ -136,7 +131,7 @@ public class BftCommitSealsValidationRuleTest {
   @Test
   public void headerContainsDuplicateSealsFailsValidation() {
     final NodeKey committerNodeKey = NodeKeyUtils.generate();
-    final Address committerAddress = Util.publicKeyToAddress(committerNodeKey.getPublicKey());
+    final Address committerAddress = Address.extract(committerNodeKey.getPublicKey());
     final List<Address> validators = singletonList(committerAddress);
 
     final BftContext bftContext = setupContextWithValidators(validators);
@@ -154,10 +149,7 @@ public class BftCommitSealsValidationRuleTest {
 
     for (int i = 0; i < validatorCount; i++) { // need -1 to account for proposer
       final NodeKey committerNodeKey = NodeKeyUtils.generate();
-      validators.add(
-          Address.extract(
-              Bytes32.wrap(
-                  Hash.hash(committerNodeKey.getPublicKey().getEncodedBytes()).getBytes())));
+      validators.add(Address.extract(committerNodeKey.getPublicKey()));
     }
 
     Collections.sort(validators);

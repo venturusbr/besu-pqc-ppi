@@ -25,7 +25,6 @@ import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
-import org.hyperledger.besu.ethereum.core.Util;
 
 import java.math.BigInteger;
 
@@ -37,7 +36,7 @@ public class CommitTest {
   @Test
   public void canRoundTripACommitMessage() {
     final NodeKey nodeKey = NodeKeyUtils.generate();
-    final Address addr = Util.publicKeyToAddress(nodeKey.getPublicKey());
+    final Address addr = Address.extract(nodeKey.getPublicKey());
 
     final CommitPayload commitPayload =
         new CommitPayload(
@@ -48,7 +47,7 @@ public class CommitTest {
 
     final SignedData<CommitPayload> signedCommitPayload =
         SignedData.create(
-            commitPayload, nodeKey.sign(Bytes32.wrap(commitPayload.hashForSignature().getBytes())));
+            commitPayload, nodeKey.sign(Bytes32.wrap(commitPayload.hashForSignature().getBytes()), "seal"));
 
     final Commit commitMsg = new Commit(signedCommitPayload);
 

@@ -37,7 +37,6 @@ import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.core.Block;
-import org.hyperledger.besu.ethereum.core.Util;
 
 import java.math.BigInteger;
 import java.util.List;
@@ -72,7 +71,7 @@ public class RoundStateTest {
     for (int i = 0; i < 3; i++) {
       final NodeKey newNodeKey = NodeKeyUtils.generate();
       validatorKeys.add(newNodeKey);
-      validators.add(Util.publicKeyToAddress(newNodeKey.getPublicKey()));
+      validators.add(Address.extract(newNodeKey.getPublicKey()));
       validatorMessageFactories.add(new MessageFactory(newNodeKey));
     }
     lenient().when(block.getHash()).thenReturn(blockHash);

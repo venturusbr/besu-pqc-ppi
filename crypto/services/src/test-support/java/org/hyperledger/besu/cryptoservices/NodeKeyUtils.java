@@ -23,18 +23,19 @@ import org.apache.tuweni.bytes.Bytes32;
 public class NodeKeyUtils {
 
   public static NodeKey createFrom(final KeyPair keyPair) {
-    return new NodeKey(new KeyPairSecurityModule(keyPair));
+    return new NodeKey(new SecurityModuleAdapter(new KeyPairSecurityModule(keyPair)));
   }
 
   public static NodeKey createFrom(final Bytes32 privateKey) {
     final SignatureAlgorithm signatureAlgorithm = SignatureAlgorithmFactory.getInstance();
     final KeyPair keyPair =
         signatureAlgorithm.createKeyPair(signatureAlgorithm.createPrivateKey(privateKey));
-    return new NodeKey(new KeyPairSecurityModule(keyPair));
+    return new NodeKey(new SecurityModuleAdapter(new KeyPairSecurityModule(keyPair)));
   }
 
   public static NodeKey generate() {
     return new NodeKey(
-        new KeyPairSecurityModule(SignatureAlgorithmFactory.getInstance().generateKeyPair()));
+        new SecurityModuleAdapter(
+            new KeyPairSecurityModule(SignatureAlgorithmFactory.getInstance().generateKeyPair())));
   }
 }

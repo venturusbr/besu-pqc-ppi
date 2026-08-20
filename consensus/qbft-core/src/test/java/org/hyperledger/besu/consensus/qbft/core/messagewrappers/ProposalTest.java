@@ -31,7 +31,6 @@ import org.hyperledger.besu.consensus.qbft.core.types.QbftBlockCodec;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.ethereum.core.Util;
 import org.hyperledger.besu.ethereum.mainnet.block.access.list.BlockAccessList;
 
 import java.util.List;
@@ -63,12 +62,12 @@ public class ProposalTest {
     when(blockEncoder.readFrom(any())).thenReturn(BLOCK);
 
     final NodeKey nodeKey = NodeKeyUtils.generate();
-    final Address addr = Util.publicKeyToAddress(nodeKey.getPublicKey());
+    final Address addr = Address.extract(nodeKey.getPublicKey());
 
     final ProposalPayload payload = createProposalPayload(blockAccessList);
     final SignedData<ProposalPayload> signedPayload =
         SignedData.create(
-            payload, nodeKey.sign(Bytes32.wrap(payload.hashForSignature().getBytes())));
+            payload, nodeKey.sign(Bytes32.wrap(payload.hashForSignature().getBytes()), "seal"));
 
     final SignedData<PreparePayload> prepare = createPrepare(nodeKey);
     final SignedData<RoundChangePayload> roundChange = createRoundChange(nodeKey);
@@ -91,7 +90,7 @@ public class ProposalTest {
     final PreparePayload preparePayload =
         new PreparePayload(new ConsensusRoundIdentifier(1, 0), BLOCK.getHash());
     return SignedData.create(
-        preparePayload, nodeKey.sign(Bytes32.wrap(preparePayload.hashForSignature().getBytes())));
+        preparePayload, nodeKey.sign(Bytes32.wrap(preparePayload.hashForSignature().getBytes()), "seal"));
   }
 
   private SignedData<RoundChangePayload> createRoundChange(final NodeKey nodeKey) {
@@ -101,7 +100,7 @@ public class ProposalTest {
             Optional.of(new PreparedRoundMetadata(BLOCK.getHash(), 0)));
     return SignedData.create(
         roundChangePayload,
-        nodeKey.sign(Bytes32.wrap(roundChangePayload.hashForSignature().getBytes())));
+        nodeKey.sign(Bytes32.wrap(roundChangePayload.hashForSignature().getBytes()), "seal"));
   }
 
   private void assertProposal(

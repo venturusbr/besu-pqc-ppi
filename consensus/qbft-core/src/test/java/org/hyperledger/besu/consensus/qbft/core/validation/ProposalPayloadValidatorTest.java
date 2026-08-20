@@ -32,7 +32,6 @@ import org.hyperledger.besu.consensus.qbft.core.types.QbftBlockValidator;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.ethereum.core.Util;
 
 import java.util.Optional;
 
@@ -53,7 +52,7 @@ public class ProposalPayloadValidatorTest {
       new ConsensusRoundIdentifier(CHAIN_HEIGHT, 3);
 
   private final NodeKey nodeKey = NodeKeyUtils.generate();
-  private final Address expectedProposer = Util.publicKeyToAddress(nodeKey.getPublicKey());
+  private final Address expectedProposer = Address.extract(nodeKey.getPublicKey());
   private MessageFactory messageFactory;
   final ConsensusRoundIdentifier roundIdentifier =
       ConsensusRoundHelpers.createFrom(targetRound, 1, 0);

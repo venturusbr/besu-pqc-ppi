@@ -262,7 +262,7 @@ public class ProposalValidatorTest {
             validators
                 .getNode(2)
                 .getNodeKey()
-                .sign(Bytes32.wrap(preparedRoundChangePayload.hashForSignature().getBytes())));
+                .sign(Bytes32.wrap(preparedRoundChangePayload.hashForSignature().getBytes()), "seal"));
 
     roundChanges.add(preparedRoundChange);
 
@@ -401,7 +401,7 @@ public class ProposalValidatorTest {
             validators
                 .getNode(2)
                 .getNodeKey()
-                .sign(Bytes32.wrap(illegalPayload.hashForSignature().getBytes())));
+                .sign(Bytes32.wrap(illegalPayload.hashForSignature().getBytes()), "seal"));
 
     roundChanges.add(preparedRoundChange);
 
@@ -596,7 +596,8 @@ public class ProposalValidatorTest {
                 .getNode(3)
                 .getNodeKey()
                 .sign(
-                    Bytes32.wrap(illegalPreparedRoundChangePayload.hashForSignature().getBytes())));
+                    Bytes32.wrap(illegalPreparedRoundChangePayload.hashForSignature().getBytes()),
+                    "seal"));
 
     roundChanges.add(preparedRoundChange);
 
@@ -637,7 +638,7 @@ public class ProposalValidatorTest {
             validators
                 .getNode(2)
                 .getNodeKey()
-                .sign(Bytes32.wrap(preparedRoundChangePayload.hashForSignature().getBytes())));
+                .sign(Bytes32.wrap(preparedRoundChangePayload.hashForSignature().getBytes()), "seal"));
 
     roundChanges.add(preparedRoundChange);
 

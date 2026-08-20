@@ -17,7 +17,6 @@ package org.hyperledger.besu.consensus.common.bft.inttest;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.ethereum.core.Util;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,7 +55,7 @@ public class NetworkLayout {
 
     for (int i = 0; i < validatorCount; i++) {
       final NodeKey newNodeKey = NodeKeyUtils.generate();
-      final Address nodeAddress = Util.publicKeyToAddress(newNodeKey.getPublicKey());
+      final Address nodeAddress = Address.extract(newNodeKey.getPublicKey());
       addressKeyMap.put(nodeAddress, new NodeParams(nodeAddress, newNodeKey));
     }
 

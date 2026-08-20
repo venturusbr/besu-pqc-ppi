@@ -37,7 +37,6 @@ import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.core.Block;
-import org.hyperledger.besu.ethereum.core.Util;
 
 import java.util.Collections;
 import java.util.List;
@@ -70,9 +69,9 @@ public class RoundChangeManagerTest {
   @BeforeEach
   public void setup() {
 
-    validators.add(Util.publicKeyToAddress(proposerKey.getPublicKey()));
-    validators.add(Util.publicKeyToAddress(validator1Key.getPublicKey()));
-    validators.add(Util.publicKeyToAddress(validator2Key.getPublicKey()));
+    validators.add(Address.extract(proposerKey.getPublicKey()));
+    validators.add(Address.extract(validator1Key.getPublicKey()));
+    validators.add(Address.extract(validator2Key.getPublicKey()));
 
     final RoundChangePayloadValidator.MessageValidatorForHeightFactory messageValidatorFactory =
         mock(RoundChangePayloadValidator.MessageValidatorForHeightFactory.class);
@@ -81,17 +80,17 @@ public class RoundChangeManagerTest {
         .thenAnswer(
             invocation ->
                 new SignedDataValidator(
-                    validators, Util.publicKeyToAddress(proposerKey.getPublicKey()), ri1));
+                    validators, Address.extract(proposerKey.getPublicKey()), ri1));
     when(messageValidatorFactory.createAt(ri2))
         .thenAnswer(
             invocation ->
                 new SignedDataValidator(
-                    validators, Util.publicKeyToAddress(validator1Key.getPublicKey()), ri2));
+                    validators, Address.extract(validator1Key.getPublicKey()), ri2));
     when(messageValidatorFactory.createAt(ri3))
         .thenAnswer(
             invocation ->
                 new SignedDataValidator(
-                    validators, Util.publicKeyToAddress(validator2Key.getPublicKey()), ri3));
+                    validators, Address.extract(validator2Key.getPublicKey()), ri3));
 
     final RoundChangeMessageValidator roundChangeMessageValidator =
         new RoundChangeMessageValidator(

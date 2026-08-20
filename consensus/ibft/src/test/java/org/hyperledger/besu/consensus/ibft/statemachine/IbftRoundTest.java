@@ -41,7 +41,7 @@ import org.hyperledger.besu.consensus.ibft.network.IbftMessageTransmitter;
 import org.hyperledger.besu.consensus.ibft.payload.MessageFactory;
 import org.hyperledger.besu.consensus.ibft.payload.RoundChangeCertificate;
 import org.hyperledger.besu.consensus.ibft.validation.MessageValidator;
-import org.hyperledger.besu.crypto.SECPSignature;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
@@ -107,7 +107,7 @@ public class IbftRoundTest {
   private Block proposedBlock;
   private BftExtraData proposedExtraData;
 
-  private final SECPSignature remoteCommitSeal =
+  private final Signature remoteCommitSeal =
       SignatureAlgorithmFactory.getInstance()
           .createSignature(BigInteger.ONE, BigInteger.ONE, (byte) 1);
 
@@ -262,7 +262,7 @@ public class IbftRoundTest {
     final Hash commitSealHash =
         new BftBlockHashing(new IbftExtraDataCodec())
             .calculateDataHashForCommittedSeal(proposedBlock.getHeader(), proposedExtraData);
-    final SECPSignature localCommitSeal = nodeKey.sign(Bytes32.wrap(commitSealHash.getBytes()));
+    final Signature localCommitSeal = nodeKey.sign(Bytes32.wrap(commitSealHash.getBytes()), "seal");
 
     // Receive Proposal Message
     round.handleProposalMessage(
@@ -311,7 +311,7 @@ public class IbftRoundTest {
     final Hash commitSealHash =
         new BftBlockHashing(new IbftExtraDataCodec())
             .calculateDataHashForCommittedSeal(proposedBlock.getHeader(), proposedExtraData);
-    final SECPSignature localCommitSeal = nodeKey.sign(Bytes32.wrap(commitSealHash.getBytes()));
+    final Signature localCommitSeal = nodeKey.sign(Bytes32.wrap(commitSealHash.getBytes()), "seal");
 
     round.createAndSendProposalMessage(15);
     verify(transmitter, never()).multicastCommit(any(), any(), any());
@@ -524,7 +524,7 @@ public class IbftRoundTest {
     final RoundState roundState = new RoundState(roundIdentifier, QUORUM_SIZE, messageValidator);
     final NodeKey throwingNodeKey = mock(NodeKey.class);
     final MessageFactory throwingMessageFactory = new MessageFactory(throwingNodeKey);
-    when(throwingNodeKey.sign(any())).thenThrow(new SecurityModuleException("Hsm is Offline"));
+    when(throwingNodeKey.sign(any(), any())).thenThrow(new SecurityModuleException("Hsm is Offline"));
 
     final IbftRound round =
         new IbftRound(

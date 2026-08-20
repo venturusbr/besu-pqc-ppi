@@ -20,16 +20,13 @@ import static org.hyperledger.besu.consensus.common.bft.BftContextBuilder.setupC
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.ProtocolContext;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.BlockHeaderTestFixture;
-import org.hyperledger.besu.ethereum.core.Util;
 
 import java.util.List;
 
 import com.google.common.collect.Lists;
-import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Test;
 
 public class BftCoinbaseValidationRuleTest {
@@ -38,16 +35,14 @@ public class BftCoinbaseValidationRuleTest {
 
     final BlockHeaderTestFixture builder = new BlockHeaderTestFixture();
     builder.number(1); // must NOT be block 0, as that should not contain seals at all
-    builder.coinbase(Util.publicKeyToAddress(proposerNodeKey.getPublicKey()));
+    builder.coinbase(Address.extract(proposerNodeKey.getPublicKey()));
     return builder.buildHeader();
   }
 
   @Test
   public void proposerInValidatorListPassesValidation() {
     final NodeKey proposerNodeKey = NodeKeyUtils.generate();
-    final Address proposerAddress =
-        Address.extract(
-            Bytes32.wrap(Hash.hash(proposerNodeKey.getPublicKey().getEncodedBytes()).getBytes()));
+    final Address proposerAddress = Address.extract(proposerNodeKey.getPublicKey());
 
     final List<Address> validators = Lists.newArrayList(proposerAddress);
 
@@ -69,9 +64,7 @@ public class BftCoinbaseValidationRuleTest {
 
     final NodeKey otherValidatorNodeKey = NodeKeyUtils.generate();
     final Address otherValidatorNodeAddress =
-        Address.extract(
-            Bytes32.wrap(
-                Hash.hash(otherValidatorNodeKey.getPublicKey().getEncodedBytes()).getBytes()));
+        Address.extract(otherValidatorNodeKey.getPublicKey());
 
     final List<Address> validators = Lists.newArrayList(otherValidatorNodeAddress);
 

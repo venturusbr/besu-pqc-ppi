@@ -32,7 +32,6 @@ import org.hyperledger.besu.datatypes.LogsBloomFilter;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.BlockHeaderBuilder;
 import org.hyperledger.besu.ethereum.core.Difficulty;
-import org.hyperledger.besu.ethereum.core.Util;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPOutput;
 
 import java.util.Arrays;
@@ -74,7 +73,7 @@ public class BftBlockHashingTest {
 
     List<Address> expectedCommitterAddresses =
         COMMITTERS_NODE_KEYS.stream()
-            .map(nodeKey -> Util.publicKeyToAddress(nodeKey.getPublicKey()))
+            .map(nodeKey -> Address.extract(nodeKey.getPublicKey()))
             .collect(Collectors.toList());
 
     assertThat(actualCommitterAddresses).isEqualTo(expectedCommitterAddresses);
@@ -90,7 +89,7 @@ public class BftBlockHashingTest {
 
     List<Signature> commitSeals =
         COMMITTERS_NODE_KEYS.stream()
-            .map(nodeKey -> nodeKey.sign(Bytes32.wrap(dataHahsForCommittedSeal.getBytes())))
+            .map(nodeKey -> nodeKey.sign(Bytes32.wrap(dataHahsForCommittedSeal.getBytes()), "seal"))
             .collect(Collectors.toList());
 
     final BftExtraData extraDataWithCommitSeals =
@@ -171,7 +170,8 @@ public class BftBlockHashingTest {
                 nodeKey ->
                     nodeKey.sign(
                         Bytes32.wrap(
-                            Hash.hash(rlpForHeaderFroCommittersSigning.encoded()).getBytes())))
+                            Hash.hash(rlpForHeaderFroCommittersSigning.encoded()).getBytes()),
+                        "seal"))
             .collect(Collectors.toList());
 
     BftExtraData extraDataWithCommitSeals =

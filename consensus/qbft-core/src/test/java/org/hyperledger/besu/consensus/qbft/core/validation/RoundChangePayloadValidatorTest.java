@@ -21,7 +21,7 @@ import org.hyperledger.besu.consensus.common.bft.payload.SignedData;
 import org.hyperledger.besu.consensus.qbft.core.payload.PreparedRoundMetadata;
 import org.hyperledger.besu.consensus.qbft.core.payload.RoundChangePayload;
 import org.hyperledger.besu.consensus.qbft.core.types.QbftBlockCodec;
-import org.hyperledger.besu.crypto.SECPSignature;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
 import org.hyperledger.besu.datatypes.Hash;
@@ -150,8 +150,8 @@ public class RoundChangePayloadValidatorTest {
 
   private SignedData<RoundChangePayload> createSignedPayload(
       final RoundChangePayload payload, final NodeKey nodeKey) {
-    final SECPSignature signature =
-        nodeKey.sign(Bytes32.wrap(payload.hashForSignature().getBytes()));
+    final Signature signature =
+        nodeKey.sign(Bytes32.wrap(payload.hashForSignature().getBytes()), "seal");
     return SignedData.create(payload, signature);
   }
 }

@@ -136,7 +136,7 @@ public class MessageValidatorTest {
         messageFactory.createCommit(
             roundIdentifier,
             block.getHash(),
-            nodeKey.sign(Bytes32.wrap(block.getHash().getBytes())));
+            nodeKey.sign(Bytes32.wrap(block.getHash().getBytes()), "seal"));
 
     assertThat(messageValidator.validateProposal(proposal)).isTrue();
     verify(signedDataValidator, times(1)).validateProposal(proposal.getSignedPayload());

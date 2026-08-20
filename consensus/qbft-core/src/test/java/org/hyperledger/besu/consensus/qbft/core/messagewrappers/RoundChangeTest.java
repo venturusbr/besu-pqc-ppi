@@ -30,7 +30,6 @@ import org.hyperledger.besu.consensus.qbft.core.types.QbftBlockCodec;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.ethereum.core.Util;
 
 import java.util.Collections;
 import java.util.List;
@@ -53,7 +52,7 @@ public class RoundChangeTest {
     when(blockEncoder.readFrom(any())).thenReturn(BLOCK);
 
     final NodeKey nodeKey = NodeKeyUtils.generate();
-    final Address addr = Util.publicKeyToAddress(nodeKey.getPublicKey());
+    final Address addr = Address.extract(nodeKey.getPublicKey());
 
     final RoundChangePayload payload =
         new RoundChangePayload(
@@ -62,14 +61,14 @@ public class RoundChangeTest {
 
     final SignedData<RoundChangePayload> signedRoundChangePayload =
         SignedData.create(
-            payload, nodeKey.sign(Bytes32.wrap(payload.hashForSignature().getBytes())));
+            payload, nodeKey.sign(Bytes32.wrap(payload.hashForSignature().getBytes()), "seal"));
 
     final PreparePayload preparePayload =
         new PreparePayload(new ConsensusRoundIdentifier(1, 0), BLOCK.getHash());
     final SignedData<PreparePayload> signedPreparePayload =
         SignedData.create(
             preparePayload,
-            nodeKey.sign(Bytes32.wrap(preparePayload.hashForSignature().getBytes())));
+            nodeKey.sign(Bytes32.wrap(preparePayload.hashForSignature().getBytes()), "seal"));
 
     final RoundChange roundChange =
         new RoundChange(
@@ -95,14 +94,14 @@ public class RoundChangeTest {
   @Test
   public void canRoundTripEmptyPreparedRoundAndPreparedList() {
     final NodeKey nodeKey = NodeKeyUtils.generate();
-    final Address addr = Util.publicKeyToAddress(nodeKey.getPublicKey());
+    final Address addr = Address.extract(nodeKey.getPublicKey());
 
     final RoundChangePayload payload =
         new RoundChangePayload(new ConsensusRoundIdentifier(1, 1), Optional.empty());
 
     final SignedData<RoundChangePayload> signedRoundChangePayload =
         SignedData.create(
-            payload, nodeKey.sign(Bytes32.wrap(payload.hashForSignature().getBytes())));
+            payload, nodeKey.sign(Bytes32.wrap(payload.hashForSignature().getBytes()), "seal"));
 
     final RoundChange roundChange =
         new RoundChange(
