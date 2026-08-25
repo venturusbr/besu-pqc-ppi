@@ -40,10 +40,23 @@ public class PublicKeyEncoder {
         final Short dsaType,
         final RLPOutput out
     ) {
-        checkNotNull(publicKey, "publicKey must not be null");
+        encodeByDsa(
+            publicKey,
+            DSAProviderFactory.getVerifierProvider().getAccountEnabledDSAById(dsaType),
+            out);
+    }
 
-        final DigitalSignatureAlgorithm dsa =
-            DSAProviderFactory.getVerifierProvider().getAccountEnabledDSAById(dsaType);
+    /*
+     * Same encoding rules as encodeByDsaId, but for callers that already hold the algorithm
+     * rather than an account-enabled DSA id (e.g. consensus messages, which use the node's
+     * active DSA).
+     */
+    public static void encodeByDsa(
+        final PublicKey publicKey,
+        final DigitalSignatureAlgorithm dsa,
+        final RLPOutput out
+    ) {
+        checkNotNull(publicKey, "publicKey must not be null");
 
         if (publicKey instanceof CompositePublicKey compositePk) {
             if (!(dsa instanceof HybridDigitalSignatureAlgorithm hybridDsa)) {

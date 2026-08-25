@@ -24,10 +24,13 @@ import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.SignatureFactory;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.ethereum.core.encoding.PublicKeyDecoder;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPOutput;
 import org.hyperledger.besu.ethereum.rlp.RLPInput;
 
+import java.security.PublicKey;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.function.Function;
 
@@ -114,9 +117,11 @@ public class BftMessage<P extends Payload> implements Authored, RoundSpecific {
     final DSAParametersSet dsaParams = DSAProviderFactory.getActiveDsaParametersSet();
     final Signature signature =
         rlpInput.readBytes(bytes -> SignatureFactory.createSignatureFromBytes(bytes, dsaParams));
+    final Optional<PublicKey> publicKey =
+        PublicKeyDecoder.decodeByDsa(DSAProviderFactory.getActiveDSA(), rlpInput);
     rlpInput.leaveList();
 
-    return SignedData.create(unsignedMessageData, signature);
+    return SignedData.create(unsignedMessageData, signature, publicKey);
   }
 
   @Override

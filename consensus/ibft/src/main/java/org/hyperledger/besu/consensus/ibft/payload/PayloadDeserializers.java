@@ -20,7 +20,11 @@ import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.SignatureFactory;
+import org.hyperledger.besu.ethereum.core.encoding.PublicKeyDecoder;
 import org.hyperledger.besu.ethereum.rlp.RLPInput;
+
+import java.security.PublicKey;
+import java.util.Optional;
 
 /** The Payload deserializers. */
 public class PayloadDeserializers {
@@ -38,9 +42,10 @@ public class PayloadDeserializers {
     rlpInput.enterList();
     final ProposalPayload unsignedMessageData = ProposalPayload.readFrom(rlpInput);
     final Signature signature = readSignature(rlpInput);
+    final Optional<PublicKey> publicKey = readPublicKey(rlpInput);
     rlpInput.leaveList();
 
-    return from(unsignedMessageData, signature);
+    return from(unsignedMessageData, signature, publicKey);
   }
 
   /**
@@ -54,9 +59,10 @@ public class PayloadDeserializers {
     rlpInput.enterList();
     final PreparePayload unsignedMessageData = PreparePayload.readFrom(rlpInput);
     final Signature signature = readSignature(rlpInput);
+    final Optional<PublicKey> publicKey = readPublicKey(rlpInput);
     rlpInput.leaveList();
 
-    return from(unsignedMessageData, signature);
+    return from(unsignedMessageData, signature, publicKey);
   }
 
   /**
@@ -70,9 +76,10 @@ public class PayloadDeserializers {
     rlpInput.enterList();
     final CommitPayload unsignedMessageData = CommitPayload.readFrom(rlpInput);
     final Signature signature = readSignature(rlpInput);
+    final Optional<PublicKey> publicKey = readPublicKey(rlpInput);
     rlpInput.leaveList();
 
-    return from(unsignedMessageData, signature);
+    return from(unsignedMessageData, signature, publicKey);
   }
 
   /**
@@ -87,9 +94,10 @@ public class PayloadDeserializers {
     rlpInput.enterList();
     final RoundChangePayload unsignedMessageData = RoundChangePayload.readFrom(rlpInput);
     final Signature signature = readSignature(rlpInput);
+    final Optional<PublicKey> publicKey = readPublicKey(rlpInput);
     rlpInput.leaveList();
 
-    return from(unsignedMessageData, signature);
+    return from(unsignedMessageData, signature, publicKey);
   }
 
   /**
@@ -98,11 +106,28 @@ public class PayloadDeserializers {
    * @param <M> the type parameter
    * @param unsignedMessageData the unsigned message data
    * @param signature the signature
+   * @param publicKey the signer's public key, present only for algorithms without recovery
+   * @return the signed data
+   */
+  protected static <M extends Payload> SignedData<M> from(
+      final M unsignedMessageData,
+      final Signature signature,
+      final Optional<PublicKey> publicKey) {
+    return SignedData.create(unsignedMessageData, signature, publicKey);
+  }
+
+  /**
+   * Create signed payload data with no supplied public key, which is only sufficient for
+   * algorithms that support public key recovery.
+   *
+   * @param <M> the type parameter
+   * @param unsignedMessageData the unsigned message data
+   * @param signature the signature
    * @return the signed data
    */
   protected static <M extends Payload> SignedData<M> from(
       final M unsignedMessageData, final Signature signature) {
-    return SignedData.create(unsignedMessageData, signature);
+    return from(unsignedMessageData, signature, Optional.empty());
   }
 
   /**
@@ -114,5 +139,16 @@ public class PayloadDeserializers {
   protected static Signature readSignature(final RLPInput signedMessage) {
     final DSAParametersSet dsaParams = DSAProviderFactory.getActiveDsaParametersSet();
     return signedMessage.readBytes(bytes -> SignatureFactory.createSignatureFromBytes(bytes, dsaParams));
+  }
+
+  /**
+   * Read the signer's public key, which is only present on the wire for algorithms that cannot
+   * recover it from the signature.
+   *
+   * @param signedMessage the signed message
+   * @return the public key, or empty for recoverable algorithms
+   */
+  protected static Optional<PublicKey> readPublicKey(final RLPInput signedMessage) {
+    return PublicKeyDecoder.decodeByDsa(DSAProviderFactory.getActiveDSA(), signedMessage);
   }
 }

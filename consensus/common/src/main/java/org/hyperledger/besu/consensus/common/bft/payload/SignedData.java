@@ -14,19 +14,25 @@
  */
 package org.hyperledger.besu.consensus.common.bft.payload;
 
+import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
+import org.hyperledger.besu.crypto.PublicKeyRecoverable;
 import org.hyperledger.besu.crypto.SignatureValidationContext;
+import org.hyperledger.besu.crypto.key.PublicKeyHandler;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
+import org.hyperledger.besu.ethereum.core.encoding.PublicKeyEncoder;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPOutput;
 import org.hyperledger.besu.ethereum.rlp.RLPOutput;
 
+import java.security.PublicKey;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.StringJoiner;
 
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 
 /**
  * The type Signed data.
@@ -41,9 +47,48 @@ public class SignedData<M extends Payload> implements Authored {
   private final Address sender;
   private final Signature signature;
   private final M unsignedPayload;
+  private final Optional<PublicKey> publicKey;
 
   /**
-   * Create signed data.
+   * Create signed data from a message received from the network, verifying the signature.
+   *
+   * <p>When the active algorithm supports public key recovery, recovering a key that hashes to the
+   * claimed author is itself the proof of authenticity, so no separate verification is performed.
+   * When it does not, {@link PublicKeyHandler#resolvePublicKey} simply trusts {@code
+   * maybePublicKey}, so the signature is explicitly verified against the resolved key here. This is
+   * the single point at which an inbound message signature is checked -- the derived author is
+   * cached, so every later {@link #getAuthor()} call is free.
+   *
+   * @param <T> the type parameter
+   * @param payload the payload
+   * @param signature the signature
+   * @param maybePublicKey the signer's public key, required for algorithms without recovery
+   * @return the signed data
+   * @throws IllegalArgumentException if the signature is malleable or fails verification
+   */
+  public static <T extends Payload> SignedData<T> create(
+      final T payload, final Signature signature, final Optional<PublicKey> maybePublicKey) {
+    final Hash msgHash = payload.hashForSignature();
+    final Bytes32 msgHashBytes = Bytes32.wrap(msgHash.getBytes());
+    final DigitalSignatureAlgorithm dsa = DSAProviderFactory.getActiveDSA();
+
+    final PublicKey resolvedPublicKey =
+        PublicKeyHandler.resolvePublicKey(dsa, signature, maybePublicKey, msgHashBytes).get();
+
+    if (!(dsa instanceof PublicKeyRecoverable)
+        && !Boolean.TRUE.equals(
+            DSAProviderFactory.getVerifierProvider()
+                .verifySignature(msgHashBytes, signature, resolvedPublicKey))) {
+      throw new IllegalArgumentException("Signature verification failed");
+    }
+
+    return new SignedData<>(
+        payload, Address.extract(resolvedPublicKey), signature, maybePublicKey);
+  }
+
+  /**
+   * Create signed data. Equivalent to {@link #create(Payload, Signature, Optional)} with no
+   * supplied public key, which is only sufficient for algorithms that support public key recovery.
    *
    * @param <T> the type parameter
    * @param payload the payload
@@ -53,20 +98,41 @@ public class SignedData<M extends Payload> implements Authored {
    */
   public static <T extends Payload> SignedData<T> create(
       final T payload, final Signature signature) {
+    return create(payload, signature, Optional.empty());
+  }
+
+  /**
+   * Create signed data for a message this node has just signed itself. The signature is not
+   * verified, since we produced it (doing so would repeat work already known to succeed).
+   *
+   * @param <T> the type parameter
+   * @param payload the payload
+   * @param signature the signature produced by this node
+   * @param maybePublicKey this node's public key, required for algorithms without recovery
+   * @return the signed data
+   * @throws IllegalArgumentException if the signature is malleable
+   */
+  public static <T extends Payload> SignedData<T> createLocallySigned(
+      final T payload, final Signature signature, final Optional<PublicKey> maybePublicKey) {
     final Hash msgHash = payload.hashForSignature();
     final Address sender =
         Address.signatureToAddress(
-            DSAProviderFactory.getActiveDSA(), signature, Optional.empty(), msgHash);
-    return new SignedData<>(payload, sender, signature);
+            DSAProviderFactory.getActiveDSA(), signature, maybePublicKey, msgHash);
+    return new SignedData<>(payload, sender, signature, maybePublicKey);
   }
 
-  private SignedData(final M unsignedPayload, final Address sender, final Signature signature) {
+  private SignedData(
+      final M unsignedPayload,
+      final Address sender,
+      final Signature signature,
+      final Optional<PublicKey> publicKey) {
     if (!signature.isValid(DISALLOW_MALLEABILITY)) {
       throw new IllegalArgumentException("Signature is invalid");
     }
     this.unsignedPayload = unsignedPayload;
     this.sender = sender;
     this.signature = signature;
+    this.publicKey = publicKey;
   }
 
   @Override
@@ -84,7 +150,18 @@ public class SignedData<M extends Payload> implements Authored {
   }
 
   /**
-   * Write to.
+   * Gets the signer's public key, present only for algorithms that cannot recover it from the
+   * signature.
+   *
+   * @return the public key
+   */
+  public Optional<PublicKey> getPublicKey() {
+    return publicKey;
+  }
+
+  /**
+   * Write to. The public key is appended only when the active algorithm cannot recover it from the
+   * signature, so the encoding is unchanged for recoverable algorithms such as SECP256K1.
    *
    * @param output the output
    */
@@ -92,6 +169,8 @@ public class SignedData<M extends Payload> implements Authored {
     output.startList();
     unsignedPayload.writeTo(output);
     output.writeBytes(signature.encodedBytes());
+    publicKey.ifPresent(
+        pk -> PublicKeyEncoder.encodeByDsa(pk, DSAProviderFactory.getActiveDSA(), output));
     output.endList();
   }
 

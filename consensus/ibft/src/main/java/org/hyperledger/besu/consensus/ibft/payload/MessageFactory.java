@@ -22,12 +22,15 @@ import org.hyperledger.besu.consensus.ibft.messagewrappers.Prepare;
 import org.hyperledger.besu.consensus.ibft.messagewrappers.Proposal;
 import org.hyperledger.besu.consensus.ibft.messagewrappers.RoundChange;
 import org.hyperledger.besu.consensus.ibft.statemachine.PreparedRoundArtifacts;
+import org.hyperledger.besu.crypto.PublicKeyRecoverable;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.core.Block;
 import org.hyperledger.besu.ethereum.mainnet.block.access.list.BlockAccessList;
 
+import java.security.PublicKey;
 import java.util.Optional;
 
 import org.apache.tuweni.bytes.Bytes32;
@@ -138,6 +141,17 @@ public class MessageFactory {
   private <M extends Payload> SignedData<M> createSignedMessage(final M payload, final String finality) {
     final Signature signature =
         nodeKey.sign(Bytes32.wrap(payload.hashForSignature().getBytes()), finality);
-    return SignedData.create(payload, signature);
+    return SignedData.createLocallySigned(payload, signature, localPublicKey());
+  }
+
+  /**
+   * This node's public key, needed on the wire only when the active algorithm cannot recover it
+   * from the signature.
+   */
+  private Optional<PublicKey> localPublicKey() {
+    if (DSAProviderFactory.getActiveDSA() instanceof PublicKeyRecoverable) {
+      return Optional.empty();
+    }
+    return Optional.of(nodeKey.getPublicKey());
   }
 }
