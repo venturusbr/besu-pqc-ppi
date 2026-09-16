@@ -1,5 +1,7 @@
 package org.hyperledger.besu.crypto.providers;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
@@ -23,6 +25,17 @@ public class DSAProviderFactory {
 
   public static void setDsaProvider(final DigitalSignatureAlgorithmConfiguration dsaConfig, final KeyConfiguration keyConfig) {
     nodeDsaProvider = new DigitalSignatureAlgorithmProvider(dsaConfig, keyConfig);
+  }
+
+  /**
+   * Clears the configured DSA provider, restoring the unconfigured state in which
+   * {@link #getActiveDSA()} and {@link #getActiveDsaParametersSet()} fall back to the default
+   * signature algorithm. Required because the provider is static process-wide state: a test that
+   * installs one would otherwise leak it into every subsequent test sharing the JVM.
+   */
+  @VisibleForTesting
+  public static void resetDsaProvider() {
+    nodeDsaProvider = null;
   }
 
   /**

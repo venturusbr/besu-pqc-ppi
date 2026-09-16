@@ -38,9 +38,19 @@ public class PublicKeyDecoder {
   public static Optional<PublicKey> decodeByDsaId(
       final Short dsaType,
       final RLPInput in) {
-    
-    final DigitalSignatureAlgorithm dsa =
-            DSAProviderFactory.getVerifierProvider().getAccountEnabledDSAById(dsaType);
+
+    return decodeByDsa(
+        DSAProviderFactory.getVerifierProvider().getAccountEnabledDSAById(dsaType), in);
+  }
+
+  /*
+   * Same decoding rules as decodeByDsaId, but for callers that already hold the algorithm
+   * rather than an account-enabled DSA id (e.g. consensus messages, which use the node's
+   * active DSA).
+   */
+  public static Optional<PublicKey> decodeByDsa(
+      final DigitalSignatureAlgorithm dsa,
+      final RLPInput in) {
 
     if (!(dsa instanceof HybridDigitalSignatureAlgorithm)) {
       if (isRecoverable(dsa)) {
