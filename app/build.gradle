@@ -107,7 +107,10 @@ dependencies {
   testImplementation 'org.awaitility:awaitility'
   testImplementation 'org.junit.jupiter:junit-jupiter'
   testImplementation 'org.mockito:mockito-core'
-  testImplementation 'tech.pegasys.discovery:discovery'
+  // Our fork of the discovery library; see settings.gradle.
+  testImplementation('tech.pegasys.discovery:discovery') {
+    version { branch = 'development' }
+  }
   testImplementation 'com.google.dagger:dagger'
 
   annotationProcessor 'com.google.dagger:dagger-compiler'

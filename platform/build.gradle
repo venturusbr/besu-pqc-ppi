@@ -181,7 +181,18 @@ dependencies {
 
     api 'io.consensys.protocols:jc-kzg-4844:2.1.5'
 
-    api 'tech.pegasys.discovery:discovery:26.1.0'
+    // NOTE: tech.pegasys.discovery:discovery is deliberately not pinned here. It resolves to our
+    // fork through settings.gradle, and the branch declared at each use site decides the version.
+
+    // Project Reactor, the reactive streams library the discovery library uses internally for its
+    // message pipeline (Flux/ReplayProcessor in DiscoveryManagerImpl and its schedulers).
+    //
+    // It is pinned here only because of the composite build: our fork declares its dependencies
+    // without versions and lets the io.spring.dependency-management plugin supply them, and that
+    // plugin does not expose the versions to a project that consumes the fork. Every other
+    // dependency of the fork is already pinned by this platform; reactor-core is the only one
+    // Besu does not use elsewhere. Keep this in sync with `gradle/versions.gradle` in the fork.
+    api 'io.projectreactor:reactor-core:3.6.7'
   }
 }
 

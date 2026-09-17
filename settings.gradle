@@ -19,6 +19,38 @@ pluginManagement {
   }
 }
 
+// The hybrid `vnt` identity scheme and the raised node record size limit live in our fork of the
+// discovery library, which is not published to any Maven repository.
+//
+// By default Gradle clones the fork and builds it from source, so `./gradlew <task>` always uses
+// the latest commit of the branch below. Nothing has to be cloned or updated by hand.
+//
+// Pass `-PdiscoveryPath=/path/to/checkout` to build against a local checkout instead. Use that
+// while changing the fork itself: a source dependency builds what is pushed to the branch, not
+// what is in your working tree.
+def discoveryFork = 'https://github.com/venturusbr/discovery-besu-ppi.git'
+def discoveryPath = providers.gradleProperty('discoveryPath').getOrNull()
+
+if (discoveryPath == null) {
+  sourceControl {
+    gitRepository(uri(discoveryFork)) {
+      producesModule('tech.pegasys.discovery:discovery')
+    }
+  }
+} else {
+  def discoveryDir = file(discoveryPath)
+  if (!discoveryDir.directory) {
+    throw new GradleException(
+      "Local discovery checkout not found at ${discoveryDir}. Clone ${discoveryFork}, or drop "
+        + "-PdiscoveryPath to let Gradle build the fork straight from the branch.")
+  }
+  includeBuild(discoveryDir) {
+    dependencySubstitution {
+      substitute module('tech.pegasys.discovery:discovery') using project(':')
+    }
+  }
+}
+
 rootProject.name='besu'
 include 'acceptance-tests:catalogless-test-plugins'
 include 'acceptance-tests:dsl'
