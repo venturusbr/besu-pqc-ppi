@@ -60,7 +60,10 @@ dependencies {
 
   annotationProcessor "org.immutables:value"
   implementation "org.immutables:value-annotations"
-  implementation 'tech.pegasys.discovery:discovery'
+  // Our fork of the discovery library; see settings.gradle.
+  implementation('tech.pegasys.discovery:discovery') {
+    version { branch = 'development' }
+  }
 
   // test dependencies.
   testImplementation project(path: ':ethereum:core', configuration: 'testArtifacts')
