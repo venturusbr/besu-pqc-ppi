@@ -20,6 +20,7 @@ import static org.hyperledger.besu.evm.account.Account.MAX_NONCE;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.CodeDelegationType;
 import org.hyperledger.besu.datatypes.TransactionType;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.ethereum.core.BlockDataGenerator;
@@ -66,9 +67,13 @@ class TransactionRLPDecoderTest {
     assertThat(transaction.getCodeDelegationList().get().size()).isEqualTo(1);
     var expectedCodeDelegation =
         CodeDelegation.createCodeDelegation(
+            CodeDelegationType.LEGACY,
+            null,
             BigInteger.ZERO,
             Address.fromHexString("0x1000"),
             "0x0",
+            null,
+            null,
             "0x0",
             "0xdbcff17ff6c249f13b334fa86bcbaa1afd9f566ca9b06e4ea5fab9bdde9a9202",
             "0x5c34c9d8af5b20e4a425fc1daf2d9d484576857eaf1629145b4686bac733868e");

@@ -59,7 +59,7 @@ class CodeDelegationTransactionEncoderTest {
                         "3b1dbace38ceb862a65bf2eac0637693b5c3493bcb2a022dd614c0a74cce0b99", 16),
                     (byte) 0));
 
-    CodeDelegationTransactionEncoder.encodeSingleCodeDelegation(authorization, output);
+    CodeDelegationEncoder.encodeOpaqueBytes(authorization, output);
 
     assertThat(output.encoded())
         .isEqualTo(
@@ -85,7 +85,7 @@ class CodeDelegationTransactionEncoderTest {
                         "25b58a1ff8ad00bddbbfa1d5c2411961cbb6d08dcdc8ae88303db3c6cf983031", 16),
                     (byte) 1));
 
-    CodeDelegationTransactionEncoder.encodeSingleCodeDelegation(authorization, output);
+    CodeDelegationEncoder.encodeOpaqueBytes(authorization, output);
 
     assertThat(output.encoded())
         .isEqualTo(
@@ -111,7 +111,7 @@ class CodeDelegationTransactionEncoderTest {
                         "3c8a25b2becd6e666f69803d1ae3322f2e137b7745c2c7f19da80f993ffde4df", 16),
                     (byte) 1));
 
-    CodeDelegationTransactionEncoder.encodeSingleCodeDelegation(authorization, output);
+    CodeDelegationEncoder.encodeOpaqueBytes(authorization, output);
 
     assertThat(output.encoded())
         .isEqualTo(

@@ -22,6 +22,7 @@ import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.CodeDelegationType;
 
 import java.math.BigInteger;
 import java.util.Optional;
@@ -113,7 +114,16 @@ class CodeDelegationTest {
     CodeDelegation delegation =
         (CodeDelegation)
             CodeDelegation.createCodeDelegation(
-                chainId, address, "0x64", "0x1b", "0xabcdef", "0x123456");
+                CodeDelegationType.LEGACY,
+                null,
+                chainId,
+                address,
+                "0x64",
+                null,
+                null,
+                "0x1b",
+                "0xabcdef",
+                "0x123456");
 
     assertThat(delegation).isNotNull();
     assertThat(delegation.chainId()).isEqualTo(chainId);

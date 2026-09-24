@@ -18,8 +18,21 @@ public class LegacyCodeDelegationDecoder {
     private static final Supplier<SignatureAlgorithm> SIGNATURE_ALGORITHM =
       Suppliers.memoize(SignatureAlgorithmFactory::getInstance);
       
+    /**
+     * Decodes a legacy code delegation from {@code input}, which must hold the RLP encoding of the
+     * delegation list and nothing else.
+     */
     public static CodeDelegation decode(final Bytes input){
-        final RLPInput cdRlp = RLP.input(input);
+        return decode(RLP.input(input));
+    }
+
+    /**
+     * Decodes a legacy code delegation in place from the supplied input, consuming exactly the
+     * delegation's list. Legacy delegations are written directly as an RLP list with no type byte
+     * (see {@link LegacyCodeDelegationEncoder#encode}), so when they appear as elements of a
+     * delegation list they must be read as a list rather than as an opaque byte string.
+     */
+    public static CodeDelegation decode(final RLPInput cdRlp){
         cdRlp.enterList();
 
         final BigInteger chainId = cdRlp.readBigIntegerScalar();
