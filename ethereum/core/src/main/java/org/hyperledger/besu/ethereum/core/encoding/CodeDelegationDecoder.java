@@ -41,7 +41,9 @@ public class CodeDelegationDecoder {
         if(isTypedCodeDelegation(rlpInput)){
             return decodeCodeDelegation(rlpInput);
         } else {
-            return LegacyCodeDelegationDecoder.decode(rlpInput.readBytes());
+            // A legacy delegation is written as a bare RLP list, so it has to be read in place as
+            // a list. Reading it as a byte string throws "current item is a list".
+            return LegacyCodeDelegationDecoder.decode(rlpInput);
         }
     }
 

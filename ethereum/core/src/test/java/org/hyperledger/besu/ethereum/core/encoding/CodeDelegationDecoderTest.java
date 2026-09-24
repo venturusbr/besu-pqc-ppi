@@ -19,7 +19,9 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.CodeDelegation;
+import org.hyperledger.besu.datatypes.CodeDelegationType;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPInput;
+import org.hyperledger.besu.ethereum.rlp.BytesValueRLPOutput;
 
 import java.math.BigInteger;
 
@@ -38,14 +40,14 @@ class CodeDelegationDecoderTest {
                 "0xf85a0194633688abc3ccf8b0c03088d2d1c6ae4958c2fa562a80a0840798fa67118e034c1eb7e42fe89e28d7cd5006dc813d5729e5f75b0d1a7ec5a03b1dbace38ceb862a65bf2eac0637693b5c3493bcb2a022dd614c0a74cce0b99"),
             true);
     final CodeDelegation codeDelegation =
-        CodeDelegationTransactionDecoder.decodeInnerPayload(input);
+        CodeDelegationDecoder.decodeRLP(input);
 
     assertThat(codeDelegation.chainId()).isEqualTo(BigInteger.ONE);
     assertThat(codeDelegation.address())
         .isEqualTo(Address.fromHexStringStrict("0x633688abc3cCf8B0C03088D2d1C6ae4958c2fA56"));
     assertThat(codeDelegation.nonce()).isEqualTo(42);
 
-    final SECPSignature signature = codeDelegation.signature();
+    final SECPSignature signature = (SECPSignature) codeDelegation.signature();
     assertThat(signature.getRecId()).isEqualTo((byte) 0);
     assertThat(signature.getR().toString(16))
         .isEqualTo("840798fa67118e034c1eb7e42fe89e28d7cd5006dc813d5729e5f75b0d1a7ec5");
@@ -63,14 +65,14 @@ class CodeDelegationDecoderTest {
                 "0xf85a0194633688abc3ccf8b0c03088d2d1c6ae4958c2fa568001a0dd6b24048be1b7d7fe5bbbb73ffc37eb2ce1997ecb4ae5b6096532ef19363148a025b58a1ff8ad00bddbbfa1d5c2411961cbb6d08dcdc8ae88303db3c6cf983031"),
             true);
     final CodeDelegation codeDelegation =
-        CodeDelegationTransactionDecoder.decodeInnerPayload(input);
+        CodeDelegationDecoder.decodeRLP(input);
 
     assertThat(codeDelegation.chainId()).isEqualTo(BigInteger.ONE);
     assertThat(codeDelegation.address())
         .isEqualTo(Address.fromHexStringStrict("0x633688abc3cCf8B0C03088D2d1C6ae4958c2fA56"));
     assertThat(codeDelegation.nonce()).isEqualTo(0);
 
-    final SECPSignature signature = codeDelegation.signature();
+    final SECPSignature signature = (SECPSignature) codeDelegation.signature();
     assertThat(signature.getRecId()).isEqualTo((byte) 1);
     assertThat(signature.getR().toString(16))
         .isEqualTo("dd6b24048be1b7d7fe5bbbb73ffc37eb2ce1997ecb4ae5b6096532ef19363148");
@@ -88,14 +90,14 @@ class CodeDelegationDecoderTest {
                 "0xf85a8094633688abc3ccf8b0c03088d2d1c6ae4958c2fa560501a0025c1240d7ffec0daeedb752d3357aff2e3cd58468f0c2d43ee0ee999e02ace2a03c8a25b2becd6e666f69803d1ae3322f2e137b7745c2c7f19da80f993ffde4df"),
             true);
     final CodeDelegation codeDelegation =
-        CodeDelegationTransactionDecoder.decodeInnerPayload(input);
+        CodeDelegationDecoder.decodeRLP(input);
 
     assertThat(codeDelegation.chainId()).isEqualTo(BigInteger.ZERO);
     assertThat(codeDelegation.address())
         .isEqualTo(Address.fromHexStringStrict("0x633688abc3cCf8B0C03088D2d1C6ae4958c2fA56"));
     assertThat(codeDelegation.nonce()).isEqualTo(5);
 
-    final SECPSignature signature = codeDelegation.signature();
+    final SECPSignature signature = (SECPSignature) codeDelegation.signature();
     assertThat(signature.getRecId()).isEqualTo((byte) 1);
     assertThat(signature.getR().toString(16))
         .isEqualTo("25c1240d7ffec0daeedb752d3357aff2e3cd58468f0c2d43ee0ee999e02ace2");
@@ -111,8 +113,53 @@ class CodeDelegationDecoderTest {
                 "0xdf8501a1f0ff5a947a40026a3b9a41754a95eec8c92c6b99886f440c5b808080"),
             true);
     final CodeDelegation codeDelegation =
-        CodeDelegationTransactionDecoder.decodeInnerPayload(input);
+        CodeDelegationDecoder.decodeRLP(input);
 
     assertThat(codeDelegation.chainId()).isEqualTo(new BigInteger("01a1f0ff5a", 16));
+  }
+
+  /**
+   * A legacy delegation short enough to use a single-byte RLP list header does not start with
+   * {@link CodeDelegationType#LEGACY}'s 0xf8 marker, so {@code decodeOpaqueBytes} cannot identify a
+   * type and falls through to {@link CodeDelegationDecoder#decodeRLP}, which must read it as a
+   * list. This is the second entry point into that branch and was previously untested.
+   */
+  @Test
+  void shouldDecodeUntypedLegacyDelegationFromOpaqueBytes() {
+    final Bytes opaqueBytes =
+        Bytes.fromHexString("0xdf8501a1f0ff5a947a40026a3b9a41754a95eec8c92c6b99886f440c5b808080");
+
+    final CodeDelegation codeDelegation = CodeDelegationDecoder.decodeOpaqueBytes(opaqueBytes);
+
+    assertThat(codeDelegation.chainId()).isEqualTo(new BigInteger("01a1f0ff5a", 16));
+    assertThat(codeDelegation.address())
+        .isEqualTo(Address.fromHexStringStrict("0x7a40026A3b9A41754a95EeC8c92C6b99886f440C"));
+    assertThat(codeDelegation.nonce()).isEqualTo(0x5b);
+  }
+
+  /**
+   * Guards both directions at once: whatever {@link CodeDelegationEncoder} writes for a legacy
+   * delegation must be readable by {@link CodeDelegationDecoder#decodeRLP}. The encoder writes a
+   * bare list, so a decoder that expects an opaque byte string fails here.
+   */
+  @Test
+  void shouldRoundTripLegacyDelegationThroughRlp() {
+    final CodeDelegation original =
+        CodeDelegationDecoder.decodeRLP(
+            new BytesValueRLPInput(
+                Bytes.fromHexString(
+                    "0xf85a0194633688abc3ccf8b0c03088d2d1c6ae4958c2fa562a80a0840798fa67118e034c1eb7e42fe89e28d7cd5006dc813d5729e5f75b0d1a7ec5a03b1dbace38ceb862a65bf2eac0637693b5c3493bcb2a022dd614c0a74cce0b99"),
+                true));
+
+    final BytesValueRLPOutput output = new BytesValueRLPOutput();
+    CodeDelegationEncoder.encodeOpaqueBytes(original, output);
+
+    final CodeDelegation roundTripped =
+        CodeDelegationDecoder.decodeRLP(new BytesValueRLPInput(output.encoded(), true));
+
+    assertThat(roundTripped.chainId()).isEqualTo(original.chainId());
+    assertThat(roundTripped.address()).isEqualTo(original.address());
+    assertThat(roundTripped.nonce()).isEqualTo(original.nonce());
+    assertThat(roundTripped.signature()).isEqualTo(original.signature());
   }
 }
