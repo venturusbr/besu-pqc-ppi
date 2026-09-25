@@ -115,10 +115,9 @@ public class PendingTransactionEstimatedMemorySizeTest extends BaseTransactionPo
           ".value.ctor",
           ".hashNoSignature",
           ".signature.encoded.delegate",
-          // Both are shared singletons rather than memory a pending transaction retains: the
-          // signature algorithm drags in the curve tables, and the metrics writer its executor.
-          ".signatureAlgorithm",
-          ".pkrMetrics");
+          // A shared singleton rather than memory a pending transaction retains: it drags in
+          // the curve tables.
+          ".signatureAlgorithm");
 
   /**
    * Field that points to constant values, for EIP-1559 and EIP-4844 pending transactions, and are

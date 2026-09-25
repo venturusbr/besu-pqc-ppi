@@ -512,13 +512,13 @@ public abstract class PendingTransaction
    * look there for the details of the calculation and to adapt the code when any of the related
    * class changes its structure.
    *
-   * <p>The transaction sizes grew by 296 bytes, and a code delegation entry by 168, when
+   * <p>The transaction sizes grew by 232 bytes, and a code delegation entry by 168, when
    * transactions gained the fields the hybrid signature scheme needs. The pool sizes itself from
    * these numbers, so leaving them behind makes it hold more memory than it was configured for.
    */
   public interface MemorySize {
-    int FRONTIER_AND_ACCESS_LIST_SHALLOW_SIZE = 1192;
-    int EIP1559_AND_EIP4844_SHALLOW_SIZE = 1304;
+    int FRONTIER_AND_ACCESS_LIST_SHALLOW_SIZE = 1128;
+    int EIP1559_AND_EIP4844_SHALLOW_SIZE = 1240;
     int OPTIONAL_TO_SIZE = 104;
     int OPTIONAL_CHAIN_ID_SIZE = 80;
     int PAYLOAD_SHALLOW_SIZE = 32;
