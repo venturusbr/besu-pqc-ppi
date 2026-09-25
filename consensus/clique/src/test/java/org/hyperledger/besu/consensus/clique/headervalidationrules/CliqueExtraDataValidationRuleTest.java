@@ -32,7 +32,6 @@ import org.hyperledger.besu.ethereum.ProtocolContext;
 import org.hyperledger.besu.ethereum.core.AddressHelpers;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.BlockHeaderTestFixture;
-import org.hyperledger.besu.ethereum.core.Util;
 
 import java.util.List;
 
@@ -52,7 +51,7 @@ public class CliqueExtraDataValidationRuleTest {
 
   @BeforeEach
   public void setup() {
-    localAddr = Util.publicKeyToAddress(proposerKeyPair.getPublicKey());
+    localAddr = Address.extract(proposerKeyPair.getPublicKey());
 
     validatorList.add(localAddr);
     validatorList.add(AddressHelpers.calculateAddressWithRespectTo(localAddr, 1));

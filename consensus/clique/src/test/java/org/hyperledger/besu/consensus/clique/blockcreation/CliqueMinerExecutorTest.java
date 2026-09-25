@@ -47,7 +47,6 @@ import org.hyperledger.besu.ethereum.core.BlockHeaderTestFixture;
 import org.hyperledger.besu.ethereum.core.ImmutableMiningConfiguration;
 import org.hyperledger.besu.ethereum.core.ImmutableMiningConfiguration.MutableInitValues;
 import org.hyperledger.besu.ethereum.core.MiningConfiguration;
-import org.hyperledger.besu.ethereum.core.Util;
 import org.hyperledger.besu.ethereum.eth.manager.EthContext;
 import org.hyperledger.besu.ethereum.eth.manager.EthScheduler;
 import org.hyperledger.besu.ethereum.eth.transactions.BlobCache;
@@ -93,7 +92,7 @@ public class CliqueMinerExecutorTest {
 
   @BeforeEach
   public void setup() {
-    localAddress = Util.publicKeyToAddress(proposerNodeKey.getPublicKey());
+    localAddress = Address.extract(proposerNodeKey.getPublicKey());
     validatorList.add(localAddress);
     validatorList.add(AddressHelpers.calculateAddressWithRespectTo(localAddress, 1));
     validatorList.add(AddressHelpers.calculateAddressWithRespectTo(localAddress, 2));

@@ -28,7 +28,6 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.ethereum.ProtocolContext;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.Difficulty;
-import org.hyperledger.besu.ethereum.core.Util;
 import org.hyperledger.besu.ethereum.mainnet.BlockHeaderValidator;
 import org.hyperledger.besu.ethereum.mainnet.HeaderValidationMode;
 import org.hyperledger.besu.ethereum.mainnet.feemarket.FeeMarket;
@@ -53,7 +52,7 @@ public class QbftBlockHeaderValidationRulesetFactoryTest {
   @Test
   public void bftValidateHeaderPasses() {
     final NodeKey proposerNodeKey = NodeKeyUtils.generate();
-    final Address proposerAddress = Util.publicKeyToAddress(proposerNodeKey.getPublicKey());
+    final Address proposerAddress = Address.extract(proposerNodeKey.getPublicKey());
 
     final List<Address> validators = singletonList(proposerAddress);
 
@@ -77,7 +76,7 @@ public class QbftBlockHeaderValidationRulesetFactoryTest {
   @Test
   public void bftValidateHeaderPassesWithBaseFee() {
     final NodeKey proposerNodeKey = NodeKeyUtils.generate();
-    final Address proposerAddress = Util.publicKeyToAddress(proposerNodeKey.getPublicKey());
+    final Address proposerAddress = Address.extract(proposerNodeKey.getPublicKey());
 
     final List<Address> validators = singletonList(proposerAddress);
 
@@ -104,7 +103,7 @@ public class QbftBlockHeaderValidationRulesetFactoryTest {
   @Test
   public void bftValidateHeaderFailsWhenExtraDataDoesntContainValidatorList() {
     final NodeKey proposerNodeKey = NodeKeyUtils.generate();
-    final Address proposerAddress = Util.publicKeyToAddress(proposerNodeKey.getPublicKey());
+    final Address proposerAddress = Address.extract(proposerNodeKey.getPublicKey());
 
     final List<Address> validators = singletonList(proposerAddress);
 
@@ -128,10 +127,9 @@ public class QbftBlockHeaderValidationRulesetFactoryTest {
   @Test
   public void bftValidateHeaderFailsOnCoinbaseData() {
     final NodeKey proposerNodeKey = NodeKeyUtils.generate();
-    final Address proposerAddress = Util.publicKeyToAddress(proposerNodeKey.getPublicKey());
+    final Address proposerAddress = Address.extract(proposerNodeKey.getPublicKey());
 
-    final Address nonProposerAddress =
-        Util.publicKeyToAddress(NodeKeyUtils.generate().getPublicKey());
+    final Address nonProposerAddress = Address.extract(NodeKeyUtils.generate().getPublicKey());
 
     final List<Address> validators = singletonList(proposerAddress);
 
@@ -156,7 +154,7 @@ public class QbftBlockHeaderValidationRulesetFactoryTest {
   @Test
   public void bftValidateHeaderIgnoresNonceValue() {
     final NodeKey proposerNodeKey = NodeKeyUtils.generate();
-    final Address proposerAddress = Util.publicKeyToAddress(proposerNodeKey.getPublicKey());
+    final Address proposerAddress = Address.extract(proposerNodeKey.getPublicKey());
 
     final List<Address> validators = singletonList(proposerAddress);
 
@@ -185,7 +183,7 @@ public class QbftBlockHeaderValidationRulesetFactoryTest {
   @Test
   public void bftValidateHeaderFailsOnTimestamp() {
     final NodeKey proposerNodeKey = NodeKeyUtils.generate();
-    final Address proposerAddress = Util.publicKeyToAddress(proposerNodeKey.getPublicKey());
+    final Address proposerAddress = Address.extract(proposerNodeKey.getPublicKey());
 
     final List<Address> validators = singletonList(proposerAddress);
 
@@ -210,7 +208,7 @@ public class QbftBlockHeaderValidationRulesetFactoryTest {
   @Test
   public void bftValidateHeaderFailsOnMixHash() {
     final NodeKey proposerNodeKey = NodeKeyUtils.generate();
-    final Address proposerAddress = Util.publicKeyToAddress(proposerNodeKey.getPublicKey());
+    final Address proposerAddress = Address.extract(proposerNodeKey.getPublicKey());
 
     final List<Address> validators = singletonList(proposerAddress);
 
@@ -239,7 +237,7 @@ public class QbftBlockHeaderValidationRulesetFactoryTest {
   @Test
   public void bftValidateHeaderIgnoresOmmersValue() {
     final NodeKey proposerNodeKey = NodeKeyUtils.generate();
-    final Address proposerAddress = Util.publicKeyToAddress(proposerNodeKey.getPublicKey());
+    final Address proposerAddress = Address.extract(proposerNodeKey.getPublicKey());
 
     final List<Address> validators = singletonList(proposerAddress);
 
@@ -268,7 +266,7 @@ public class QbftBlockHeaderValidationRulesetFactoryTest {
   @Test
   public void bftValidateHeaderFailsOnDifficulty() {
     final NodeKey proposerNodeKey = NodeKeyUtils.generate();
-    final Address proposerAddress = Util.publicKeyToAddress(proposerNodeKey.getPublicKey());
+    final Address proposerAddress = Address.extract(proposerNodeKey.getPublicKey());
 
     final List<Address> validators = singletonList(proposerAddress);
 
@@ -293,7 +291,7 @@ public class QbftBlockHeaderValidationRulesetFactoryTest {
   @Test
   public void bftValidateHeaderFailsOnAncestor() {
     final NodeKey proposerNodeKey = NodeKeyUtils.generate();
-    final Address proposerAddress = Util.publicKeyToAddress(proposerNodeKey.getPublicKey());
+    final Address proposerAddress = Address.extract(proposerNodeKey.getPublicKey());
 
     final List<Address> validators = singletonList(proposerAddress);
 
@@ -317,7 +315,7 @@ public class QbftBlockHeaderValidationRulesetFactoryTest {
   @Test
   public void bftValidateHeaderFailsOnGasUsage() {
     final NodeKey proposerNodeKey = NodeKeyUtils.generate();
-    final Address proposerAddress = Util.publicKeyToAddress(proposerNodeKey.getPublicKey());
+    final Address proposerAddress = Address.extract(proposerNodeKey.getPublicKey());
 
     final List<Address> validators = singletonList(proposerAddress);
 
@@ -343,7 +341,7 @@ public class QbftBlockHeaderValidationRulesetFactoryTest {
   @Test
   public void bftValidateHeaderFailsOnGasLimitRange() {
     final NodeKey proposerNodeKey = NodeKeyUtils.generate();
-    final Address proposerAddress = Util.publicKeyToAddress(proposerNodeKey.getPublicKey());
+    final Address proposerAddress = Address.extract(proposerNodeKey.getPublicKey());
 
     final List<Address> validators = singletonList(proposerAddress);
 

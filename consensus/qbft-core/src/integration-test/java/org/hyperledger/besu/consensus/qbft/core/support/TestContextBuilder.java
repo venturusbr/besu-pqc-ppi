@@ -109,7 +109,6 @@ import org.hyperledger.besu.ethereum.core.ImmutableMiningConfiguration;
 import org.hyperledger.besu.ethereum.core.ImmutableMiningConfiguration.MutableInitValues;
 import org.hyperledger.besu.ethereum.core.MiningConfiguration;
 import org.hyperledger.besu.ethereum.core.ProtocolScheduleFixture;
-import org.hyperledger.besu.ethereum.core.Util;
 import org.hyperledger.besu.ethereum.eth.manager.EthContext;
 import org.hyperledger.besu.ethereum.eth.manager.EthScheduler;
 import org.hyperledger.besu.ethereum.eth.transactions.BlobCache;
@@ -132,7 +131,7 @@ import org.hyperledger.besu.testutil.TestClock;
 import org.hyperledger.besu.util.Subscribers;
 
 import java.io.IOException;
-import java.nio.file.Path;
+import java.net.URL;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -188,7 +187,7 @@ public class TestContextBuilder {
   private int validatorCount = 4;
   private int indexOfFirstLocallyProposedBlock = 0; // Meaning first block is from remote peer.
   private boolean useGossip = false;
-  private Optional<String> genesisFile = Optional.empty();
+  private Optional<URL> genesisFile = Optional.empty();
   private List<NodeParams> nodeParams = Collections.emptyList();
   private List<QbftFork> qbftForks = Collections.emptyList();
   private QbftBlockInterface qbftBlockInterface =
@@ -225,7 +224,7 @@ public class TestContextBuilder {
     return this;
   }
 
-  public TestContextBuilder genesisFile(final String genesisFile) {
+  public TestContextBuilder genesisFile(final URL genesisFile) {
     this.genesisFile = Optional.of(genesisFile);
     return this;
   }
@@ -308,9 +307,7 @@ public class TestContextBuilder {
         new UniqueMessageMulticaster(multicaster, GOSSIPED_HISTORY_LIMIT);
 
     final QbftGossiper gossiper =
-        useGossip
-            ? new QbftGossiperImpl(uniqueMulticaster)
-            : mock(QbftGossiper.class);
+        useGossip ? new QbftGossiperImpl(uniqueMulticaster) : mock(QbftGossiper.class);
 
     final StubbedSynchronizerUpdater synchronizerUpdater = new StubbedSynchronizerUpdater();
 
@@ -396,9 +393,11 @@ public class TestContextBuilder {
         genesisHeader, new BlockBody(Collections.emptyList(), Collections.emptyList()));
   }
 
-  private GenesisState createGenesisBlock(final String genesisFile) throws IOException {
+  private GenesisState createGenesisBlock(final URL genesisFile) throws IOException {
+    // Passed through as a URL rather than a file-system path: Resources.getResource yields
+    // /C:/... on Windows, which Path.of rejects with InvalidPathException.
     return GenesisState.fromConfig(
-        GenesisConfig.fromSource(Path.of(genesisFile).toUri().toURL()),
+        GenesisConfig.fromSource(genesisFile),
         ProtocolScheduleFixture.TESTING_NETWORK,
         new CodeCache());
   }
@@ -526,7 +525,7 @@ public class TestContextBuilder {
 
     final EthScheduler ethScheduler = new DeterministicEthScheduler();
 
-    final Address localAddress = Util.publicKeyToAddress(nodeKey.getPublicKey());
+    final Address localAddress = Address.extract(nodeKey.getPublicKey());
     final QbftBlockCreatorFactory blockCreatorFactory =
         new QbftBlockCreatorFactory(
             transactionPool, // changed from QbftBesuController
@@ -547,7 +546,7 @@ public class TestContextBuilder {
         new QbftFinalStateImpl(
             validatorProvider,
             nodeKey,
-            Util.publicKeyToAddress(nodeKey.getPublicKey()),
+            Address.extract(nodeKey.getPublicKey()),
             proposerSelector,
             multicaster,
             new RoundTimer(

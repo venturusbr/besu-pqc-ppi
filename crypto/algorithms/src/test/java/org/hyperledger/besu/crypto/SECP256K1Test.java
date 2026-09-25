@@ -63,7 +63,7 @@ public class SECP256K1Test {
   @Test
   public void keyPairGeneration_PublicKeyRecovery() {
     final KeyPair keyPair = secp256K1.generateKeyPair();
-    assertThat(secp256K1.createPublicKey(keyPair.getPrivateKey()))
+    assertThat(secp256K1.createPublicKey((SECPPrivateKey) keyPair.getPrivateKey()))
         .isEqualTo(keyPair.getPublicKey());
   }
 
@@ -113,7 +113,10 @@ public class SECP256K1Test {
     final Bytes32 dataHash = keccak256(data);
 
     final SECPSignature signature = secp256K1.sign(dataHash, keyPair);
-    assertThat(secp256K1.verify(data, signature, keyPair.getPublicKey(), Hash::keccak256)).isTrue();
+    assertThat(
+            secp256K1.verify(
+                data, signature, (SECPPublicKey) keyPair.getPublicKey(), Hash::keccak256))
+        .isTrue();
   }
 
   @Test

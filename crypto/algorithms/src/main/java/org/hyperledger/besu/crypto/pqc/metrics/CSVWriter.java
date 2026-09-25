@@ -60,14 +60,25 @@ public class CSVWriter {
     }
 
     public void write(final String data) {
+        // The metrics file may not have opened, and clean() may already have shut the executor
+        // down. Metrics are best effort, so drop the sample instead of failing the caller.
+        if (bufferedWriter == null || executor == null || executor.isShutdown()) {
+            return;
+        }
         executor.execute(new Register(data));
     }
 
     public void clean() {
-        try {
+        if (executor != null) {
             executor.shutdown();
-            writer.close();
-            bufferedWriter.close();
+        }
+        // Closing the buffered writer flushes and closes the underlying file writer.
+        try {
+            if (bufferedWriter != null) {
+                bufferedWriter.close();
+            } else if (writer != null) {
+                writer.close();
+            }
         } catch (IOException e) {
             LOG.info(e.getMessage());
         }
@@ -82,6 +93,9 @@ public class CSVWriter {
 
         @Override
         public void run() {
+            if (bufferedWriter == null) {
+                return;
+            }
             try {
                 bufferedWriter.write(data);
                 bufferedWriter.flush();

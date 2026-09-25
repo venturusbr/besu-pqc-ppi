@@ -118,7 +118,7 @@ public class P256VerifyCorpusGenerator {
       input.set(0, messageHash);
       input.set(32, Bytes32.leftPad(Bytes.wrap(signature.getR().toByteArray())));
       input.set(64, Bytes32.leftPad(Bytes.wrap(signature.getS().toByteArray())));
-      input.set(96, keyPair.getPublicKey().getEncodedBytes());
+      input.set(96, Bytes.wrap(keyPair.getPublicKey().getEncoded()));
 
       return input.toArray();
     } catch (Exception e) {
@@ -254,7 +254,7 @@ public class P256VerifyCorpusGenerator {
     // Generate a valid public key and return its encoding
     try {
       KeyPair keyPair = secp256r1.generateKeyPair();
-      return keyPair.getPublicKey().getEncodedBytes();
+      return Bytes.wrap(keyPair.getPublicKey().getEncoded());
     } catch (Exception e) {
       // Fallback to generator point
       byte[] gEncoded = R1_PARAMS.getG().getEncoded(false);

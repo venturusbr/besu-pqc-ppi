@@ -40,7 +40,6 @@ import org.hyperledger.besu.ethereum.core.Block;
 import org.hyperledger.besu.ethereum.core.BlockBody;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.BlockHeaderTestFixture;
-import org.hyperledger.besu.ethereum.core.Util;
 import org.hyperledger.besu.ethereum.eth.sync.state.SyncState;
 
 import java.util.Collections;
@@ -66,8 +65,8 @@ public class CliqueMiningCoordinatorTest {
 
   private final KeyPair proposerKeys = SIGNATURE_ALGORITHM.get().generateKeyPair();
   private final KeyPair validatorKeys = SIGNATURE_ALGORITHM.get().generateKeyPair();
-  private final Address proposerAddress = Util.publicKeyToAddress(proposerKeys.getPublicKey());
-  private final Address validatorAddress = Util.publicKeyToAddress(validatorKeys.getPublicKey());
+  private final Address proposerAddress = Address.extract(proposerKeys.getPublicKey());
+  private final Address validatorAddress = Address.extract(validatorKeys.getPublicKey());
 
   private final List<Address> validators = Lists.newArrayList(validatorAddress, proposerAddress);
 

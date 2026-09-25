@@ -29,7 +29,7 @@ import org.hyperledger.besu.consensus.qbft.core.support.RoundSpecificPeers;
 import org.hyperledger.besu.consensus.qbft.core.support.TestContext;
 import org.hyperledger.besu.consensus.qbft.core.support.TestContextBuilder;
 import org.hyperledger.besu.consensus.qbft.core.types.QbftBlock;
-import org.hyperledger.besu.crypto.SECPSignature;
+import org.hyperledger.besu.crypto.signature.Signature;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -107,11 +107,11 @@ public class FutureRoundTest {
 
     final QbftBlock commitBlock =
         createCommitBlockFromProposalBlock(futureBlock, futureRoundId.getRoundNumber());
-    final SECPSignature commitSeal =
+    final Signature commitSeal =
         context
             .getLocalNodeParams()
             .getNodeKey()
-            .sign(Bytes32.wrap(commitBlock.getHash().getBytes()));
+            .sign(Bytes32.wrap(commitBlock.getHash().getBytes()), "seal");
     final Commit expectedCommit =
         localNodeMessageFactory.createCommit(futureRoundId, futureBlock.getHash(), commitSeal);
     peers.verifyMessagesReceived(expectedCommit);

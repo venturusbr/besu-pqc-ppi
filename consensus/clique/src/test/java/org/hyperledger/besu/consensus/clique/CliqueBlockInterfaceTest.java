@@ -27,7 +27,6 @@ import org.hyperledger.besu.ethereum.core.AddressHelpers;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.BlockHeaderBuilder;
 import org.hyperledger.besu.ethereum.core.BlockHeaderTestFixture;
-import org.hyperledger.besu.ethereum.core.Util;
 
 import java.util.Collection;
 import java.util.List;
@@ -39,8 +38,7 @@ public class CliqueBlockInterfaceTest {
 
   private static final KeyPair proposerKeys =
       SignatureAlgorithmFactory.getInstance().generateKeyPair();
-  private static final Address proposerAddress =
-      Util.publicKeyToAddress(proposerKeys.getPublicKey());
+  private static final Address proposerAddress = Address.extract(proposerKeys.getPublicKey());
   private static final List<Address> validatorList = singletonList(proposerAddress);
 
   private final CliqueBlockInterface blockInterface = new CliqueBlockInterface();

@@ -71,7 +71,7 @@ public class MockPeerDiscoveryAgent extends PeerDiscoveryAgentV4 {
         new NodeRecordManager(
             new InMemoryKeyValueStorageProvider(), nodeKey, forkIdManager, natService),
         rlpxAgent,
-        new PeerTable(nodeKey.getPublicKey().getEncodedBytes()));
+        new PeerTable(Bytes.wrap(nodeKey.getPublicKey().getEncoded())));
     this.agentNetwork = agentNetwork;
     PacketPackage packetPackage = DaggerPacketPackage.create();
     this.packetSerializer = packetPackage.packetSerializer();

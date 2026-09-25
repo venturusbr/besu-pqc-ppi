@@ -56,8 +56,8 @@ public class Account {
       final Address address,
       final Optional<KeyPair> keyPair) {
     this.name = name;
-    this.privateKey = keyPair.map(KeyPair::getPrivateKey);
-    this.publicKey = keyPair.map(KeyPair::getPublicKey);
+    this.privateKey = keyPair.map(kp -> (SECPPrivateKey) kp.getPrivateKey());
+    this.publicKey = keyPair.map(kp -> (SECPPublicKey) kp.getPublicKey());
     this.address = address;
     this.eth = eth;
   }
@@ -66,8 +66,7 @@ public class Account {
     this(
         eth,
         name,
-        Address.extract(
-            Bytes32.wrap(Hash.hash(keyPair.getPublicKey().getEncodedBytes()).getBytes())),
+        Address.extract(keyPair.getPublicKey()),
         Optional.of(keyPair));
   }
 

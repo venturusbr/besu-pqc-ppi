@@ -33,6 +33,7 @@ import org.hyperledger.besu.evm.tracing.OpCodeTracerConfigBuilder;
 import org.hyperledger.besu.evm.tracing.OpCodeTracerConfigBuilder.OpCodeTracerConfig;
 import org.hyperledger.besu.evm.tracing.StreamingOperationTracer;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -42,26 +43,29 @@ import jakarta.validation.constraints.NotNull;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class EVMExecutorTest {
 
   @Test
   void currentEVM() {
-    var subject = EVMExecutor.evm();
-    assertThat(subject.getEVMVersion()).isEqualTo(EvmSpecVersion.CANCUN);
+    var subject = EvmSpec.evmSpec();
+    // tracks the default rather than a hardcoded fork, so a new fork does not break this
+    assertThat(subject.getEVMVersion()).isEqualTo(EvmSpecVersion.mostRecent());
   }
 
   @ParameterizedTest
   @EnumSource(EvmSpecVersion.class)
   void evmByRequest(final EvmSpecVersion version) {
-    var subject = EVMExecutor.evm(version);
+    var subject = EvmSpec.evmSpec(version);
     assertThat(subject.getEVMVersion()).isEqualTo(version);
   }
 
   @ParameterizedTest
   @EnumSource(EvmSpecVersion.class)
   void evmWithChainIDByRequest(final EvmSpecVersion version) {
-    var subject = EVMExecutor.evm(version, BigInteger.TEN);
+    var subject = EvmSpec.evmSpec(version, BigInteger.TEN);
     assertThat(subject.getEVMVersion()).isEqualTo(version);
     if (EvmSpecVersion.ISTANBUL.compareTo(version) <= 0) {
       assertThat(subject.getChainId()).map(Bytes::trimLeadingZeros).map(Bytes::toInt).contains(10);
@@ -73,7 +77,7 @@ class EVMExecutorTest {
   @ParameterizedTest
   @EnumSource(EvmSpecVersion.class)
   void evmWithChainIDByBytes(final EvmSpecVersion version) {
-    var subject = EVMExecutor.evm(version, Bytes.fromHexString("0xc4a1201d"));
+    var subject = EvmSpec.evmSpec(version, Bytes.fromHexString("0xc4a1201d"));
     assertThat(subject.getEVMVersion()).isEqualTo(version);
     if (EvmSpecVersion.ISTANBUL.compareTo(version) <= 0) {
       assertThat(subject.getChainId())

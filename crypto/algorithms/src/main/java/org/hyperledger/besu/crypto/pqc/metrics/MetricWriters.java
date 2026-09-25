@@ -6,9 +6,17 @@ public class MetricWriters {
     private static CSVWriter pkrInstance = null;
 
     public static void clean() {
-        signInstance.clean();
-        verifyInstance.clean();
-        pkrInstance.clean();
+        // The writers are created on first use, so a run that never signed, verified or recovered
+        // a key has none of them.
+        if (signInstance != null) {
+            signInstance.clean();
+        }
+        if (verifyInstance != null) {
+            verifyInstance.clean();
+        }
+        if (pkrInstance != null) {
+            pkrInstance.clean();
+        }
     }
 
     public static String buildSignHeader(){

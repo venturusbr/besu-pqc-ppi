@@ -27,12 +27,12 @@ import org.hyperledger.besu.consensus.ibft.support.RoundSpecificPeers;
 import org.hyperledger.besu.consensus.ibft.support.TestContext;
 import org.hyperledger.besu.consensus.ibft.support.TestContextBuilder;
 import org.hyperledger.besu.consensus.ibft.support.ValidatorPeer;
-import org.hyperledger.besu.crypto.SECPSignature;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.core.Block;
-import org.hyperledger.besu.ethereum.core.Util;
 import org.hyperledger.besu.ethereum.p2p.rlpx.wire.MessageData;
 import org.hyperledger.besu.ethereum.p2p.rlpx.wire.RawMessage;
 
@@ -101,8 +101,7 @@ public class SpuriousBehaviourTest {
   public void nonValidatorsCannotTriggerResponses() {
     final NodeKey nonValidatorNodeKey = NodeKeyUtils.generate();
     final NodeParams nonValidatorParams =
-        new NodeParams(
-            Util.publicKeyToAddress(nonValidatorNodeKey.getPublicKey()), nonValidatorNodeKey);
+        new NodeParams(Address.extract(nonValidatorNodeKey.getPublicKey()), nonValidatorNodeKey);
 
     final ValidatorPeer nonvalidator =
         new ValidatorPeer(
@@ -146,7 +145,7 @@ public class SpuriousBehaviourTest {
 
     // nonProposer-2 will generate an invalid seal
     final ValidatorPeer badSealPeer = peers.getNonProposing(2);
-    final SECPSignature illegalSeal = badSealPeer.getnodeKey().sign(Bytes32.ZERO);
+    final Signature illegalSeal = badSealPeer.getnodeKey().sign(Bytes32.ZERO, "seal");
 
     badSealPeer.injectCommit(roundId, proposedBlock.getHash(), illegalSeal);
     assertThat(context.getCurrentChainHeight()).isEqualTo(0);

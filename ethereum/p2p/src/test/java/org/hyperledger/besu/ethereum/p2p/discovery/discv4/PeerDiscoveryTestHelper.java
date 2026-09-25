@@ -84,7 +84,7 @@ public class PeerDiscoveryTestHelper {
   }
 
   public DiscoveryPeerV4 createDiscoveryPeer(final NodeKey nodeKey) {
-    final Bytes peerId = nodeKey.getPublicKey().getEncodedBytes();
+    final Bytes peerId = Bytes.wrap(nodeKey.getPublicKey().getEncoded());
     final int port = nextAvailablePort.incrementAndGet();
     final DiscoveryPeerV4 discoveryPeerV4 =
         DiscoveryPeerV4.fromEnode(

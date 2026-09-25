@@ -295,7 +295,7 @@ public class TestNode implements Closeable {
   }
 
   public Bytes id() {
-    return nodeKey.getPublicKey().getEncodedBytes();
+    return Bytes.wrap(nodeKey.getPublicKey().getEncoded());
   }
 
   public static String shortId(final Bytes id) {

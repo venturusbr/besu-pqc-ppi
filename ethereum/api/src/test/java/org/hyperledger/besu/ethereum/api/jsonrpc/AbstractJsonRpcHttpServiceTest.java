@@ -21,6 +21,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import org.hyperledger.besu.config.StubGenesisConfigOptions;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.ProtocolContext;
 import org.hyperledger.besu.ethereum.api.ApiConfiguration;
@@ -219,7 +220,8 @@ public abstract class AbstractJsonRpcHttpServiceTest {
             BalConfiguration.DEFAULT,
             Optional.empty(),
             transactionSimulator,
-            new EthScheduler(1, 1, 1, new NoOpMetricsSystem()));
+            new EthScheduler(1, 1, 1, new NoOpMetricsSystem()),
+            DSAProviderFactory.getVerifierProvider());
   }
 
   protected void startService() throws Exception {

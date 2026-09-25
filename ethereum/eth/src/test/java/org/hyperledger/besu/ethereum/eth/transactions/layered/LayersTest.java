@@ -48,7 +48,6 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.MiningConfiguration;
 import org.hyperledger.besu.ethereum.core.Transaction;
-import org.hyperledger.besu.ethereum.core.Util;
 import org.hyperledger.besu.ethereum.eth.manager.EthScheduler;
 import org.hyperledger.besu.ethereum.eth.transactions.BlobCache;
 import org.hyperledger.besu.ethereum.eth.transactions.ImmutableTransactionPoolConfiguration;
@@ -1766,6 +1765,7 @@ public class LayersTest extends BaseTransactionPoolTest {
             case BLOB -> createBlobPendingTransaction(sender, nonce);
             case DELEGATE_CODE ->
                 createEIP7702PendingTransaction(sender, nonce, authorityAndNonces);
+            default -> throw new IllegalArgumentException("Unsupported transaction type: " + type);
           };
       liveTxsBySender.get(sender).put(nonce, newPendingTx);
       return newPendingTx;
@@ -2098,7 +2098,7 @@ public class LayersTest extends BaseTransactionPoolTest {
 
     Sender(final boolean hasPriority, final int gasFeeMultiplier) {
       this.key = SIGNATURE_ALGORITHM.get().generateKeyPair();
-      this.address = Util.publicKeyToAddress(key.getPublicKey());
+      this.address = Address.extract(key.getPublicKey());
       this.gasFeeMultiplier = gasFeeMultiplier;
       this.hasPriority = hasPriority;
     }

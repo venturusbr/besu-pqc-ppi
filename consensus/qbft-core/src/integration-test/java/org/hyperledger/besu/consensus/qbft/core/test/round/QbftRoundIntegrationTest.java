@@ -110,7 +110,7 @@ public class QbftRoundIntegrationTest {
     when(messageValidator.validatePrepare(any())).thenReturn(true);
     when(messageValidator.validateCommit(any())).thenReturn(true);
 
-    when(nodeKey.sign(any())).thenThrow(new SecurityModuleException("Hsm Is Down"));
+    when(nodeKey.sign(any(), any())).thenThrow(new SecurityModuleException("Hsm Is Down"));
 
     final QbftExtraDataCodec qbftExtraDataEncoder = new QbftExtraDataCodec();
     throwingMessageFactory = new MessageFactory(nodeKey, blockEncoder);

@@ -17,6 +17,7 @@ package org.hyperledger.besu.ethereum.p2p.rlpx.handshake.ecies;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.hyperledger.besu.crypto.KeyPair;
+import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
@@ -122,7 +123,8 @@ public class ECIESHandshakeTest {
 
     // Prepare the handshaker to take the initiator role.
     initiator.prepareInitiator(
-        NodeKeyUtils.createFrom(Input.initiatorKeyPair), Input.responderKeyPair.getPublicKey());
+        NodeKeyUtils.createFrom(Input.initiatorKeyPair),
+        (SECPPublicKey) Input.responderKeyPair.getPublicKey());
 
     // Set the test vectors.
     initiator.setEphKeyPair(Input.initiatorEphKeyPair);
@@ -188,7 +190,8 @@ public class ECIESHandshakeTest {
     // Initiator end of the handshake.
     final ECIESHandshaker initiator = new ECIESHandshaker();
     initiator.prepareInitiator(
-        NodeKeyUtils.createFrom(Input.initiatorKeyPair), Input.responderKeyPair.getPublicKey());
+        NodeKeyUtils.createFrom(Input.initiatorKeyPair),
+        (SECPPublicKey) Input.responderKeyPair.getPublicKey());
     initiator.firstMessage();
     initiator.setInitiatorMsgEnc(Bytes.wrap(Messages.initiatorMsgEnc));
     initiator.setEphKeyPair(Input.initiatorEphKeyPair);

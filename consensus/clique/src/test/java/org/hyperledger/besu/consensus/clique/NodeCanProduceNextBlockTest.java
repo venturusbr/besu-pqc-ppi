@@ -34,7 +34,6 @@ import org.hyperledger.besu.ethereum.core.Block;
 import org.hyperledger.besu.ethereum.core.BlockBody;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.BlockHeaderTestFixture;
-import org.hyperledger.besu.ethereum.core.Util;
 
 import java.util.List;
 
@@ -64,13 +63,13 @@ public class NodeCanProduceNextBlockTest {
 
   @BeforeEach
   public void setup() {
-    localAddress = Util.publicKeyToAddress(proposerKeyPair.getPublicKey());
+    localAddress = Address.extract(proposerKeyPair.getPublicKey());
     validatorList.add(localAddress);
   }
 
   @Test
   public void networkWithOneValidatorIsAllowedToCreateConsecutiveBlocks() {
-    final Address localAddress = Util.publicKeyToAddress(proposerKeyPair.getPublicKey());
+    final Address localAddress = Address.extract(proposerKeyPair.getPublicKey());
 
     genesisBlock = createEmptyBlock(proposerKeyPair);
 
@@ -97,7 +96,7 @@ public class NodeCanProduceNextBlockTest {
 
   @Test
   public void networkWithTwoValidatorsIsAllowedToProduceBlockIfNotPreviousBlockProposer() {
-    final Address otherAddress = Util.publicKeyToAddress(otherNodeKeyPair.getPublicKey());
+    final Address otherAddress = Address.extract(otherNodeKeyPair.getPublicKey());
     validatorList.add(otherAddress);
 
     genesisBlock = createEmptyBlock(otherNodeKeyPair);
@@ -134,7 +133,7 @@ public class NodeCanProduceNextBlockTest {
 
   @Test
   public void networkWithTwoValidatorsIsNotAllowedToProduceBlockIfIsPreviousBlockProposer() {
-    final Address otherAddress = Util.publicKeyToAddress(otherNodeKeyPair.getPublicKey());
+    final Address otherAddress = Address.extract(otherNodeKeyPair.getPublicKey());
     validatorList.add(otherAddress);
 
     genesisBlock = createEmptyBlock(proposerKeyPair);
@@ -166,7 +165,7 @@ public class NodeCanProduceNextBlockTest {
 
   @Test
   public void withThreeValidatorsMustHaveOneBlockBetweenSignings() {
-    final Address otherAddress = Util.publicKeyToAddress(otherNodeKeyPair.getPublicKey());
+    final Address otherAddress = Address.extract(otherNodeKeyPair.getPublicKey());
     validatorList.add(otherAddress);
     validatorList.add(AddressHelpers.ofValue(1));
 
@@ -211,7 +210,7 @@ public class NodeCanProduceNextBlockTest {
 
   @Test
   public void signerIsValidIfInsufficientBlocksExistInHistory() {
-    final Address otherAddress = Util.publicKeyToAddress(otherNodeKeyPair.getPublicKey());
+    final Address otherAddress = Address.extract(otherNodeKeyPair.getPublicKey());
     validatorList.add(otherAddress);
     validatorList.add(AddressHelpers.ofValue(1));
     validatorList.add(AddressHelpers.ofValue(2));
@@ -247,7 +246,7 @@ public class NodeCanProduceNextBlockTest {
 
   @Test
   public void exceptionIsThrownIfOnAnOrphanedChain() {
-    final Address otherAddress = Util.publicKeyToAddress(otherNodeKeyPair.getPublicKey());
+    final Address otherAddress = Address.extract(otherNodeKeyPair.getPublicKey());
     validatorList.add(otherAddress);
 
     genesisBlock = createEmptyBlock(proposerKeyPair);

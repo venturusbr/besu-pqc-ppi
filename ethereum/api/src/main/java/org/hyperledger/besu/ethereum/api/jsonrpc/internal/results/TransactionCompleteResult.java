@@ -87,11 +87,14 @@ public class TransactionCompleteResult implements TransactionResult {
   private final String nonce;
   private final String to;
   private final String transactionIndex;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private final String dsaType;
   private final String type;
   private final String value;
   private final String yParity;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private final String publicKey;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private final String signature;
   private final String v;
   private final String r;
@@ -296,11 +299,13 @@ public class TransactionCompleteResult implements TransactionResult {
     return v;
   }
 
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   @JsonGetter(value = "r")
   public String getR() {
     return r;
   }
 
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   @JsonGetter(value = "s")
   public String getS() {
     return s;

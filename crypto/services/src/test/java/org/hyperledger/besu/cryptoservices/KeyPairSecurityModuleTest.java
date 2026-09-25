@@ -43,7 +43,7 @@ public class KeyPairSecurityModuleTest {
     final SECPPublicKey publicKey =
         SignatureAlgorithmFactory.getInstance().createPublicKey(encodedBytes);
 
-    Assertions.assertThat(keyPair.getPublicKey().getEncodedBytes())
+    Assertions.assertThat(Bytes.wrap(keyPair.getPublicKey().getEncoded()))
         .isEqualByComparingTo(publicKey.getEncodedBytes());
   }
 }

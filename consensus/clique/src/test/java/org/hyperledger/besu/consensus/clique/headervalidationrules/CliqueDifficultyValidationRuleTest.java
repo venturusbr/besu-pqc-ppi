@@ -32,7 +32,6 @@ import org.hyperledger.besu.ethereum.core.AddressHelpers;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.BlockHeaderTestFixture;
 import org.hyperledger.besu.ethereum.core.Difficulty;
-import org.hyperledger.besu.ethereum.core.Util;
 
 import java.util.List;
 
@@ -50,7 +49,7 @@ public class CliqueDifficultyValidationRuleTest {
 
   @BeforeEach
   public void setup() {
-    final Address localAddress = Util.publicKeyToAddress(proposerKeyPair.getPublicKey());
+    final Address localAddress = Address.extract(proposerKeyPair.getPublicKey());
     validatorList.add(localAddress);
     validatorList.add(AddressHelpers.calculateAddressWithRespectTo(localAddress, 1));
 

@@ -3,8 +3,6 @@ package org.hyperledger.besu.crypto;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.crypto.algorithms.MLDSA;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
-import org.hyperledger.besu.crypto.key.KeyManager;
-import org.hyperledger.besu.crypto.key.NodeKeyPair;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -24,7 +22,7 @@ public class MLDSATest {
     @EnumSource(value = DSAParametersSet.class, names = {"MLDSA44", "MLDSA65", "MLDSA87"})
     void testGenerateNodeKeyPair(final DSAParametersSet params) {
         MLDSA mldsa = new MLDSA(params);
-        NodeKeyPair keyPair = mldsa.generateNodeKeyPair(new KeyManager(null));
+        KeyPair keyPair = mldsa.generateNodeKeyPair();
 
         assertNotNull(keyPair);
         assertNotNull(keyPair.getPrivateKey());
@@ -35,7 +33,7 @@ public class MLDSATest {
     @EnumSource(value = DSAParametersSet.class, names = {"MLDSA44", "MLDSA65", "MLDSA87"})
     void testSignAndVerify(final DSAParametersSet params) {
         MLDSA mldsa = new MLDSA(params);
-        NodeKeyPair keyPair = mldsa.generateNodeKeyPair(new KeyManager(null));
+        KeyPair keyPair = mldsa.generateNodeKeyPair();
 
         PrivateKey sk = keyPair.getPrivateKey();
         PublicKey pk = keyPair.getPublicKey();
@@ -53,7 +51,7 @@ public class MLDSATest {
     @EnumSource(value = DSAParametersSet.class, names = {"MLDSA44", "MLDSA65", "MLDSA87"})
     void testVerifyFailsForModifiedMessage(final DSAParametersSet params) {
         MLDSA mldsa = new MLDSA(params);
-        NodeKeyPair keyPair = mldsa.generateNodeKeyPair(new KeyManager(null));
+        KeyPair keyPair = mldsa.generateNodeKeyPair();
 
         PrivateKey sk = keyPair.getPrivateKey();
         PublicKey pk = keyPair.getPublicKey();

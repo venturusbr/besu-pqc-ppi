@@ -18,7 +18,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hyperledger.besu.consensus.clique.CliqueHelpers.distanceFromInTurn;
 import static org.hyperledger.besu.consensus.clique.CliqueHelpers.installCliqueBlockChoiceRule;
 import static org.hyperledger.besu.ethereum.core.InMemoryKeyValueStorageProvider.createInMemoryBlockchain;
-import static org.hyperledger.besu.ethereum.core.Util.publicKeyToAddress;
 
 import org.hyperledger.besu.consensus.common.BlockInterface;
 import org.hyperledger.besu.consensus.common.EpochManager;
@@ -60,11 +59,11 @@ public class CliqueBlockChoiceTests {
     keyPairs =
         IntStream.range(0, 8)
             .mapToObj(i -> SignatureAlgorithmFactory.getInstance().generateKeyPair())
-            .sorted(Comparator.comparing(kp -> publicKeyToAddress(kp.getPublicKey())))
+            .sorted(Comparator.comparing(kp -> Address.extract(kp.getPublicKey())))
             .collect(Collectors.toList());
     addresses =
         keyPairs.stream()
-            .map(kp -> publicKeyToAddress(kp.getPublicKey()))
+            .map(kp -> Address.extract(kp.getPublicKey()))
             .collect(Collectors.toList());
     headerBuilder = new BlockHeaderTestFixture();
     final Block genesisBlock = createEmptyBlock(keyPairs.get(0));

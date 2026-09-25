@@ -17,11 +17,10 @@ public final class TestKeyLoader {
     public static PrivateKey loadPrivateKey(final String resourcePath, final DSAParametersSet params, final PrivateKeyRepresentation skFirstRep, final PrivateKeyRepresentation skSecondRep ) throws URISyntaxException {
         File skFile = new File(TestKeyLoader.class.getResource(resourcePath).toURI());
 
-        KeyConfiguration keyConfig = new KeyConfiguration(
-            skFirstRep,
-            skSecondRep,
-            skFile
-        );
+        KeyConfiguration keyConfig =
+            skSecondRep == null
+                ? KeyConfiguration.createSingleKeyConfig(skFile, skFirstRep)
+                : KeyConfiguration.createHybridKeyConfig(skFile, skFirstRep, skSecondRep);
 
         KeyManager keyManager = new KeyManager(keyConfig);
 

@@ -224,24 +224,9 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
   
   @Override
   public Optional<String> publicKey(){
-    if(maybePublicKey.isPresent()){
-      return maybePublicKey.map(pk -> Bytes.wrap(pk.getEncoded()).toHexString());
-    }
-    final DSAParametersSet dsaParams;
-    if(authorizationType == CodeDelegationType.FLEXIBLE){
-      dsaParams = DSAParametersSet.fromId(dsaType.get());
-    } else {
-      dsaParams = DSAParametersSet.SECP256K1;
-    }
-
-    return Optional.of(
-      Bytes.wrap(
-          KeyFactory
-              .createPublicKey(Bytes.wrap(maybePublicKey.get().getEncoded()), dsaParams)
-              .get()
-              .getEncoded()
-      ).toHexString()
-    );
+    // A delegation that relies on public key recovery carries no key of its own, and recovering
+    // one needs the signing hash this object does not hold, so there is nothing to report.
+    return maybePublicKey.map(pk -> Bytes.wrap(pk.getEncoded()).toHexString());
   }
 
   @JsonProperty("signature")

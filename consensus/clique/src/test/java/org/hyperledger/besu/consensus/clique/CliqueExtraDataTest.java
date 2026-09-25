@@ -25,7 +25,6 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.core.AddressHelpers;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.BlockHeaderTestFixture;
-import org.hyperledger.besu.ethereum.core.Util;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -103,7 +102,7 @@ public class CliqueExtraDataTest {
     final List<Address> addresses =
         nodeKeys.stream()
             .map(KeyPair::getPublicKey)
-            .map(Util::publicKeyToAddress)
+            .map(Address::extract)
             .collect(Collectors.toList());
 
     final String hexOutput = CliqueExtraData.createGenesisExtraDataString(addresses);

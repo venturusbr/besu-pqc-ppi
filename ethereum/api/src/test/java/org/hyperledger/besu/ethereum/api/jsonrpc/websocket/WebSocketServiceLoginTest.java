@@ -25,6 +25,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 
 import org.hyperledger.besu.config.StubGenesisConfigOptions;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.ProtocolContext;
 import org.hyperledger.besu.ethereum.api.ApiConfiguration;
@@ -220,7 +221,8 @@ public class WebSocketServiceLoginTest {
                     BalConfiguration.DEFAULT,
                     Optional.empty(),
                     mock(TransactionSimulator.class),
-                    new DeterministicEthScheduler()));
+                    new DeterministicEthScheduler(),
+                    DSAProviderFactory.getVerifierProvider()));
 
     websocketMethods.putAll(rpcMethods);
     webSocketMessageHandlerSpy =

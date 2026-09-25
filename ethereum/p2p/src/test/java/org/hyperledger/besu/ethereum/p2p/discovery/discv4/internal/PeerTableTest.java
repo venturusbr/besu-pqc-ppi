@@ -88,7 +88,7 @@ public class PeerTableTest {
   public void peerExists_withDifferentIp() {
     final PeerTable table = new PeerTable(Peer.randomId());
     final Bytes peerId =
-        SIGNATURE_ALGORITHM.get().generateKeyPair().getPublicKey().getEncodedBytes();
+        Bytes.wrap(SIGNATURE_ALGORITHM.get().generateKeyPair().getPublicKey().getEncoded());
     final DiscoveryPeerV4 peer =
         DiscoveryPeerV4.fromIdAndEndpoint(peerId, new Endpoint("1.1.1.1", 30303, Optional.empty()));
 
@@ -108,7 +108,7 @@ public class PeerTableTest {
   public void peerExists_withDifferentUdpPort() {
     final PeerTable table = new PeerTable(Peer.randomId());
     final Bytes peerId =
-        SIGNATURE_ALGORITHM.get().generateKeyPair().getPublicKey().getEncodedBytes();
+        Bytes.wrap(SIGNATURE_ALGORITHM.get().generateKeyPair().getPublicKey().getEncoded());
     final DiscoveryPeerV4 peer =
         DiscoveryPeerV4.fromIdAndEndpoint(peerId, new Endpoint("1.1.1.1", 30303, Optional.empty()));
 
@@ -128,7 +128,7 @@ public class PeerTableTest {
   public void peerExists_withDifferentIdAndUdpPort() {
     final PeerTable table = new PeerTable(Peer.randomId());
     final Bytes peerId =
-        SIGNATURE_ALGORITHM.get().generateKeyPair().getPublicKey().getEncodedBytes();
+        Bytes.wrap(SIGNATURE_ALGORITHM.get().generateKeyPair().getPublicKey().getEncoded());
     final DiscoveryPeerV4 peer =
         DiscoveryPeerV4.fromIdAndEndpoint(peerId, new Endpoint("1.1.1.1", 30303, Optional.empty()));
 
