@@ -21,21 +21,21 @@ import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.
 import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.BLOB_PROOF_BUNDLE_SIZE_V0;
 import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.BLOB_PROOF_BUNDLE_SIZE_V1;
 import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.CODE_DELEGATION_ENTRY_SIZE;
+import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.CODE_DELEGATION_TYPE_SIZE;
 import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.EIP1559_AND_EIP4844_SHALLOW_SIZE;
 import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.FRONTIER_AND_ACCESS_LIST_SHALLOW_SIZE;
-import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.OPTIONAL_DSATYPE_SIZE;
-import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.OPTIONAL_PUBLIC_KEY_SHALLOW_SIZE;
-import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.SIGNATURE_SHALLOW_SIZE;
-import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.CODE_DELEGATION_TYPE_SIZE;
 import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.KZG_PROOF_CONTAINER_SHALLOW_SIZE;
 import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.KZG_PROOF_SIZE;
 import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.OPTIONAL_ACCESS_LIST_SHALLOW_SIZE;
 import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.OPTIONAL_CHAIN_ID_SIZE;
 import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.OPTIONAL_CODE_DELEGATION_LIST_SHALLOW_SIZE;
+import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.OPTIONAL_DSATYPE_SIZE;
+import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.OPTIONAL_PUBLIC_KEY_SHALLOW_SIZE;
 import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.OPTIONAL_SHALLOW_SIZE;
 import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.OPTIONAL_TO_SIZE;
 import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.PAYLOAD_SHALLOW_SIZE;
 import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.PENDING_TRANSACTION_SHALLOW_SIZE;
+import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.SIGNATURE_SHALLOW_SIZE;
 import static org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction.MemorySize.calculateListShallowSize;
 
 import org.hyperledger.besu.datatypes.AccessListEntry;
@@ -216,7 +216,7 @@ public abstract class PendingTransaction
         + computeBlobWithCommitmentsMemorySize();
   }
 
-    private int computeFlexibleBlobMemorySize() {
+  private int computeFlexibleBlobMemorySize() {
     return OPTIONAL_DSATYPE_SIZE
         + computeBlobMemorySize()
         + computePublicKeyMemorySize()
@@ -260,16 +260,17 @@ public abstract class PendingTransaction
         : 0;
   }
 
-  private int computeSignatureMemorySize(){
-    if(transaction.getSignature() != null){
+  private int computeSignatureMemorySize() {
+    if (transaction.getSignature() != null) {
       return SIGNATURE_SHALLOW_SIZE + transaction.getSignature().encodedBytes().size();
     }
     return 0;
   }
 
-  private int computePublicKeyMemorySize(){
-    if(transaction.getMaybePublicKey().isPresent()){
-      return OPTIONAL_PUBLIC_KEY_SHALLOW_SIZE + transaction.getMaybePublicKey().get().getEncoded().length;
+  private int computePublicKeyMemorySize() {
+    if (transaction.getMaybePublicKey().isPresent()) {
+      return OPTIONAL_PUBLIC_KEY_SHALLOW_SIZE
+          + transaction.getMaybePublicKey().get().getEncoded().length;
     }
 
     return 0;
@@ -328,12 +329,10 @@ public abstract class PendingTransaction
     }
 
     if (cd.publicKey().isPresent()) {
-      size += OPTIONAL_PUBLIC_KEY_SHALLOW_SIZE
-            + cd.maybePublicKey().get().getEncoded().length;
+      size += OPTIONAL_PUBLIC_KEY_SHALLOW_SIZE + cd.maybePublicKey().get().getEncoded().length;
     }
 
-    size += SIGNATURE_SHALLOW_SIZE
-          + cd.signature().encodedBytes().size();
+    size += SIGNATURE_SHALLOW_SIZE + cd.signature().encodedBytes().size();
 
     return size;
   }
@@ -512,10 +511,14 @@ public abstract class PendingTransaction
    * The memory size of an object is calculated using the PendingTransactionEstimatedMemorySizeTest
    * look there for the details of the calculation and to adapt the code when any of the related
    * class changes its structure.
+   *
+   * <p>The transaction sizes grew by 296 bytes, and a code delegation entry by 168, when
+   * transactions gained the fields the hybrid signature scheme needs. The pool sizes itself from
+   * these numbers, so leaving them behind makes it hold more memory than it was configured for.
    */
   public interface MemorySize {
-    int FRONTIER_AND_ACCESS_LIST_SHALLOW_SIZE = 896;
-    int EIP1559_AND_EIP4844_SHALLOW_SIZE = 1008;
+    int FRONTIER_AND_ACCESS_LIST_SHALLOW_SIZE = 1192;
+    int EIP1559_AND_EIP4844_SHALLOW_SIZE = 1304;
     int OPTIONAL_TO_SIZE = 104;
     int OPTIONAL_CHAIN_ID_SIZE = 80;
     int PAYLOAD_SHALLOW_SIZE = 32;
@@ -523,7 +526,7 @@ public abstract class PendingTransaction
     int ACCESS_LIST_ENTRY_SHALLOW_SIZE = 160;
     int OPTIONAL_ACCESS_LIST_SHALLOW_SIZE = 40;
     int OPTIONAL_CODE_DELEGATION_LIST_SHALLOW_SIZE = 40;
-    int CODE_DELEGATION_ENTRY_SIZE = 512;
+    int CODE_DELEGATION_ENTRY_SIZE = 680;
     int OPTIONAL_SHALLOW_SIZE = 16;
     int CODE_DELEGATION_TYPE_SIZE = 8;
     int KZG_PROOF_CONTAINER_SHALLOW_SIZE = 24;

@@ -21,6 +21,7 @@ import static org.hyperledger.besu.consensus.common.validator.VoteType.DROP;
 
 import org.hyperledger.besu.consensus.common.validator.ValidatorVote;
 import org.hyperledger.besu.crypto.KeyPair;
+import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.core.AddressHelpers;
@@ -40,7 +41,7 @@ public class CliqueBlockInterfaceTest {
   private static final KeyPair proposerKeys =
       SignatureAlgorithmFactory.getInstance().generateKeyPair();
   private static final Address proposerAddress =
-      Util.publicKeyToAddress(proposerKeys.getPublicKey());
+      Util.publicKeyToAddress((SECPPublicKey) proposerKeys.getPublicKey());
   private static final List<Address> validatorList = singletonList(proposerAddress);
 
   private final CliqueBlockInterface blockInterface = new CliqueBlockInterface();

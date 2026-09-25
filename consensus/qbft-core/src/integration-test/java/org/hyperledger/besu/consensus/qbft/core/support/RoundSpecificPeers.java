@@ -33,7 +33,7 @@ import org.hyperledger.besu.consensus.qbft.core.payload.RoundChangePayload;
 import org.hyperledger.besu.consensus.qbft.core.statemachine.PreparedCertificate;
 import org.hyperledger.besu.consensus.qbft.core.types.QbftBlock;
 import org.hyperledger.besu.consensus.qbft.core.types.QbftBlockCodec;
-import org.hyperledger.besu.crypto.SECPSignature;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.p2p.rlpx.wire.MessageData;
 
@@ -77,7 +77,7 @@ public class RoundSpecificPeers {
     peers.forEach(ValidatorPeer::clearReceivedMessages);
   }
 
-  public List<SECPSignature> sign(final Hash digest) {
+  public List<Signature> sign(final Hash digest) {
     return peers.stream().map(peer -> peer.getBlockSignature(digest)).collect(Collectors.toList());
   }
 

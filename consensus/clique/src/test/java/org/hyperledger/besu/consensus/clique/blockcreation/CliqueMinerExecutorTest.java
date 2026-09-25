@@ -32,6 +32,7 @@ import org.hyperledger.besu.consensus.clique.CliqueProtocolSchedule;
 import org.hyperledger.besu.consensus.common.EpochManager;
 import org.hyperledger.besu.consensus.common.ForksSchedule;
 import org.hyperledger.besu.consensus.common.validator.ValidatorProvider;
+import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
 import org.hyperledger.besu.datatypes.Address;
@@ -93,7 +94,7 @@ public class CliqueMinerExecutorTest {
 
   @BeforeEach
   public void setup() {
-    localAddress = Util.publicKeyToAddress(proposerNodeKey.getPublicKey());
+    localAddress = Util.publicKeyToAddress((SECPPublicKey) proposerNodeKey.getPublicKey());
     validatorList.add(localAddress);
     validatorList.add(AddressHelpers.calculateAddressWithRespectTo(localAddress, 1));
     validatorList.add(AddressHelpers.calculateAddressWithRespectTo(localAddress, 2));

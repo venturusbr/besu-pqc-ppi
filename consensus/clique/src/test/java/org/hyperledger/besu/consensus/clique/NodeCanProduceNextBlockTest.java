@@ -24,6 +24,7 @@ import static org.mockito.Mockito.when;
 import org.hyperledger.besu.consensus.clique.headervalidationrules.SignerRateLimitValidationRule;
 import org.hyperledger.besu.consensus.common.validator.ValidatorProvider;
 import org.hyperledger.besu.crypto.KeyPair;
+import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
@@ -64,13 +65,14 @@ public class NodeCanProduceNextBlockTest {
 
   @BeforeEach
   public void setup() {
-    localAddress = Util.publicKeyToAddress(proposerKeyPair.getPublicKey());
+    localAddress = Util.publicKeyToAddress((SECPPublicKey) proposerKeyPair.getPublicKey());
     validatorList.add(localAddress);
   }
 
   @Test
   public void networkWithOneValidatorIsAllowedToCreateConsecutiveBlocks() {
-    final Address localAddress = Util.publicKeyToAddress(proposerKeyPair.getPublicKey());
+    final Address localAddress =
+        Util.publicKeyToAddress((SECPPublicKey) proposerKeyPair.getPublicKey());
 
     genesisBlock = createEmptyBlock(proposerKeyPair);
 
@@ -97,7 +99,8 @@ public class NodeCanProduceNextBlockTest {
 
   @Test
   public void networkWithTwoValidatorsIsAllowedToProduceBlockIfNotPreviousBlockProposer() {
-    final Address otherAddress = Util.publicKeyToAddress(otherNodeKeyPair.getPublicKey());
+    final Address otherAddress =
+        Util.publicKeyToAddress((SECPPublicKey) otherNodeKeyPair.getPublicKey());
     validatorList.add(otherAddress);
 
     genesisBlock = createEmptyBlock(otherNodeKeyPair);
@@ -134,7 +137,8 @@ public class NodeCanProduceNextBlockTest {
 
   @Test
   public void networkWithTwoValidatorsIsNotAllowedToProduceBlockIfIsPreviousBlockProposer() {
-    final Address otherAddress = Util.publicKeyToAddress(otherNodeKeyPair.getPublicKey());
+    final Address otherAddress =
+        Util.publicKeyToAddress((SECPPublicKey) otherNodeKeyPair.getPublicKey());
     validatorList.add(otherAddress);
 
     genesisBlock = createEmptyBlock(proposerKeyPair);
@@ -166,7 +170,8 @@ public class NodeCanProduceNextBlockTest {
 
   @Test
   public void withThreeValidatorsMustHaveOneBlockBetweenSignings() {
-    final Address otherAddress = Util.publicKeyToAddress(otherNodeKeyPair.getPublicKey());
+    final Address otherAddress =
+        Util.publicKeyToAddress((SECPPublicKey) otherNodeKeyPair.getPublicKey());
     validatorList.add(otherAddress);
     validatorList.add(AddressHelpers.ofValue(1));
 
@@ -211,7 +216,8 @@ public class NodeCanProduceNextBlockTest {
 
   @Test
   public void signerIsValidIfInsufficientBlocksExistInHistory() {
-    final Address otherAddress = Util.publicKeyToAddress(otherNodeKeyPair.getPublicKey());
+    final Address otherAddress =
+        Util.publicKeyToAddress((SECPPublicKey) otherNodeKeyPair.getPublicKey());
     validatorList.add(otherAddress);
     validatorList.add(AddressHelpers.ofValue(1));
     validatorList.add(AddressHelpers.ofValue(2));
@@ -247,7 +253,8 @@ public class NodeCanProduceNextBlockTest {
 
   @Test
   public void exceptionIsThrownIfOnAnOrphanedChain() {
-    final Address otherAddress = Util.publicKeyToAddress(otherNodeKeyPair.getPublicKey());
+    final Address otherAddress =
+        Util.publicKeyToAddress((SECPPublicKey) otherNodeKeyPair.getPublicKey());
     validatorList.add(otherAddress);
 
     genesisBlock = createEmptyBlock(proposerKeyPair);

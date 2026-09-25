@@ -30,6 +30,7 @@ import org.hyperledger.besu.consensus.clique.CliqueMiningTracker;
 import org.hyperledger.besu.consensus.clique.TestHelpers;
 import org.hyperledger.besu.consensus.common.validator.ValidatorProvider;
 import org.hyperledger.besu.crypto.KeyPair;
+import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.datatypes.Address;
@@ -66,8 +67,10 @@ public class CliqueMiningCoordinatorTest {
 
   private final KeyPair proposerKeys = SIGNATURE_ALGORITHM.get().generateKeyPair();
   private final KeyPair validatorKeys = SIGNATURE_ALGORITHM.get().generateKeyPair();
-  private final Address proposerAddress = Util.publicKeyToAddress(proposerKeys.getPublicKey());
-  private final Address validatorAddress = Util.publicKeyToAddress(validatorKeys.getPublicKey());
+  private final Address proposerAddress =
+      Util.publicKeyToAddress((SECPPublicKey) proposerKeys.getPublicKey());
+  private final Address validatorAddress =
+      Util.publicKeyToAddress((SECPPublicKey) validatorKeys.getPublicKey());
 
   private final List<Address> validators = Lists.newArrayList(validatorAddress, proposerAddress);
 

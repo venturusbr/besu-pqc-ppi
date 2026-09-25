@@ -43,12 +43,12 @@ public class NodeKeyTest {
     final KeyPair keyPair =
         signatureAlgorithm.createKeyPair(signatureAlgorithm.createPrivateKey(keyPairPrvKey));
     final KeyPairSecurityModule keyPairSecurityModule = new KeyPairSecurityModule(keyPair);
-    final NodeKey nodeKey = new NodeKey(keyPairSecurityModule);
+    final NodeKey nodeKey = new NodeKey(new SecurityModuleAdapter(keyPairSecurityModule));
 
-    Assertions.assertThat(nodeKey.getPublicKey().getEncodedBytes())
-        .isEqualByComparingTo(keyPair.getPublicKey().getEncodedBytes());
+    Assertions.assertThat(Bytes.wrap(nodeKey.getPublicKey().getEncoded()))
+        .isEqualByComparingTo(Bytes.wrap(keyPair.getPublicKey().getEncoded()));
 
-    Assertions.assertThat(nodeKey.getPublicKey().getEncodedBytes())
+    Assertions.assertThat(Bytes.wrap(nodeKey.getPublicKey().getEncoded()))
         .isEqualByComparingTo(keyPairPubKey);
   }
 }

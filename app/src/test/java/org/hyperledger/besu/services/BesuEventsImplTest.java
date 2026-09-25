@@ -153,6 +153,9 @@ public class BesuEventsImplTest {
         .when(mockTransactionValidatorFactory.get().validateForSender(any(), any(), any()))
         .thenReturn(ValidationResult.valid());
     lenient()
+        .when(mockTransactionValidatorFactory.get().validateTransactionSignature(any()))
+        .thenReturn(ValidationResult.valid());
+    lenient()
         .when(mockWorldStateArchive.getWorldState(any(WorldStateQueryParams.class)))
         .thenReturn(Optional.of(mockWorldState));
 

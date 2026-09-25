@@ -32,6 +32,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.hyperledger.besu.crypto.Hash;
+import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.cryptoservices.NodeKey;
@@ -1805,7 +1806,7 @@ public class PeerDiscoveryControllerTest {
               new EnrField(EnrField.ID, IdentitySchema.V4),
               new EnrField(
                   EnrField.PKEY_SECP256K1,
-                  signatureAlgorithm.compressPublicKey(nodeKey.getPublicKey())),
+                  signatureAlgorithm.compressPublicKey((SECPPublicKey) nodeKey.getPublicKey())),
               new EnrField(EnrField.IP_V4, addressBytes),
               new EnrField(EnrField.TCP, 7890),
               new EnrField(EnrField.UDP, 4871),
@@ -1817,14 +1818,14 @@ public class PeerDiscoveryControllerTest {
               new EnrField(EnrField.ID, IdentitySchema.V4),
               new EnrField(
                   EnrField.PKEY_SECP256K1,
-                  signatureAlgorithm.compressPublicKey(nodeKey.getPublicKey())),
+                  signatureAlgorithm.compressPublicKey((SECPPublicKey) nodeKey.getPublicKey())),
               new EnrField(EnrField.IP_V4, addressBytes),
               new EnrField(EnrField.TCP, 7890),
               new EnrField(EnrField.UDP, 4871));
     }
     nodeRecord.setSignature(
         nodeKey
-            .sign(Hash.keccak256(nodeRecord.serializeNoSignature()))
+            .sign(Hash.keccak256(nodeRecord.serializeNoSignature()), "node-record")
             .encodedBytes()
             .slice(0, 64));
     return nodeRecord;

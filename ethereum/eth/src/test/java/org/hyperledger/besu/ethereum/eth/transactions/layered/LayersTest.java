@@ -41,6 +41,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
 import org.hyperledger.besu.crypto.KeyPair;
+import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.CodeDelegation;
 import org.hyperledger.besu.datatypes.TransactionType;
@@ -1766,6 +1767,7 @@ public class LayersTest extends BaseTransactionPoolTest {
             case BLOB -> createBlobPendingTransaction(sender, nonce);
             case DELEGATE_CODE ->
                 createEIP7702PendingTransaction(sender, nonce, authorityAndNonces);
+            default -> throw new IllegalArgumentException("Unsupported transaction type: " + type);
           };
       liveTxsBySender.get(sender).put(nonce, newPendingTx);
       return newPendingTx;
@@ -2098,7 +2100,7 @@ public class LayersTest extends BaseTransactionPoolTest {
 
     Sender(final boolean hasPriority, final int gasFeeMultiplier) {
       this.key = SIGNATURE_ALGORITHM.get().generateKeyPair();
-      this.address = Util.publicKeyToAddress(key.getPublicKey());
+      this.address = Util.publicKeyToAddress((SECPPublicKey) key.getPublicKey());
       this.gasFeeMultiplier = gasFeeMultiplier;
       this.hasPriority = hasPriority;
     }

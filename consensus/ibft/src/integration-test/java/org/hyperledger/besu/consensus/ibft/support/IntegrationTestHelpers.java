@@ -23,7 +23,7 @@ import org.hyperledger.besu.consensus.ibft.messagewrappers.Prepare;
 import org.hyperledger.besu.consensus.ibft.payload.CommitPayload;
 import org.hyperledger.besu.consensus.ibft.payload.MessageFactory;
 import org.hyperledger.besu.consensus.ibft.statemachine.PreparedRoundArtifacts;
-import org.hyperledger.besu.crypto.SECPSignature;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.ethereum.core.Block;
 
@@ -40,12 +40,13 @@ public class IntegrationTestHelpers {
     final IbftExtraDataCodec ibftExtraDataEncoder = new IbftExtraDataCodec();
     final BftExtraData extraData = ibftExtraDataEncoder.decode(block.getHeader());
 
-    final SECPSignature commitSeal =
+    final Signature commitSeal =
         nodeKey.sign(
             Bytes32.wrap(
                 new BftBlockHashing(ibftExtraDataEncoder)
                     .calculateDataHashForCommittedSeal(block.getHeader(), extraData)
-                    .getBytes()));
+                    .getBytes()),
+            "seal");
 
     final MessageFactory messageFactory = new MessageFactory(nodeKey);
 

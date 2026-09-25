@@ -21,6 +21,7 @@ import org.hyperledger.besu.config.MergeConfiguration;
 import org.hyperledger.besu.config.NetworkDefinition;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.KeyPairUtil;
+import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.api.ApiConfiguration;
 import org.hyperledger.besu.ethereum.api.jsonrpc.InProcessRpcConfiguration;
@@ -625,7 +626,7 @@ public class BesuNode implements NodeConfiguration, RunnableNode, AutoCloseable 
 
   @Override
   public Address getAddress() {
-    return Util.publicKeyToAddress(keyPair.getPublicKey());
+    return Util.publicKeyToAddress((SECPPublicKey) keyPair.getPublicKey());
   }
 
   public KeyPair keyPair() {

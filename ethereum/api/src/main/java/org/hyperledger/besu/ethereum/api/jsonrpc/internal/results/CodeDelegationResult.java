@@ -16,6 +16,7 @@ package org.hyperledger.besu.ethereum.api.jsonrpc.internal.results;
 
 import org.hyperledger.besu.datatypes.CodeDelegation;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -23,6 +24,7 @@ import org.apache.tuweni.units.bigints.UInt256;
 @JsonPropertyOrder({"type","dsaType","chainId", "address", "nonce", "yParity", "r", "s", "publicKey", "signature"})
 public class CodeDelegationResult {
   private final String type;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private final String dsaType;
   private final String chainId;
   private final String address;
@@ -30,12 +32,16 @@ public class CodeDelegationResult {
   private final String yParity;
   private final String r;
   private final String s;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private final String publicKey;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private final String signature;
 
   public CodeDelegationResult(final CodeDelegation codeDelegation) {
     type = Quantity.create(codeDelegation.getType().getSerializedType());
-    dsaType = codeDelegation.dsaType().get().toString();
+    // A legacy delegation carries no DSA type, so the field is left out of the response
+    // rather than reported as null.
+    dsaType = codeDelegation.dsaType().map(String::valueOf).orElse(null);
     chainId = Quantity.create(UInt256.valueOf(codeDelegation.chainId()));
     address = codeDelegation.address().getBytes().toHexString();
     nonce = Quantity.create(codeDelegation.nonce());

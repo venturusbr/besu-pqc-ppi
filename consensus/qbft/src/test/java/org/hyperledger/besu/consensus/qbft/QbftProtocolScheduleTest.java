@@ -29,6 +29,7 @@ import org.hyperledger.besu.consensus.common.ForksSchedule;
 import org.hyperledger.besu.consensus.common.bft.BftContext;
 import org.hyperledger.besu.consensus.common.bft.BftExtraDataCodec;
 import org.hyperledger.besu.consensus.common.bft.BftProtocolSchedule;
+import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
 import org.hyperledger.besu.datatypes.Address;
@@ -53,7 +54,8 @@ import org.junit.jupiter.api.Test;
 public class QbftProtocolScheduleTest {
   private final BftExtraDataCodec bftExtraDataCodec = mock(BftExtraDataCodec.class);
   private final NodeKey proposerNodeKey = NodeKeyUtils.generate();
-  private final Address proposerAddress = Util.publicKeyToAddress(proposerNodeKey.getPublicKey());
+  private final Address proposerAddress =
+      Util.publicKeyToAddress((SECPPublicKey) proposerNodeKey.getPublicKey());
   private final List<Address> validators = singletonList(proposerAddress);
 
   private ProtocolContext protocolContext(final Collection<Address> validators) {

@@ -519,6 +519,12 @@ class AbstractBlockCreatorTest extends TrustedSetupClassLoaderExtension {
   static class AlwaysValidTransactionValidator implements TransactionValidator {
 
     @Override
+    public ValidationResult<TransactionInvalidReason> validateTransactionSignature(
+        final Transaction transaction) {
+      return ValidationResult.valid();
+    }
+
+    @Override
     public ValidationResult<TransactionInvalidReason> validate(
         final Transaction transaction,
         final Optional<Wei> baseFee,

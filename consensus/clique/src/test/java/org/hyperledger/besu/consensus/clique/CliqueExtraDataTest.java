@@ -18,6 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.hyperledger.besu.crypto.KeyPair;
+import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
@@ -102,7 +103,7 @@ public class CliqueExtraDataTest {
 
     final List<Address> addresses =
         nodeKeys.stream()
-            .map(KeyPair::getPublicKey)
+            .map(keyPair -> (SECPPublicKey) keyPair.getPublicKey())
             .map(Util::publicKeyToAddress)
             .collect(Collectors.toList());
 

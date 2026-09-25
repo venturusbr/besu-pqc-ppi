@@ -25,7 +25,7 @@ import org.hyperledger.besu.consensus.qbft.core.statemachine.PreparedCertificate
 import org.hyperledger.besu.consensus.qbft.core.types.QbftBlock;
 import org.hyperledger.besu.consensus.qbft.core.types.QbftBlockCodec;
 import org.hyperledger.besu.consensus.qbft.core.types.QbftBlockInterface;
-import org.hyperledger.besu.crypto.SECPSignature;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 
 import org.apache.tuweni.bytes.Bytes32;
@@ -40,7 +40,8 @@ public class IntegrationTestHelpers {
 
     final QbftBlock commitBlock =
         createCommitBlockFromProposalBlock(block, roundId.getRoundNumber());
-    final SECPSignature commitSeal = nodeKey.sign(Bytes32.wrap(commitBlock.getHash().getBytes()));
+    final Signature commitSeal =
+        nodeKey.sign(Bytes32.wrap(commitBlock.getHash().getBytes()), "seal");
 
     final MessageFactory messageFactory = new MessageFactory(nodeKey, blockEncoder);
 

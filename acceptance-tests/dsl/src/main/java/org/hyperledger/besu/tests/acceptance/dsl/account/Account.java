@@ -34,6 +34,7 @@ import java.util.Optional;
 
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
+import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.web3j.crypto.Credentials;
 import org.web3j.utils.Convert.Unit;
@@ -56,8 +57,8 @@ public class Account {
       final Address address,
       final Optional<KeyPair> keyPair) {
     this.name = name;
-    this.privateKey = keyPair.map(KeyPair::getPrivateKey);
-    this.publicKey = keyPair.map(KeyPair::getPublicKey);
+    this.privateKey = keyPair.map(kp -> (SECPPrivateKey) kp.getPrivateKey());
+    this.publicKey = keyPair.map(kp -> (SECPPublicKey) kp.getPublicKey());
     this.address = address;
     this.eth = eth;
   }
@@ -67,7 +68,7 @@ public class Account {
         eth,
         name,
         Address.extract(
-            Bytes32.wrap(Hash.hash(keyPair.getPublicKey().getEncodedBytes()).getBytes())),
+            Bytes32.wrap(Hash.hash(Bytes.wrap(keyPair.getPublicKey().getEncoded())).getBytes())),
         Optional.of(keyPair));
   }
 

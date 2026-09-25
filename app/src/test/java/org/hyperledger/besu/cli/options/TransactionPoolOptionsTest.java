@@ -414,7 +414,7 @@ public class TransactionPoolOptionsTest
   @Test
   public void maxPrioritizedTxsPerTypeWrongTxType() {
     internalTestFailure(
-        "Invalid value for option '--tx-pool-max-prioritized-by-type' (MAP<TYPE,INTEGER>): expected one of [FRONTIER, ACCESS_LIST, EIP1559, BLOB, DELEGATE_CODE] (case-insensitive) but was 'WRONG_TYPE'",
+        "Invalid value for option '--tx-pool-max-prioritized-by-type' (MAP<TYPE,INTEGER>): expected one of [FRONTIER, ACCESS_LIST, EIP1559, BLOB, DELEGATE_CODE, FLEXIBLE_ACCESS_LIST, FLEXIBLE_EIP1559, FLEXIBLE_BLOB, FLEXIBLE_DELEGATE_CODE] (case-insensitive) but was 'WRONG_TYPE'",
         "--tx-pool-max-prioritized-by-type",
         "WRONG_TYPE=1");
   }

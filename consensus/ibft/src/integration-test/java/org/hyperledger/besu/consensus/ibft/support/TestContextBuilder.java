@@ -66,6 +66,7 @@ import org.hyperledger.besu.consensus.ibft.statemachine.IbftBlockHeightManagerFa
 import org.hyperledger.besu.consensus.ibft.statemachine.IbftController;
 import org.hyperledger.besu.consensus.ibft.statemachine.IbftRoundFactory;
 import org.hyperledger.besu.consensus.ibft.validation.MessageValidatorFactory;
+import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
@@ -385,7 +386,7 @@ public class TestContextBuilder {
 
     final EthScheduler ethScheduler = new DeterministicEthScheduler();
 
-    final Address localAddress = Util.publicKeyToAddress(nodeKey.getPublicKey());
+    final Address localAddress = Util.publicKeyToAddress((SECPPublicKey) nodeKey.getPublicKey());
     final BftBlockCreatorFactory<?> blockCreatorFactory =
         new BftBlockCreatorFactory<>(
             transactionPool, // changed from IbftBesuController
@@ -406,7 +407,7 @@ public class TestContextBuilder {
         new BftFinalState(
             protocolContext.getConsensusContext(BftContext.class).getValidatorProvider(),
             nodeKey,
-            Util.publicKeyToAddress(nodeKey.getPublicKey()),
+            Util.publicKeyToAddress((SECPPublicKey) nodeKey.getPublicKey()),
             proposerSelector,
             multicaster,
             new RoundTimer(

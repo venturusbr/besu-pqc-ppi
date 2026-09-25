@@ -24,6 +24,7 @@ import org.hyperledger.besu.consensus.common.BlockInterface;
 import org.hyperledger.besu.consensus.common.EpochManager;
 import org.hyperledger.besu.consensus.common.validator.blockbased.BlockValidatorProvider;
 import org.hyperledger.besu.crypto.KeyPair;
+import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.chain.MutableBlockchain;
@@ -60,11 +61,12 @@ public class CliqueBlockChoiceTests {
     keyPairs =
         IntStream.range(0, 8)
             .mapToObj(i -> SignatureAlgorithmFactory.getInstance().generateKeyPair())
-            .sorted(Comparator.comparing(kp -> publicKeyToAddress(kp.getPublicKey())))
+            .sorted(
+                Comparator.comparing(kp -> publicKeyToAddress((SECPPublicKey) kp.getPublicKey())))
             .collect(Collectors.toList());
     addresses =
         keyPairs.stream()
-            .map(kp -> publicKeyToAddress(kp.getPublicKey()))
+            .map(kp -> publicKeyToAddress((SECPPublicKey) kp.getPublicKey()))
             .collect(Collectors.toList());
     headerBuilder = new BlockHeaderTestFixture();
     final Block genesisBlock = createEmptyBlock(keyPairs.get(0));

@@ -91,6 +91,7 @@ import org.hyperledger.besu.consensus.qbft.validator.ForkingValidatorProvider;
 import org.hyperledger.besu.consensus.qbft.validator.TransactionValidatorProvider;
 import org.hyperledger.besu.consensus.qbft.validator.ValidatorContractController;
 import org.hyperledger.besu.consensus.qbft.validator.ValidatorModeTransitionLogger;
+import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
@@ -308,9 +309,7 @@ public class TestContextBuilder {
         new UniqueMessageMulticaster(multicaster, GOSSIPED_HISTORY_LIMIT);
 
     final QbftGossiper gossiper =
-        useGossip
-            ? new QbftGossiperImpl(uniqueMulticaster)
-            : mock(QbftGossiper.class);
+        useGossip ? new QbftGossiperImpl(uniqueMulticaster) : mock(QbftGossiper.class);
 
     final StubbedSynchronizerUpdater synchronizerUpdater = new StubbedSynchronizerUpdater();
 
@@ -526,7 +525,7 @@ public class TestContextBuilder {
 
     final EthScheduler ethScheduler = new DeterministicEthScheduler();
 
-    final Address localAddress = Util.publicKeyToAddress(nodeKey.getPublicKey());
+    final Address localAddress = Util.publicKeyToAddress((SECPPublicKey) nodeKey.getPublicKey());
     final QbftBlockCreatorFactory blockCreatorFactory =
         new QbftBlockCreatorFactory(
             transactionPool, // changed from QbftBesuController
@@ -547,7 +546,7 @@ public class TestContextBuilder {
         new QbftFinalStateImpl(
             validatorProvider,
             nodeKey,
-            Util.publicKeyToAddress(nodeKey.getPublicKey()),
+            Util.publicKeyToAddress((SECPPublicKey) nodeKey.getPublicKey()),
             proposerSelector,
             multicaster,
             new RoundTimer(

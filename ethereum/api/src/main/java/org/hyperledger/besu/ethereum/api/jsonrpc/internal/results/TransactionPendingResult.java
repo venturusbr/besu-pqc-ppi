@@ -79,9 +79,11 @@ public class TransactionPendingResult implements TransactionResult {
   private final String publicKey;
   private final String raw;
   private final String to;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private final String dsaType;
   private final String type;
   private final String value;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private final String signature;
   private final String yParity;
   private final String v;
@@ -106,6 +108,9 @@ public class TransactionPendingResult implements TransactionResult {
     this.hash = transaction.getHash().toString();
     this.input = transaction.getPayload().toString();
     this.nonce = Quantity.create(transaction.getNonce());
+    // Always reported, as upstream does: resolvePublicKey returns the key the
+    // transaction carries when it has one, and recovers it from the signature otherwise.
+    this.publicKey = transaction.getPublicKey().orElse(null);
     this.raw =
         TransactionEncoder.encodeOpaqueBytes(transaction, EncodingContext.POOLED_TRANSACTION)
             .toString();
@@ -117,7 +122,6 @@ public class TransactionPendingResult implements TransactionResult {
       this.s = Quantity.create(transaction.getS());
       this.v = Quantity.create(transaction.getV());
       this.dsaType = null;
-      this.publicKey = null;
       this.signature = null;
     } else if(isFlexible(transactionType)){
       this.type = Quantity.create(transactionType.getSerializedType());
@@ -126,7 +130,6 @@ public class TransactionPendingResult implements TransactionResult {
       this.s = null;
       this.v = null;
       this.dsaType = String.format("0x%04X", transaction.getDsaType().get() & 0xFFFF);
-      this.publicKey = Bytes.wrap(transaction.getMaybePublicKey().get().getEncoded()).toHexString();
       this.signature = transaction.getSignature().encodedBytes().toHexString();
     } else{
       this.type = Quantity.create(transactionType.getSerializedType());
@@ -141,7 +144,6 @@ public class TransactionPendingResult implements TransactionResult {
       this.r = Quantity.create(transaction.getR());
       this.s = Quantity.create(transaction.getS());
       this.dsaType = null;
-      this.publicKey = null;
       this.signature = null;
     }
     this.value = Quantity.create(transaction.getValue());
@@ -263,11 +265,13 @@ public class TransactionPendingResult implements TransactionResult {
     return v;
   }
 
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   @JsonGetter(value = "r")
   public String getR() {
     return r;
   }
 
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   @JsonGetter(value = "s")
   public String getS() {
     return s;

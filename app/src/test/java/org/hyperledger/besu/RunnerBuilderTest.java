@@ -34,6 +34,7 @@ import org.hyperledger.besu.controller.BesuController;
 import org.hyperledger.besu.crypto.SECP256K1;
 import org.hyperledger.besu.cryptoservices.KeyPairSecurityModule;
 import org.hyperledger.besu.cryptoservices.NodeKey;
+import org.hyperledger.besu.cryptoservices.SecurityModuleAdapter;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.ProtocolContext;
 import org.hyperledger.besu.ethereum.api.ImmutableApiConfiguration;
@@ -107,7 +108,10 @@ public final class RunnerBuilderTest {
     final SubProtocolConfiguration subProtocolConfiguration = mock(SubProtocolConfiguration.class);
     final EthProtocolManager ethProtocolManager = mock(EthProtocolManager.class);
     final EthContext ethContext = mock(EthContext.class);
-    nodeKey = new NodeKey(new KeyPairSecurityModule(new SECP256K1().generateKeyPair()));
+    nodeKey =
+        new NodeKey(
+            new SecurityModuleAdapter(
+                new KeyPairSecurityModule(new SECP256K1().generateKeyPair())));
 
     when(subProtocolConfiguration.getProtocolManagers())
         .thenReturn(

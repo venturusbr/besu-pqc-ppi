@@ -110,7 +110,7 @@ public class FutureRoundTest {
             context
                 .getLocalNodeParams()
                 .getNodeKey()
-                .sign(Bytes32.wrap(futureBlock.getHash().getBytes())));
+                .sign(Bytes32.wrap(futureBlock.getHash().getBytes()), "seal"));
     peers.verifyMessagesReceived(expectedCommit);
 
     // requires 1 more commit and the blockchain will progress

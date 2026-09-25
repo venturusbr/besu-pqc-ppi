@@ -36,6 +36,7 @@ import org.hyperledger.besu.controller.BesuControllerBuilder;
 import org.hyperledger.besu.crypto.KeyPairUtil;
 import org.hyperledger.besu.cryptoservices.KeyPairSecurityModule;
 import org.hyperledger.besu.cryptoservices.NodeKey;
+import org.hyperledger.besu.cryptoservices.SecurityModuleAdapter;
 import org.hyperledger.besu.ethereum.api.ApiConfiguration;
 import org.hyperledger.besu.ethereum.api.graphql.GraphQLConfiguration;
 import org.hyperledger.besu.ethereum.api.jsonrpc.InProcessRpcConfiguration;
@@ -179,7 +180,10 @@ public class ThreadBesuNodeRunner implements BesuNodeRunner {
     builder.networkConfiguration(node.getNetworkingConfiguration());
 
     builder.dataDirectory(dataDir);
-    builder.nodeKey(new NodeKey(new KeyPairSecurityModule(KeyPairUtil.loadKeyPair(dataDir))));
+    builder.nodeKey(
+        new NodeKey(
+            new SecurityModuleAdapter(
+                new KeyPairSecurityModule(KeyPairUtil.loadKeyPair(dataDir)))));
 
     node.getGenesisConfig().map(GenesisConfig::fromConfig).ifPresent(builder::genesisConfig);
 

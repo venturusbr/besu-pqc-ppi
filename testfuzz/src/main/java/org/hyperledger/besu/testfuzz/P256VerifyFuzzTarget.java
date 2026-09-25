@@ -305,7 +305,7 @@ public class P256VerifyFuzzTarget implements FuzzTarget {
     writeBigIntegerAs32Bytes(packed, 64, signature.getS());
 
     // Public key coordinates (64 bytes total: qx + qy)
-    Bytes publicKeyBytes = keyPair.getPublicKey().getEncodedBytes();
+    Bytes publicKeyBytes = Bytes.wrap(keyPair.getPublicKey().getEncoded());
     if (publicKeyBytes.size() == 64) {
       packed.set(96, publicKeyBytes.slice(0, 32)); // qx
       packed.set(128, publicKeyBytes.slice(32, 32)); // qy
@@ -532,7 +532,7 @@ public class P256VerifyFuzzTarget implements FuzzTarget {
         input.set(0, validMessageHash);
         writeBigIntegerAs32Bytes(input, 32, validSignature.getR());
         writeBigIntegerAs32Bytes(input, 64, validSignature.getS());
-        Bytes validPubKey = validKeyPair.getPublicKey().getEncodedBytes();
+        Bytes validPubKey = Bytes.wrap(validKeyPair.getPublicKey().getEncoded());
         input.set(96, validPubKey.slice(0, 32)); // qx
         input.set(128, validPubKey.slice(32, 32)); // qy
         break;
@@ -642,14 +642,14 @@ public class P256VerifyFuzzTarget implements FuzzTarget {
     if (fuzzData.length < 2) {
       // Use a completely different random public key
       KeyPair differentKey = javaSignatureAlgorithm.generateKeyPair();
-      Bytes differentPubKey = differentKey.getPublicKey().getEncodedBytes();
+      Bytes differentPubKey = Bytes.wrap(differentKey.getPublicKey().getEncoded());
       input.set(96, differentPubKey.slice(0, 32));
       input.set(128, differentPubKey.slice(32, 32));
       return input.toArray();
     }
 
     int manipulationType = (fuzzData[1] & 0xFF) % 5;
-    Bytes originalPubKey = originalKeyPair.getPublicKey().getEncodedBytes();
+    Bytes originalPubKey = Bytes.wrap(originalKeyPair.getPublicKey().getEncoded());
     BigInteger qx = originalPubKey.slice(0, 32).toUnsignedBigInteger();
     BigInteger qy = originalPubKey.slice(32, 32).toUnsignedBigInteger();
 
@@ -666,7 +666,7 @@ public class P256VerifyFuzzTarget implements FuzzTarget {
 
       case 2: // Use a completely different random key
         KeyPair differentKey = javaSignatureAlgorithm.generateKeyPair();
-        Bytes differentPubKey = differentKey.getPublicKey().getEncodedBytes();
+        Bytes differentPubKey = Bytes.wrap(differentKey.getPublicKey().getEncoded());
         input.set(96, differentPubKey.slice(0, 32));
         input.set(128, differentPubKey.slice(32, 32));
         break;

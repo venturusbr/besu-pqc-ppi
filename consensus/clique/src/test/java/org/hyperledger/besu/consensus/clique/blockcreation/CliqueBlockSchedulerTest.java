@@ -26,6 +26,7 @@ import org.hyperledger.besu.consensus.common.ForkSpec;
 import org.hyperledger.besu.consensus.common.ForksSchedule;
 import org.hyperledger.besu.consensus.common.validator.ValidatorProvider;
 import org.hyperledger.besu.crypto.KeyPair;
+import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.blockcreation.DefaultBlockScheduler.BlockCreationTimeResult;
@@ -52,7 +53,7 @@ public class CliqueBlockSchedulerTest {
 
   @BeforeEach
   public void setup() {
-    localAddr = Util.publicKeyToAddress(proposerKeyPair.getPublicKey());
+    localAddr = Util.publicKeyToAddress((SECPPublicKey) proposerKeyPair.getPublicKey());
 
     validatorList.add(localAddr);
     validatorList.add(AddressHelpers.calculateAddressWithRespectTo(localAddr, 1));

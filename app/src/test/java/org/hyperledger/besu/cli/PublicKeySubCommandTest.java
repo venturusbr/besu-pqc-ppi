@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.contentOf;
 
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
+import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.cryptoservices.NodeKey;
@@ -290,7 +291,8 @@ public class PublicKeySubCommandTest extends CommandTestAbstract {
 
     parseCommand(PUBLIC_KEY_SUBCOMMAND_NAME, PUBLIC_KEY_EXPORT_ADDRESS_SUBCOMMAND_NAME);
 
-    final String expectedOutputStart = Util.publicKeyToAddress(nodeKey.getPublicKey()).toString();
+    final String expectedOutputStart =
+        Util.publicKeyToAddress((SECPPublicKey) nodeKey.getPublicKey()).toString();
     assertThat(commandErrorOutput.toString(UTF_8)).isEmpty();
     assertThat(commandOutput.toString(UTF_8)).startsWith(expectedOutputStart);
   }
@@ -310,8 +312,8 @@ public class PublicKeySubCommandTest extends CommandTestAbstract {
         file.getPath());
 
     assertThat(contentOf(file))
-        .startsWith(Util.publicKeyToAddress(nodeKey.getPublicKey()).toString())
-        .endsWith(Util.publicKeyToAddress(nodeKey.getPublicKey()).toString());
+        .startsWith(Util.publicKeyToAddress((SECPPublicKey) nodeKey.getPublicKey()).toString())
+        .endsWith(Util.publicKeyToAddress((SECPPublicKey) nodeKey.getPublicKey()).toString());
 
     assertThat(commandOutput.toString(UTF_8)).isEmpty();
     assertThat(commandErrorOutput.toString(UTF_8)).isEmpty();
@@ -337,7 +339,8 @@ public class PublicKeySubCommandTest extends CommandTestAbstract {
         "--node-private-key-file",
         privateKeyFile.toString());
 
-    final String expectedOutputStart = Util.publicKeyToAddress(keyPair.getPublicKey()).toString();
+    final String expectedOutputStart =
+        Util.publicKeyToAddress((SECPPublicKey) keyPair.getPublicKey()).toString();
     assertThat(commandErrorOutput.toString(UTF_8)).isEmpty();
     assertThat(commandOutput.toString(UTF_8)).startsWith(expectedOutputStart);
   }

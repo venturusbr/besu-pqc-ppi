@@ -388,6 +388,8 @@ public abstract class AbstractTransactionPoolTestBase extends TrustedSetupClassL
             .validateForSender(
                 eq(transaction), nullable(Account.class), any(TransactionValidationParams.class)))
         .thenReturn(valid());
+    when(transactionValidatorFactory.get().validateTransactionSignature(eq(transaction)))
+        .thenReturn(valid());
   }
 
   protected void givenAllTransactionsAreValid() {
@@ -400,6 +402,7 @@ public abstract class AbstractTransactionPoolTestBase extends TrustedSetupClassL
             .validateForSender(
                 any(), nullable(Account.class), any(TransactionValidationParams.class)))
         .thenReturn(valid());
+    when(transactionValidatorFactory.get().validateTransactionSignature(any())).thenReturn(valid());
   }
 
   protected abstract Block appendBlock(

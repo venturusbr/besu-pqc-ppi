@@ -349,6 +349,9 @@ public abstract class AbstractTransactionPoolTest extends AbstractTransactionPoo
     verify(transactionValidatorFactory.get())
         .validate(eq(transaction1), any(Optional.class), any(Optional.class), any());
     verify(transactionValidatorFactory.get()).validateForSender(eq(transaction1), any(), any());
+    // the pool checks the signature of every transaction it is offered
+    verify(transactionValidatorFactory.get()).validateTransactionSignature(eq(transaction0));
+    verify(transactionValidatorFactory.get()).validateTransactionSignature(eq(transaction1));
     verifyNoMoreInteractions(transactionValidatorFactory.get());
   }
 
@@ -523,6 +526,9 @@ public abstract class AbstractTransactionPoolTest extends AbstractTransactionPoo
     when(transactionValidatorFactory
             .get()
             .validateForSender(any(), any(), txValidationParamCaptor.capture()))
+        .thenReturn(valid());
+    // the signature is checked first, so without this the transaction never reaches the captor
+    when(transactionValidatorFactory.get().validateTransactionSignature(eq(transaction0)))
         .thenReturn(valid());
 
     final TransactionValidationParams expectedValidationParams =
