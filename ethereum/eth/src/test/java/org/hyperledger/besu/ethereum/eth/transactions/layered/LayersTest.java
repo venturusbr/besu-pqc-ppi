@@ -41,7 +41,6 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 
 import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.CodeDelegation;
 import org.hyperledger.besu.datatypes.TransactionType;
@@ -49,7 +48,6 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.MiningConfiguration;
 import org.hyperledger.besu.ethereum.core.Transaction;
-import org.hyperledger.besu.ethereum.core.Util;
 import org.hyperledger.besu.ethereum.eth.manager.EthScheduler;
 import org.hyperledger.besu.ethereum.eth.transactions.BlobCache;
 import org.hyperledger.besu.ethereum.eth.transactions.ImmutableTransactionPoolConfiguration;
@@ -2100,7 +2098,7 @@ public class LayersTest extends BaseTransactionPoolTest {
 
     Sender(final boolean hasPriority, final int gasFeeMultiplier) {
       this.key = SIGNATURE_ALGORITHM.get().generateKeyPair();
-      this.address = Util.publicKeyToAddress((SECPPublicKey) key.getPublicKey());
+      this.address = Address.extract(key.getPublicKey());
       this.gasFeeMultiplier = gasFeeMultiplier;
       this.hasPriority = hasPriority;
     }

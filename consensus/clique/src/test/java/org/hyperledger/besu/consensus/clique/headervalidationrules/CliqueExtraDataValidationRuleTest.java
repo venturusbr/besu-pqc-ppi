@@ -26,14 +26,12 @@ import org.hyperledger.besu.consensus.clique.TestHelpers;
 import org.hyperledger.besu.consensus.common.EpochManager;
 import org.hyperledger.besu.consensus.common.validator.ValidatorProvider;
 import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.ProtocolContext;
 import org.hyperledger.besu.ethereum.core.AddressHelpers;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.BlockHeaderTestFixture;
-import org.hyperledger.besu.ethereum.core.Util;
 
 import java.util.List;
 
@@ -53,7 +51,7 @@ public class CliqueExtraDataValidationRuleTest {
 
   @BeforeEach
   public void setup() {
-    localAddr = Util.publicKeyToAddress((SECPPublicKey) proposerKeyPair.getPublicKey());
+    localAddr = Address.extract(proposerKeyPair.getPublicKey());
 
     validatorList.add(localAddr);
     validatorList.add(AddressHelpers.calculateAddressWithRespectTo(localAddr, 1));

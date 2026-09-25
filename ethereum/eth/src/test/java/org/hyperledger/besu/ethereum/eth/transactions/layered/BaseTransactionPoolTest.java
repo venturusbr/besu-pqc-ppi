@@ -22,7 +22,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.datatypes.Address;
@@ -33,7 +32,6 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.ethereum.core.BlobTestFixture;
 import org.hyperledger.besu.ethereum.core.Transaction;
 import org.hyperledger.besu.ethereum.core.TransactionTestFixture;
-import org.hyperledger.besu.ethereum.core.Util;
 import org.hyperledger.besu.ethereum.core.kzg.BlobProofBundle;
 import org.hyperledger.besu.ethereum.core.kzg.BlobsWithCommitments;
 import org.hyperledger.besu.ethereum.eth.manager.EthScheduler;
@@ -62,10 +60,8 @@ public class BaseTransactionPoolTest extends TrustedSetupClassLoaderExtension {
       Suppliers.memoize(SignatureAlgorithmFactory::getInstance);
   protected static final KeyPair KEYS1 = SIGNATURE_ALGORITHM.get().generateKeyPair();
   protected static final KeyPair KEYS2 = SIGNATURE_ALGORITHM.get().generateKeyPair();
-  protected static final Address SENDER1 =
-      Util.publicKeyToAddress((SECPPublicKey) KEYS1.getPublicKey());
-  protected static final Address SENDER2 =
-      Util.publicKeyToAddress((SECPPublicKey) KEYS2.getPublicKey());
+  protected static final Address SENDER1 = Address.extract(KEYS1.getPublicKey());
+  protected static final Address SENDER2 = Address.extract(KEYS2.getPublicKey());
   protected static final CodeDelegation CODE_DELEGATION_SENDER_1 =
       createSignedCodeDelegation(BigInteger.ONE, Address.ZERO, 0, KEYS1);
   protected static final Wei DEFAULT_MIN_GAS_PRICE = Wei.of(50);

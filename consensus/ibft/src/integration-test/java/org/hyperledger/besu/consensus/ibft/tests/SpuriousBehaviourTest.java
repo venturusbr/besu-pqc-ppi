@@ -27,13 +27,12 @@ import org.hyperledger.besu.consensus.ibft.support.RoundSpecificPeers;
 import org.hyperledger.besu.consensus.ibft.support.TestContext;
 import org.hyperledger.besu.consensus.ibft.support.TestContextBuilder;
 import org.hyperledger.besu.consensus.ibft.support.ValidatorPeer;
-import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.core.Block;
-import org.hyperledger.besu.ethereum.core.Util;
 import org.hyperledger.besu.ethereum.p2p.rlpx.wire.MessageData;
 import org.hyperledger.besu.ethereum.p2p.rlpx.wire.RawMessage;
 
@@ -102,9 +101,7 @@ public class SpuriousBehaviourTest {
   public void nonValidatorsCannotTriggerResponses() {
     final NodeKey nonValidatorNodeKey = NodeKeyUtils.generate();
     final NodeParams nonValidatorParams =
-        new NodeParams(
-            Util.publicKeyToAddress((SECPPublicKey) nonValidatorNodeKey.getPublicKey()),
-            nonValidatorNodeKey);
+        new NodeParams(Address.extract(nonValidatorNodeKey.getPublicKey()), nonValidatorNodeKey);
 
     final ValidatorPeer nonvalidator =
         new ValidatorPeer(

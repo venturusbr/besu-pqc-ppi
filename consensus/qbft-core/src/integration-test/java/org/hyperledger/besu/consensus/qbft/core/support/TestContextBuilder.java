@@ -91,7 +91,6 @@ import org.hyperledger.besu.consensus.qbft.validator.ForkingValidatorProvider;
 import org.hyperledger.besu.consensus.qbft.validator.TransactionValidatorProvider;
 import org.hyperledger.besu.consensus.qbft.validator.ValidatorContractController;
 import org.hyperledger.besu.consensus.qbft.validator.ValidatorModeTransitionLogger;
-import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
@@ -110,7 +109,6 @@ import org.hyperledger.besu.ethereum.core.ImmutableMiningConfiguration;
 import org.hyperledger.besu.ethereum.core.ImmutableMiningConfiguration.MutableInitValues;
 import org.hyperledger.besu.ethereum.core.MiningConfiguration;
 import org.hyperledger.besu.ethereum.core.ProtocolScheduleFixture;
-import org.hyperledger.besu.ethereum.core.Util;
 import org.hyperledger.besu.ethereum.eth.manager.EthContext;
 import org.hyperledger.besu.ethereum.eth.manager.EthScheduler;
 import org.hyperledger.besu.ethereum.eth.transactions.BlobCache;
@@ -525,7 +523,7 @@ public class TestContextBuilder {
 
     final EthScheduler ethScheduler = new DeterministicEthScheduler();
 
-    final Address localAddress = Util.publicKeyToAddress((SECPPublicKey) nodeKey.getPublicKey());
+    final Address localAddress = Address.extract(nodeKey.getPublicKey());
     final QbftBlockCreatorFactory blockCreatorFactory =
         new QbftBlockCreatorFactory(
             transactionPool, // changed from QbftBesuController
@@ -546,7 +544,7 @@ public class TestContextBuilder {
         new QbftFinalStateImpl(
             validatorProvider,
             nodeKey,
-            Util.publicKeyToAddress((SECPPublicKey) nodeKey.getPublicKey()),
+            Address.extract(nodeKey.getPublicKey()),
             proposerSelector,
             multicaster,
             new RoundTimer(

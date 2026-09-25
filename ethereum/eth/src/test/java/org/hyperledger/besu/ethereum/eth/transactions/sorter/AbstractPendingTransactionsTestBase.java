@@ -31,7 +31,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.datatypes.Address;
@@ -40,7 +39,6 @@ import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.Transaction;
 import org.hyperledger.besu.ethereum.core.TransactionTestFixture;
-import org.hyperledger.besu.ethereum.core.Util;
 import org.hyperledger.besu.ethereum.eth.transactions.ImmutableTransactionPoolConfiguration;
 import org.hyperledger.besu.ethereum.eth.transactions.PendingTransaction;
 import org.hyperledger.besu.ethereum.eth.transactions.PendingTransactionAddedListener;
@@ -125,10 +123,8 @@ public abstract class AbstractPendingTransactionsTestBase {
       mock(PendingTransactionAddedListener.class);
   protected final PendingTransactionDroppedListener droppedListener =
       mock(PendingTransactionDroppedListener.class);
-  protected static final Address SENDER1 =
-      Util.publicKeyToAddress((SECPPublicKey) KEYS1.getPublicKey());
-  protected static final Address SENDER2 =
-      Util.publicKeyToAddress((SECPPublicKey) KEYS2.getPublicKey());
+  protected static final Address SENDER1 = Address.extract(KEYS1.getPublicKey());
+  protected static final Address SENDER2 = Address.extract(KEYS2.getPublicKey());
 
   abstract AbstractPendingTransactionsSorter getPendingTransactions(
       final TransactionPoolConfiguration poolConfig, Optional<Clock> clock);

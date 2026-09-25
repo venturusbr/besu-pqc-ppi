@@ -36,7 +36,6 @@ import org.hyperledger.besu.consensus.common.validator.ValidatorVote;
 import org.hyperledger.besu.consensus.common.validator.VoteProvider;
 import org.hyperledger.besu.consensus.common.validator.VoteType;
 import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
@@ -53,7 +52,6 @@ import org.hyperledger.besu.ethereum.core.BlockHeaderTestFixture;
 import org.hyperledger.besu.ethereum.core.ImmutableMiningConfiguration;
 import org.hyperledger.besu.ethereum.core.ImmutableMiningConfiguration.MutableInitValues;
 import org.hyperledger.besu.ethereum.core.MiningConfiguration;
-import org.hyperledger.besu.ethereum.core.Util;
 import org.hyperledger.besu.ethereum.eth.manager.EthContext;
 import org.hyperledger.besu.ethereum.eth.manager.EthScheduler;
 import org.hyperledger.besu.ethereum.eth.transactions.BlobCache;
@@ -85,8 +83,7 @@ import org.junit.jupiter.api.Test;
 public class CliqueBlockCreatorTest {
 
   private final NodeKey proposerNodeKey = NodeKeyUtils.generate();
-  private final Address proposerAddress =
-      Util.publicKeyToAddress((SECPPublicKey) proposerNodeKey.getPublicKey());
+  private final Address proposerAddress = Address.extract(proposerNodeKey.getPublicKey());
   private final KeyPair otherKeyPair = SignatureAlgorithmFactory.getInstance().generateKeyPair();
   private final List<Address> validatorList = Lists.newArrayList();
   private final MetricsSystem metricsSystem = new NoOpMetricsSystem();
@@ -103,8 +100,7 @@ public class CliqueBlockCreatorTest {
 
   @BeforeEach
   void setup() {
-    final Address otherAddress =
-        Util.publicKeyToAddress((SECPPublicKey) otherKeyPair.getPublicKey());
+    final Address otherAddress = Address.extract(otherKeyPair.getPublicKey());
     validatorList.add(otherAddress);
 
     validatorProvider = mock(ValidatorProvider.class);

@@ -25,7 +25,6 @@ import org.hyperledger.besu.consensus.clique.CliqueHelpers;
 import org.hyperledger.besu.consensus.clique.TestHelpers;
 import org.hyperledger.besu.consensus.common.validator.ValidatorProvider;
 import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.ProtocolContext;
@@ -33,7 +32,6 @@ import org.hyperledger.besu.ethereum.core.AddressHelpers;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.BlockHeaderTestFixture;
 import org.hyperledger.besu.ethereum.core.Difficulty;
-import org.hyperledger.besu.ethereum.core.Util;
 
 import java.util.List;
 
@@ -51,8 +49,7 @@ public class CliqueDifficultyValidationRuleTest {
 
   @BeforeEach
   public void setup() {
-    final Address localAddress =
-        Util.publicKeyToAddress((SECPPublicKey) proposerKeyPair.getPublicKey());
+    final Address localAddress = Address.extract(proposerKeyPair.getPublicKey());
     validatorList.add(localAddress);
     validatorList.add(AddressHelpers.calculateAddressWithRespectTo(localAddress, 1));
 

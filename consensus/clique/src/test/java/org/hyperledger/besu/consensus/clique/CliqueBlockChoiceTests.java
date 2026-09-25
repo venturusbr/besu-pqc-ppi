@@ -18,13 +18,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hyperledger.besu.consensus.clique.CliqueHelpers.distanceFromInTurn;
 import static org.hyperledger.besu.consensus.clique.CliqueHelpers.installCliqueBlockChoiceRule;
 import static org.hyperledger.besu.ethereum.core.InMemoryKeyValueStorageProvider.createInMemoryBlockchain;
-import static org.hyperledger.besu.ethereum.core.Util.publicKeyToAddress;
 
 import org.hyperledger.besu.consensus.common.BlockInterface;
 import org.hyperledger.besu.consensus.common.EpochManager;
 import org.hyperledger.besu.consensus.common.validator.blockbased.BlockValidatorProvider;
 import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.chain.MutableBlockchain;
@@ -61,12 +59,11 @@ public class CliqueBlockChoiceTests {
     keyPairs =
         IntStream.range(0, 8)
             .mapToObj(i -> SignatureAlgorithmFactory.getInstance().generateKeyPair())
-            .sorted(
-                Comparator.comparing(kp -> publicKeyToAddress((SECPPublicKey) kp.getPublicKey())))
+            .sorted(Comparator.comparing(kp -> Address.extract(kp.getPublicKey())))
             .collect(Collectors.toList());
     addresses =
         keyPairs.stream()
-            .map(kp -> publicKeyToAddress((SECPPublicKey) kp.getPublicKey()))
+            .map(kp -> Address.extract(kp.getPublicKey()))
             .collect(Collectors.toList());
     headerBuilder = new BlockHeaderTestFixture();
     final Block genesisBlock = createEmptyBlock(keyPairs.get(0));

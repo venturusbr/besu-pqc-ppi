@@ -66,7 +66,6 @@ import org.hyperledger.besu.consensus.ibft.statemachine.IbftBlockHeightManagerFa
 import org.hyperledger.besu.consensus.ibft.statemachine.IbftController;
 import org.hyperledger.besu.consensus.ibft.statemachine.IbftRoundFactory;
 import org.hyperledger.besu.consensus.ibft.validation.MessageValidatorFactory;
-import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
@@ -84,7 +83,6 @@ import org.hyperledger.besu.ethereum.core.Difficulty;
 import org.hyperledger.besu.ethereum.core.ImmutableMiningConfiguration;
 import org.hyperledger.besu.ethereum.core.ImmutableMiningConfiguration.MutableInitValues;
 import org.hyperledger.besu.ethereum.core.MiningConfiguration;
-import org.hyperledger.besu.ethereum.core.Util;
 import org.hyperledger.besu.ethereum.eth.manager.EthContext;
 import org.hyperledger.besu.ethereum.eth.manager.EthScheduler;
 import org.hyperledger.besu.ethereum.eth.transactions.BlobCache;
@@ -386,7 +384,7 @@ public class TestContextBuilder {
 
     final EthScheduler ethScheduler = new DeterministicEthScheduler();
 
-    final Address localAddress = Util.publicKeyToAddress((SECPPublicKey) nodeKey.getPublicKey());
+    final Address localAddress = Address.extract(nodeKey.getPublicKey());
     final BftBlockCreatorFactory<?> blockCreatorFactory =
         new BftBlockCreatorFactory<>(
             transactionPool, // changed from IbftBesuController
@@ -407,7 +405,7 @@ public class TestContextBuilder {
         new BftFinalState(
             protocolContext.getConsensusContext(BftContext.class).getValidatorProvider(),
             nodeKey,
-            Util.publicKeyToAddress((SECPPublicKey) nodeKey.getPublicKey()),
+            Address.extract(nodeKey.getPublicKey()),
             proposerSelector,
             multicaster,
             new RoundTimer(

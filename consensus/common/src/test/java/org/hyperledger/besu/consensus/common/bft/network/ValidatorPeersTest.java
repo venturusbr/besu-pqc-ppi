@@ -27,7 +27,6 @@ import org.hyperledger.besu.consensus.common.validator.ValidatorProvider;
 import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.ethereum.core.Util;
 import org.hyperledger.besu.ethereum.p2p.rlpx.connections.PeerConnection;
 import org.hyperledger.besu.ethereum.p2p.rlpx.connections.PeerConnection.PeerNotConnected;
 import org.hyperledger.besu.ethereum.p2p.rlpx.wire.MessageData;
@@ -60,7 +59,7 @@ public class ValidatorPeersTest {
       final SECPPublicKey pubKey =
           SignatureAlgorithmFactory.getInstance().createPublicKey(BigInteger.valueOf(i));
       publicKeys.add(pubKey);
-      final Address address = Util.publicKeyToAddress(pubKey);
+      final Address address = Address.extract(pubKey);
 
       final PeerConnection peerConnection = mockPeerConnection(address);
       peerConnections.add(peerConnection);
@@ -80,7 +79,7 @@ public class ValidatorPeersTest {
   @Test
   public void onlyValidatorsAreSentAMessage() throws PeerNotConnected {
     // Only add the first Peer's address to the validators.
-    validators.add(Util.publicKeyToAddress(publicKeys.get(0)));
+    validators.add(Address.extract(publicKeys.get(0)));
 
     final ValidatorPeers peers = new ValidatorPeers(validatorProvider, PROTOCOL_NAME);
     for (final PeerConnection peer : peerConnections) {
@@ -143,7 +142,7 @@ public class ValidatorPeersTest {
 
   @Test
   public void doesntSendToValidatorsWhichAreNotDirectlyConnected() throws PeerNotConnected {
-    validators.add(Util.publicKeyToAddress(publicKeys.get(0)));
+    validators.add(Address.extract(publicKeys.get(0)));
 
     final ValidatorPeers peers = new ValidatorPeers(validatorProvider, PROTOCOL_NAME);
 
@@ -162,9 +161,9 @@ public class ValidatorPeersTest {
   @Test
   public void onlyValidatorsAreSentAMessageNotInExcludes() throws PeerNotConnected {
     // Only add the first Peer's address to the validators.
-    final Address validatorAddress = Util.publicKeyToAddress(publicKeys.get(0));
+    final Address validatorAddress = Address.extract(publicKeys.get(0));
     validators.add(validatorAddress);
-    validators.add(Util.publicKeyToAddress(publicKeys.get(1)));
+    validators.add(Address.extract(publicKeys.get(1)));
 
     final ValidatorPeers peers = new ValidatorPeers(validatorProvider, PROTOCOL_NAME);
     for (final PeerConnection peer : peerConnections) {

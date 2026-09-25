@@ -34,7 +34,6 @@ import java.util.Optional;
 
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
-import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.web3j.crypto.Credentials;
 import org.web3j.utils.Convert.Unit;
@@ -67,8 +66,7 @@ public class Account {
     this(
         eth,
         name,
-        Address.extract(
-            Bytes32.wrap(Hash.hash(Bytes.wrap(keyPair.getPublicKey().getEncoded())).getBytes())),
+        Address.extract(keyPair.getPublicKey()),
         Optional.of(keyPair));
   }
 
