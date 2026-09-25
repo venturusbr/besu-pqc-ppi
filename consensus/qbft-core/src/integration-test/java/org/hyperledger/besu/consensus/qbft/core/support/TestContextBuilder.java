@@ -131,7 +131,7 @@ import org.hyperledger.besu.testutil.TestClock;
 import org.hyperledger.besu.util.Subscribers;
 
 import java.io.IOException;
-import java.nio.file.Path;
+import java.net.URL;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -187,7 +187,7 @@ public class TestContextBuilder {
   private int validatorCount = 4;
   private int indexOfFirstLocallyProposedBlock = 0; // Meaning first block is from remote peer.
   private boolean useGossip = false;
-  private Optional<String> genesisFile = Optional.empty();
+  private Optional<URL> genesisFile = Optional.empty();
   private List<NodeParams> nodeParams = Collections.emptyList();
   private List<QbftFork> qbftForks = Collections.emptyList();
   private QbftBlockInterface qbftBlockInterface =
@@ -224,7 +224,7 @@ public class TestContextBuilder {
     return this;
   }
 
-  public TestContextBuilder genesisFile(final String genesisFile) {
+  public TestContextBuilder genesisFile(final URL genesisFile) {
     this.genesisFile = Optional.of(genesisFile);
     return this;
   }
@@ -393,9 +393,11 @@ public class TestContextBuilder {
         genesisHeader, new BlockBody(Collections.emptyList(), Collections.emptyList()));
   }
 
-  private GenesisState createGenesisBlock(final String genesisFile) throws IOException {
+  private GenesisState createGenesisBlock(final URL genesisFile) throws IOException {
+    // Passed through as a URL rather than a file-system path: Resources.getResource yields
+    // /C:/... on Windows, which Path.of rejects with InvalidPathException.
     return GenesisState.fromConfig(
-        GenesisConfig.fromSource(Path.of(genesisFile).toUri().toURL()),
+        GenesisConfig.fromSource(genesisFile),
         ProtocolScheduleFixture.TESTING_NETWORK,
         new CodeCache());
   }

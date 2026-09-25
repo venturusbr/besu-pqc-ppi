@@ -82,7 +82,7 @@ public class ValidatorContractTest {
             .nodeParams(
                 List.of(new NodeParams(NODE_ADDRESS, NodeKeyUtils.createFrom(NODE_PRIVATE_KEY))))
             .clock(TestClock.fixed())
-            .genesisFile(Resources.getResource("genesis_validator_contract.json").getFile())
+            .genesisFile(Resources.getResource("genesis_validator_contract.json"))
             .useValidatorContract(true)
             .buildAndStart();
 
@@ -103,7 +103,7 @@ public class ValidatorContractTest {
             .nodeParams(
                 List.of(new NodeParams(NODE_ADDRESS, NodeKeyUtils.createFrom(NODE_PRIVATE_KEY))))
             .clock(TestClock.fixed())
-            .genesisFile(Resources.getResource("genesis_validator_contract_london.json").getFile())
+            .genesisFile(Resources.getResource("genesis_validator_contract_london.json"))
             .useValidatorContract(true)
             .useLondonMilestone(true)
             .buildAndStart();
@@ -126,7 +126,7 @@ public class ValidatorContractTest {
             .nodeParams(
                 List.of(new NodeParams(NODE_ADDRESS, NodeKeyUtils.createFrom(NODE_PRIVATE_KEY))))
             .clock(TestClock.fixed())
-            .genesisFile(Resources.getResource("genesis_validator_contract_london.json").getFile())
+            .genesisFile(Resources.getResource("genesis_validator_contract_london.json"))
             .useValidatorContract(true)
             .useLondonMilestone(true)
             .useZeroBaseFee(true)
@@ -150,8 +150,7 @@ public class ValidatorContractTest {
             .nodeParams(
                 List.of(new NodeParams(NODE_ADDRESS, NodeKeyUtils.createFrom(NODE_PRIVATE_KEY))))
             .clock(TestClock.fixed())
-            .genesisFile(
-                Resources.getResource("genesis_validator_contract_shanghai.json").getFile())
+            .genesisFile(Resources.getResource("genesis_validator_contract_shanghai.json"))
             .useValidatorContract(true)
             .useShanghaiMilestone(true)
             .useZeroBaseFee(true)
@@ -177,7 +176,7 @@ public class ValidatorContractTest {
             .nodeParams(
                 List.of(new NodeParams(NODE_ADDRESS, NodeKeyUtils.createFrom(NODE_PRIVATE_KEY))))
             .clock(TestClock.fixed())
-            .genesisFile(Resources.getResource("genesis_validator_contract_london.json").getFile())
+            .genesisFile(Resources.getResource("genesis_validator_contract_london.json"))
             .useValidatorContract(true)
             .useLondonMilestone(true)
             .useFixedBaseFee(true)
@@ -201,8 +200,7 @@ public class ValidatorContractTest {
             .nodeParams(
                 List.of(new NodeParams(NODE_ADDRESS, NodeKeyUtils.createFrom(NODE_PRIVATE_KEY))))
             .clock(TestClock.fixed())
-            .genesisFile(
-                Resources.getResource("genesis_validator_contract_shanghai.json").getFile())
+            .genesisFile(Resources.getResource("genesis_validator_contract_shanghai.json"))
             .useValidatorContract(true)
             .useShanghaiMilestone(true)
             .useFixedBaseFee(true)
@@ -231,8 +229,7 @@ public class ValidatorContractTest {
                     new NodeParams(NODE_ADDRESS, NodeKeyUtils.createFrom(NODE_PRIVATE_KEY)),
                     new NodeParams(NODE_2_ADDRESS, NodeKeyUtils.createFrom(NODE_2_PRIVATE_KEY))))
             .clock(TestClock.fixed())
-            .genesisFile(
-                Resources.getResource("genesis_migrating_validator_contract.json").getFile())
+            .genesisFile(Resources.getResource("genesis_migrating_validator_contract.json"))
             .useValidatorContract(false)
             .qbftForks(qbftForks)
             .buildAndStart();
@@ -270,7 +267,7 @@ public class ValidatorContractTest {
                     new NodeParams(NODE_ADDRESS, NodeKeyUtils.createFrom(NODE_PRIVATE_KEY)),
                     new NodeParams(NODE_2_ADDRESS, NodeKeyUtils.createFrom(NODE_2_PRIVATE_KEY))))
             .clock(clock)
-            .genesisFile(Resources.getResource("genesis_validator_contract.json").getFile())
+            .genesisFile(Resources.getResource("genesis_validator_contract.json"))
             .useValidatorContract(true)
             .qbftForks(qbftForks)
             .buildAndStart();
@@ -310,7 +307,7 @@ public class ValidatorContractTest {
                     new NodeParams(NODE_ADDRESS, NodeKeyUtils.createFrom(NODE_PRIVATE_KEY)),
                     new NodeParams(NODE_2_ADDRESS, NodeKeyUtils.createFrom(NODE_2_PRIVATE_KEY))))
             .clock(clock)
-            .genesisFile(Resources.getResource("genesis_validator_contract.json").getFile())
+            .genesisFile(Resources.getResource("genesis_validator_contract.json"))
             .useValidatorContract(true)
             .qbftForks(qbftForks)
             .buildAndStart();
@@ -360,8 +357,7 @@ public class ValidatorContractTest {
                     new NodeParams(NODE_ADDRESS, NodeKeyUtils.createFrom(NODE_PRIVATE_KEY)),
                     new NodeParams(NODE_2_ADDRESS, NodeKeyUtils.createFrom(NODE_2_PRIVATE_KEY))))
             .clock(clock)
-            .genesisFile(
-                Resources.getResource("genesis_migrating_validator_contract.json").getFile())
+            .genesisFile(Resources.getResource("genesis_migrating_validator_contract.json"))
             .useValidatorContract(false)
             .qbftForks(qbftForks)
             .buildAndStart();
@@ -418,7 +414,7 @@ public class ValidatorContractTest {
                     new NodeParams(NODE_ADDRESS, NodeKeyUtils.createFrom(NODE_PRIVATE_KEY)),
                     new NodeParams(NODE_2_ADDRESS, NodeKeyUtils.createFrom(NODE_2_PRIVATE_KEY))))
             .clock(clock)
-            .genesisFile(Resources.getResource("genesis_validator_contract.json").getFile())
+            .genesisFile(Resources.getResource("genesis_validator_contract.json"))
             .useValidatorContract(true)
             .qbftForks(qbftForks)
             .buildAndStart();
