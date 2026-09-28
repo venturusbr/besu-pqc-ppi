@@ -15,12 +15,12 @@
 package org.hyperledger.besu.consensus.ibft.statemachine;
 
 import org.hyperledger.besu.consensus.common.bft.BftHelpers;
+import org.hyperledger.besu.consensus.common.bft.CommitSeal;
 import org.hyperledger.besu.consensus.common.bft.ConsensusRoundIdentifier;
 import org.hyperledger.besu.consensus.ibft.messagewrappers.Commit;
 import org.hyperledger.besu.consensus.ibft.messagewrappers.Prepare;
 import org.hyperledger.besu.consensus.ibft.messagewrappers.Proposal;
 import org.hyperledger.besu.consensus.ibft.validation.MessageValidator;
-import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.core.Block;
 import org.hyperledger.besu.ethereum.mainnet.block.access.list.BlockAccessList;
@@ -183,9 +183,13 @@ public class RoundState {
    *
    * @return the commit seals
    */
-  public Collection<Signature> getCommitSeals() {
+  public Collection<CommitSeal> getCommitSeals() {
     return commitMessages.values().stream()
-        .map(cp -> cp.getSignedPayload().getPayload().getCommitSeal())
+        .map(
+            cp ->
+                new CommitSeal(
+                    cp.getSignedPayload().getPayload().getCommitSeal(),
+                    cp.getSignedPayload().getPublicKey()))
         .collect(Collectors.toList());
   }
 

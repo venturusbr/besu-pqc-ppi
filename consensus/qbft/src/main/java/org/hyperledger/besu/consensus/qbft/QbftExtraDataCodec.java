@@ -19,12 +19,9 @@ import static org.hyperledger.besu.consensus.common.bft.Vote.DROP_BYTE_VALUE;
 
 import org.hyperledger.besu.consensus.common.bft.BftExtraData;
 import org.hyperledger.besu.consensus.common.bft.BftExtraDataCodec;
+import org.hyperledger.besu.consensus.common.bft.CommitSeal;
 import org.hyperledger.besu.consensus.common.bft.Vote;
 import org.hyperledger.besu.consensus.common.validator.VoteType;
-import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
-import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
-import org.hyperledger.besu.crypto.signature.Signature;
-import org.hyperledger.besu.crypto.signature.SignatureFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPInput;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPOutput;
@@ -101,10 +98,7 @@ public class QbftExtraDataCodec extends BftExtraDataCodec {
     }
 
     final int round = rlpInput.readIntScalar();
-    final DSAParametersSet dsaParams = DSAProviderFactory.getActiveDsaParametersSet();
-    final List<Signature> seals =
-        rlpInput.readList(
-            rlp -> SignatureFactory.createSignatureFromBytes(rlp.readBytes(), dsaParams));
+    final List<CommitSeal> seals = decodeCommitSeals(rlpInput);
     rlpInput.leaveListLenient();
 
     return new BftExtraData(vanityData, seals, vote, round, validators);
@@ -127,8 +121,7 @@ public class QbftExtraDataCodec extends BftExtraDataCodec {
     if (encodingType != EncodingType.EXCLUDE_COMMIT_SEALS_AND_ROUND_NUMBER) {
       encoder.writeIntScalar(bftExtraData.getRound());
       if (encodingType != EncodingType.EXCLUDE_COMMIT_SEALS) {
-        encoder.writeList(
-            bftExtraData.getSeals(), (committer, rlp) -> rlp.writeBytes(committer.encodedBytes()));
+        encodeCommitSeals(bftExtraData.getSeals(), encoder);
       } else {
         encoder.writeEmptyList();
       }

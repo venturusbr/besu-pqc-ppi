@@ -124,11 +124,16 @@ public class IbftBlockHashing {
     final Hash committerHash =
         IbftBlockHashing.calculateDataHashForCommittedSeal(header, ibftExtraData);
 
+    // IBFT 1.0 is a legacy, SECP-only format: its seals carry no public key and the address is
+    // recovered from the signature, which is itself the proof of authenticity.
     return ibftExtraData.getSeals().stream()
         .map(
             p ->
                 Address.signatureToAddress(
-                    DSAProviderFactory.getActiveDSA(), p, Optional.empty(), committerHash))
+                    DSAProviderFactory.getActiveDSA(),
+                    p.getSignature(),
+                    Optional.empty(),
+                    committerHash))
         .collect(Collectors.toList());
   }
 

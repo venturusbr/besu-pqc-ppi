@@ -15,6 +15,7 @@
 package org.hyperledger.besu.consensus.ibftlegacy;
 
 import org.hyperledger.besu.consensus.common.bft.BftExtraData;
+import org.hyperledger.besu.consensus.common.bft.CommitSeal;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -41,7 +42,8 @@ public class IbftLegacyExtraData extends BftExtraData {
       final Collection<Signature> seals,
       final Signature proposerSeal,
       final Collection<Address> validators) {
-    super(vanityData, seals, Optional.empty(), 0, validators);
+    super(
+        vanityData, seals.stream().map(CommitSeal::new).toList(), Optional.empty(), 0, validators);
     this.proposerSeal = proposerSeal;
   }
 
