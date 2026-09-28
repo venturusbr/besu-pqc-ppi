@@ -20,8 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.hyperledger.besu.consensus.common.bft.BftBlockHashing;
 import org.hyperledger.besu.consensus.common.bft.BftBlockHeaderFunctions;
 import org.hyperledger.besu.consensus.common.bft.BftExtraData;
+import org.hyperledger.besu.consensus.common.bft.CommitSeal;
 import org.hyperledger.besu.consensus.common.bft.Vote;
-import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.cryptoservices.NodeKey;
@@ -87,9 +87,13 @@ public class BftBlockHashingTest {
 
     BlockHeaderBuilder builder = setHeaderFieldsExceptForExtraData();
 
-    List<Signature> commitSeals =
+    List<CommitSeal> commitSeals =
         COMMITTERS_NODE_KEYS.stream()
-            .map(nodeKey -> nodeKey.sign(Bytes32.wrap(dataHahsForCommittedSeal.getBytes()), "seal"))
+            .map(
+                nodeKey ->
+                    new CommitSeal(
+                        nodeKey.sign(Bytes32.wrap(dataHahsForCommittedSeal.getBytes()), "seal"),
+                        Optional.of(nodeKey.getPublicKey())))
             .collect(Collectors.toList());
 
     final BftExtraData extraDataWithCommitSeals =
@@ -164,14 +168,16 @@ public class BftBlockHashingTest {
     BytesValueRLPOutput rlpForHeaderFroCommittersSigning = new BytesValueRLPOutput();
     builder.buildBlockHeader().writeTo(rlpForHeaderFroCommittersSigning);
 
-    List<Signature> commitSeals =
+    List<CommitSeal> commitSeals =
         COMMITTERS_NODE_KEYS.stream()
             .map(
                 nodeKey ->
-                    nodeKey.sign(
-                        Bytes32.wrap(
-                            Hash.hash(rlpForHeaderFroCommittersSigning.encoded()).getBytes()),
-                        "seal"))
+                    new CommitSeal(
+                        nodeKey.sign(
+                            Bytes32.wrap(
+                                Hash.hash(rlpForHeaderFroCommittersSigning.encoded()).getBytes()),
+                            "seal"),
+                        Optional.of(nodeKey.getPublicKey())))
             .collect(Collectors.toList());
 
     BftExtraData extraDataWithCommitSeals =

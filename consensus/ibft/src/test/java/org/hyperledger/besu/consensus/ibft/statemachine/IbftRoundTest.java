@@ -33,6 +33,7 @@ import org.hyperledger.besu.consensus.common.bft.BftBlockHashing;
 import org.hyperledger.besu.consensus.common.bft.BftExtraData;
 import org.hyperledger.besu.consensus.common.bft.BftExtraDataCodec;
 import org.hyperledger.besu.consensus.common.bft.BftProtocolSchedule;
+import org.hyperledger.besu.consensus.common.bft.CommitSeal;
 import org.hyperledger.besu.consensus.common.bft.ConsensusRoundIdentifier;
 import org.hyperledger.besu.consensus.common.bft.RoundTimer;
 import org.hyperledger.besu.consensus.common.bft.blockcreation.BftBlockCreator;
@@ -41,8 +42,8 @@ import org.hyperledger.besu.consensus.ibft.network.IbftMessageTransmitter;
 import org.hyperledger.besu.consensus.ibft.payload.MessageFactory;
 import org.hyperledger.besu.consensus.ibft.payload.RoundChangeCertificate;
 import org.hyperledger.besu.consensus.ibft.validation.MessageValidator;
-import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
 import org.hyperledger.besu.datatypes.Hash;
@@ -285,7 +286,8 @@ public class IbftRoundTest {
     // Ensure imported block contains both commit seals.
     final BftExtraData importedExtraData =
         new IbftExtraDataCodec().decode(capturedBlock.getValue().getHeader());
-    assertThat(importedExtraData.getSeals()).containsOnly(remoteCommitSeal, localCommitSeal);
+    assertThat(importedExtraData.getSeals())
+        .containsOnly(new CommitSeal(remoteCommitSeal), new CommitSeal(localCommitSeal));
   }
 
   @Test
@@ -524,7 +526,8 @@ public class IbftRoundTest {
     final RoundState roundState = new RoundState(roundIdentifier, QUORUM_SIZE, messageValidator);
     final NodeKey throwingNodeKey = mock(NodeKey.class);
     final MessageFactory throwingMessageFactory = new MessageFactory(throwingNodeKey);
-    when(throwingNodeKey.sign(any(), any())).thenThrow(new SecurityModuleException("Hsm is Offline"));
+    when(throwingNodeKey.sign(any(), any()))
+        .thenThrow(new SecurityModuleException("Hsm is Offline"));
 
     final IbftRound round =
         new IbftRound(
