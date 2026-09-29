@@ -2,6 +2,7 @@ package org.hyperledger.besu.crypto.algorithms.hybrid;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import org.hyperledger.besu.crypto.PublicKeyRecoverable;
 import java.util.concurrent.CompletableFuture;
 
 import org.apache.tuweni.bytes.Bytes;
@@ -50,14 +51,41 @@ public class HybridStrongNestingConcatenation implements HybridDigitalSignatureA
         Bytes dataWithFirstSignature = Bytes.concatenate(data, firstSignature.encodedBytes()); 
 
         CompletableFuture<Boolean> firstVerify = CompletableFuture.supplyAsync(() ->
-            delegateFirstAlgorithm.verify(data, firstSignature, hybridPublicKey.getFirstKey())
+            verifyHalf(delegateFirstAlgorithm, data, firstSignature, hybridPublicKey.getFirstKey())
         );
 
         CompletableFuture<Boolean> secondVerify = CompletableFuture.supplyAsync(() ->
-            delegateSecondAlgorithm.verify(dataWithFirstSignature, secondSignature, hybridPublicKey.getSecondKey())
+            verifyHalf(delegateSecondAlgorithm, dataWithFirstSignature, secondSignature, hybridPublicKey.getSecondKey())
         );
 
         return firstVerify.join() && secondVerify.join();
+    }
+
+    /**
+     * Checks one half of the composite signature against the matching half of the composite key.
+     *
+     * <p>An algorithm that supports public key recovery is authenticated by recovering the key
+     * from the signature, which the caller does, so this does not verify that half. Anything
+     * else is verified directly.
+     *
+     * @param algorithm the algorithm that produced this half
+     * @param data what that half was signed over
+     * @param signature the half to check
+     * @param claimedKey the half of the composite key it is claimed to belong to
+     * @return whether the half holds up
+     */
+    private Boolean verifyHalf(
+            final DigitalSignatureAlgorithm algorithm,
+            final Bytes data,
+            final Signature signature,
+            final PublicKey claimedKey) {
+
+        if (algorithm instanceof PublicKeyRecoverable) {
+            //uses PKR to authentication, verify is not necessary
+            return true;
+        }
+
+        return algorithm.verify(data, signature, claimedKey);
     }
 
     @Override

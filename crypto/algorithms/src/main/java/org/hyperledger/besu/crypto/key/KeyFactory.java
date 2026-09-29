@@ -1,4 +1,29 @@
+/*
+ * Copyright contributors to Besu.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.hyperledger.besu.crypto.key;
+
+import org.hyperledger.besu.crypto.KeyPair;
+import org.hyperledger.besu.crypto.SECPPrivateKey;
+import org.hyperledger.besu.crypto.SECPPublicKey;
+import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.key.types.CompositePrivateKey;
+import org.hyperledger.besu.crypto.key.types.FalconPrivateKey;
+import org.hyperledger.besu.crypto.key.types.FalconPublicKey;
+import org.hyperledger.besu.crypto.key.types.MLDSAPrivateKey;
+import org.hyperledger.besu.crypto.key.types.MLDSAPublicKey;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -6,44 +31,48 @@ import java.util.Optional;
 
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.SECPPrivateKey;
-import org.hyperledger.besu.crypto.SECPPublicKey;
-import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
-import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
-import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
-import org.hyperledger.besu.crypto.key.types.CompositePrivateKey;
-import org.hyperledger.besu.crypto.key.types.FalconPrivateKey;
-import org.hyperledger.besu.crypto.key.types.FalconPublicKey;
-import org.hyperledger.besu.crypto.key.types.MLDSAPrivateKey;
-import org.hyperledger.besu.crypto.key.types.MLDSAPublicKey;
 
 public class KeyFactory {
-    private static final KeyExtractor keyExtractor = new KeyExtractor();
+  private static final KeyExtractor keyExtractor = new KeyExtractor();
 
-    private KeyFactory(){}
+  private KeyFactory() {}
 
-    public static PrivateKey createPrivateKey(final Bytes privateKeyBytes, final DSAParametersSet paramsSet, final PrivateKeyRepresentation firstSkRep, final PrivateKeyRepresentation secondSkRep){
-        PrivateKey sk;
-        switch (paramsSet) {
-            case SECP256K1:
-            case SECP256R1:
-                sk = SECPPrivateKey.create(Bytes32.wrap(privateKeyBytes), paramsSet.getName());
-                break;
-            case MLDSA44:
-            case MLDSA65:
-            case MLDSA87:
-                sk = MLDSAPrivateKey.create(privateKeyBytes, paramsSet);
-                break;
+  public static PrivateKey createPrivateKey(
+      final Bytes privateKeyBytes,
+      final DSAParametersSet paramsSet,
+      final PrivateKeyRepresentation firstSkRep,
+      final PrivateKeyRepresentation secondSkRep) {
+    PrivateKey sk;
+    switch (paramsSet) {
+      case SECP256K1:
+      case SECP256R1:
+        sk = SECPPrivateKey.create(Bytes32.wrap(privateKeyBytes), paramsSet.getName());
+        break;
+      case MLDSA44:
+      case MLDSA65:
+      case MLDSA87:
+        sk = MLDSAPrivateKey.create(privateKeyBytes, paramsSet);
+        break;
             case FALCON512:
                 sk = FalconPrivateKey.create(privateKeyBytes, paramsSet);
                 break;
-            case SECP256K1MLDSA44:
-                Bytes secpSkBytes = keyExtractor.extractPrivateKeyBytesAtOffset(privateKeyBytes, 0, DSAParametersSet.SECP256K1, firstSkRep);
-                PrivateKey secpSk = createPrivateKey(secpSkBytes, DSAParametersSet.SECP256K1, PrivateKeyRepresentation.EXPANDED, null);
+      case SECP256K1MLDSA44:
+        Bytes secpSkBytes =
+            keyExtractor.extractPrivateKeyBytesAtOffset(
+                privateKeyBytes, 0, DSAParametersSet.SECP256K1, firstSkRep);
+        PrivateKey secpSk =
+            createPrivateKey(
+                secpSkBytes, DSAParametersSet.SECP256K1, PrivateKeyRepresentation.EXPANDED, null);
 
-                Bytes mldsaSk44Bytes = keyExtractor.extractPrivateKeyBytesAtOffset(privateKeyBytes, DSAParametersSet.SECP256K1.getPrivateKeyLength() + 1, DSAParametersSet.MLDSA44, secondSkRep);
-                PrivateKey mldsaSk44 = createPrivateKey(mldsaSk44Bytes, DSAParametersSet.MLDSA44, PrivateKeyRepresentation.EXPANDED, null);
+        Bytes mldsaSk44Bytes =
+            keyExtractor.extractPrivateKeyBytesAtOffset(
+                privateKeyBytes,
+                DSAParametersSet.SECP256K1.getPrivateKeyLength(),
+                DSAParametersSet.MLDSA44,
+                secondSkRep);
+        PrivateKey mldsaSk44 =
+            createPrivateKey(
+                mldsaSk44Bytes, DSAParametersSet.MLDSA44, PrivateKeyRepresentation.EXPANDED, null);
 
                 sk = CompositePrivateKey.create(secpSk, mldsaSk44);
                 break;
@@ -75,30 +104,31 @@ public class KeyFactory {
         return sk;
     }
 
-    public static PublicKey createPublicKey(final PrivateKey privateKey, final DSAParametersSet paramsSet){
-        PublicKey pk;
-        switch (paramsSet) {
-            case SECP256K1:
-            case SECP256R1:
-                SECPPrivateKey secpSk = (SECPPrivateKey) privateKey;
-                pk = SignatureAlgorithmFactory.getInstance().createPublicKey(secpSk);
-                break;
-            case MLDSA44:
-            case MLDSA65:
-            case MLDSA87:
-                pk = MLDSAPublicKey.create(privateKey, paramsSet);
-                break;
+  public static PublicKey createPublicKey(
+      final PrivateKey privateKey, final DSAParametersSet paramsSet) {
+    PublicKey pk;
+    switch (paramsSet) {
+      case SECP256K1:
+      case SECP256R1:
+        SECPPrivateKey secpSk = (SECPPrivateKey) privateKey;
+        pk = SignatureAlgorithmFactory.getInstance().createPublicKey(secpSk);
+        break;
+      case MLDSA44:
+      case MLDSA65:
+      case MLDSA87:
+        pk = MLDSAPublicKey.create(privateKey, paramsSet);
+        break;
             case FALCON512:
                 pk = FalconPublicKey.create(privateKey);
                 break;
-            case SECP256K1MLDSA44:
-                CompositePrivateKey compositeSk = (CompositePrivateKey) privateKey;
+      case SECP256K1MLDSA44:
+        CompositePrivateKey compositeSk = (CompositePrivateKey) privateKey;
 
-                PrivateKey secpFirstSk = compositeSk.getFirstKey();
-                PrivateKey mldsaSecondSk = compositeSk.getSecondKey();
+        PrivateKey secpFirstSk = compositeSk.getFirstKey();
+        PrivateKey mldsaSecondSk = compositeSk.getSecondKey();
 
-                PublicKey secpFirstPk = createPublicKey(secpFirstSk, DSAParametersSet.SECP256K1);
-                PublicKey mldsaSecondPk = createPublicKey(mldsaSecondSk, DSAParametersSet.MLDSA44);
+        PublicKey secpFirstPk = createPublicKey(secpFirstSk, DSAParametersSet.SECP256K1);
+        PublicKey mldsaSecondPk = createPublicKey(mldsaSecondSk, DSAParametersSet.MLDSA44);
 
                 pk = CompositePublicKey.create(secpFirstPk, mldsaSecondPk);
                 break;
@@ -116,42 +146,40 @@ public class KeyFactory {
         return pk;
     }
 
-    public static Optional<PublicKey> createPublicKey(final Bytes publicKeyBytes, final DSAParametersSet paramsSet){
-        PublicKey pk;
-        switch (paramsSet) {
-            case SECP256K1:
-            case SECP256R1:
-                pk = SECPPublicKey.create(publicKeyBytes, paramsSet.getName());
-                break;
-            case MLDSA44:
-            case MLDSA65:
-            case MLDSA87:
-                pk = MLDSAPublicKey.create(publicKeyBytes, paramsSet);
-                break;
+  public static Optional<PublicKey> createPublicKey(
+      final Bytes publicKeyBytes, final DSAParametersSet paramsSet) {
+    PublicKey pk;
+    switch (paramsSet) {
+      case SECP256K1:
+      case SECP256R1:
+        pk = SECPPublicKey.create(publicKeyBytes, paramsSet.getName());
+        break;
+      case MLDSA44:
+      case MLDSA65:
+      case MLDSA87:
+        pk = MLDSAPublicKey.create(publicKeyBytes, paramsSet);
+        break;
             case FALCON512:
                 pk = FalconPublicKey.create(publicKeyBytes, paramsSet);
                 break;
-            case SECP256K1MLDSA44:
-                int expectedFullLength =
-                    DSAParametersSet.SECP256K1MLDSA44.getPublicKeyLength();
+      case SECP256K1MLDSA44:
+        int expectedFullLength = DSAParametersSet.SECP256K1MLDSA44.getPublicKeyLength();
 
-                if (publicKeyBytes.size() == expectedFullLength) {
+        if (publicKeyBytes.size() == expectedFullLength) {
 
-                    Bytes secpPkBytes =
-                        keyExtractor.extractPublicKeyBytesAtOffset(
-                            publicKeyBytes, 0, DSAParametersSet.SECP256K1);
+          Bytes secpPkBytes =
+              keyExtractor.extractPublicKeyBytesAtOffset(
+                  publicKeyBytes, 0, DSAParametersSet.SECP256K1);
 
-                    Bytes mldsaPkBytes =
-                        keyExtractor.extractPublicKeyBytesAtOffset(
-                            publicKeyBytes,
-                            DSAParametersSet.SECP256K1.getPublicKeyLength() + 1,
-                            DSAParametersSet.MLDSA44);
+          Bytes mldsaPkBytes =
+              keyExtractor.extractPublicKeyBytesAtOffset(
+                  publicKeyBytes,
+                  DSAParametersSet.SECP256K1.getPublicKeyLength(),
+                  DSAParametersSet.MLDSA44);
 
-                    Optional<PublicKey> secpPk =
-                        createPublicKey(secpPkBytes, DSAParametersSet.SECP256K1);
+          Optional<PublicKey> secpPk = createPublicKey(secpPkBytes, DSAParametersSet.SECP256K1);
 
-                    Optional<PublicKey> mldsaPk =
-                        createPublicKey(mldsaPkBytes, DSAParametersSet.MLDSA44);
+          Optional<PublicKey> mldsaPk = createPublicKey(mldsaPkBytes, DSAParametersSet.MLDSA44);
 
                     return Optional.of(CompositePublicKey.create(secpPk.get(), mldsaPk.get()));
                 }
@@ -185,29 +213,34 @@ public class KeyFactory {
         return Optional.ofNullable(pk);
     }
 
-    public static PublicKey createCompositePublicKey(final PublicKey firstPk, final PublicKey secondPk){
-        return CompositePublicKey.create(firstPk, secondPk);
-    }
+  public static PublicKey createCompositePublicKey(
+      final PublicKey firstPk, final PublicKey secondPk) {
+    return CompositePublicKey.create(firstPk, secondPk);
+  }
 
-    public static KeyPair createKeyPair(final PrivateKey privateKey, final PublicKey publicKey){
-        return new KeyPair(privateKey, publicKey);
-    }
+  public static KeyPair createKeyPair(final PrivateKey privateKey, final PublicKey publicKey) {
+    return new KeyPair(privateKey, publicKey);
+  }
 
-    public static KeyPair createKeyPair(
-            final Bytes privateKeyBytes,
-            final Bytes publicKeyBytes,
-            final DSAParametersSet dsaParams) {
-        PrivateKey sk = createPrivateKey(privateKeyBytes, dsaParams, PrivateKeyRepresentation.EXPANDED, PrivateKeyRepresentation.EXPANDED);
+  public static KeyPair createKeyPair(
+      final Bytes privateKeyBytes, final Bytes publicKeyBytes, final DSAParametersSet dsaParams) {
+    PrivateKey sk =
+        createPrivateKey(
+            privateKeyBytes,
+            dsaParams,
+            PrivateKeyRepresentation.EXPANDED,
+            PrivateKeyRepresentation.EXPANDED);
 
-        PublicKey pk = createPublicKey(sk, dsaParams);
+    PublicKey pk = createPublicKey(sk, dsaParams);
 
-        return createKeyPair(sk, pk);
-    }
+    return createKeyPair(sk, pk);
+  }
 
-    public static KeyPair createHybridKeyPair(final KeyPair firstKp, final KeyPair secondKp){
-        PrivateKey hybridSk = CompositePrivateKey.create(firstKp.getPrivateKey(), secondKp.getPrivateKey());
-        PublicKey hybridPk = CompositePublicKey.create(firstKp.getPublicKey(), secondKp.getPublicKey());
+  public static KeyPair createHybridKeyPair(final KeyPair firstKp, final KeyPair secondKp) {
+    PrivateKey hybridSk =
+        CompositePrivateKey.create(firstKp.getPrivateKey(), secondKp.getPrivateKey());
+    PublicKey hybridPk = CompositePublicKey.create(firstKp.getPublicKey(), secondKp.getPublicKey());
 
-        return createKeyPair(hybridSk, hybridPk);
-    }
+    return createKeyPair(hybridSk, hybridPk);
+  }
 }
