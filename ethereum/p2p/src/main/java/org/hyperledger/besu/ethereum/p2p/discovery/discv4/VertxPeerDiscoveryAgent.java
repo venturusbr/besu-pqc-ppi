@@ -62,7 +62,6 @@ import io.vertx.core.Vertx;
 import io.vertx.core.datagram.DatagramPacket;
 import io.vertx.core.datagram.DatagramSocket;
 import io.vertx.core.datagram.DatagramSocketOptions;
-
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.rlp.EndOfRLPException;
 import org.ethereum.beacon.discovery.util.DecodeException;
@@ -163,7 +162,13 @@ public class VertxPeerDiscoveryAgent extends PeerDiscoveryAgentV4 {
   protected CompletableFuture<InetSocketAddress> listenForConnections() {
     final CompletableFuture<InetSocketAddress> future = new CompletableFuture<>();
     vertx
-        .createDatagramSocket(new DatagramSocketOptions().setIpV6(NetworkUtility.isIPv6Available()))
+        .createDatagramSocket(
+            new DatagramSocketOptions()
+                .setIpV6(NetworkUtility.isIPv6Available())
+                // Netty sizes the datagram read buffer at 2048 bytes by default, which silently
+                // truncates anything larger. Size it to the packet limit so oversized packets are
+                // rejected by validatePacketSize rather than arriving corrupted.
+                .setReceiveBufferSize(MAX_PACKET_SIZE_BYTES))
         .listen(
             config.getBindPort(), config.getBindHost(), res -> handleListenerSetup(res, future));
     return future;

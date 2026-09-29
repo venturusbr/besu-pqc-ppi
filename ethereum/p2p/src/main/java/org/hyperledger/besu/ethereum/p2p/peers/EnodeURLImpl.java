@@ -17,6 +17,8 @@ package org.hyperledger.besu.ethereum.p2p.peers;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.plugin.data.EnodeURL;
 import org.hyperledger.besu.util.NetworkUtility;
 
@@ -37,10 +39,22 @@ import org.apache.tuweni.bytes.Bytes;
 public class EnodeURLImpl implements EnodeURL {
 
   public static final int DEFAULT_LISTENING_PORT = 30303;
-  public static final int NODE_ID_SIZE = 64;
   private static final Pattern DISCPORT_QUERY_STRING_REGEX =
       Pattern.compile("^discport=([0-9]{1,5})$");
-  private static final Pattern NODE_ID_PATTERN = Pattern.compile("^[0-9a-fA-F]{128}$");
+  private static final Pattern NODE_ID_PATTERN = Pattern.compile("^[0-9a-fA-F]+$");
+
+  /**
+   * The size of a node id, in bytes: the public key length of the node's active signature
+   * algorithm. A secp256k1 key is 64 bytes, a hybrid secp256k1 + ML-DSA-44 key is 1376.
+   *
+   * <p>This is not a constant because the node id carries the whole node key, whose size depends on
+   * the algorithm selected with {@code --node-dsa}.
+   *
+   * @return the expected node id size in bytes
+   */
+  public static int nodeIdSize() {
+    return DSAProviderFactory.getActiveDsaParametersSet().getPublicKeyLength();
+  }
 
   private final Bytes nodeId;
   private InetAddress ip;
@@ -55,8 +69,12 @@ public class EnodeURLImpl implements EnodeURL {
       final Optional<Integer> listeningPort,
       final Optional<Integer> discoveryPort) {
     checkArgument(
-        nodeId.size() == NODE_ID_SIZE,
-        "Invalid node id of length " + nodeId.size() + ".  Expected id of length: 64 bytes.");
+        nodeId.size() == nodeIdSize(),
+        "Invalid node id of length "
+            + nodeId.size()
+            + ".  Expected id of length: "
+            + nodeIdSize()
+            + " bytes.");
     listeningPort.ifPresent(port -> NetworkUtility.checkPort(port, "listening"));
     discoveryPort.ifPresent(port -> NetworkUtility.checkPort(port, "discovery"));
 
@@ -114,8 +132,11 @@ public class EnodeURLImpl implements EnodeURL {
     checkArgument(
         uri.getScheme().equalsIgnoreCase("enode"), "Invalid URI scheme (must equal \"enode\").");
     checkArgument(
-        NODE_ID_PATTERN.matcher(uri.getUserInfo()).matches(),
-        "Invalid node ID: node ID must have exactly 128 hexadecimal characters and should not include any '0x' hex prefix.");
+        NODE_ID_PATTERN.matcher(uri.getUserInfo()).matches()
+            && uri.getUserInfo().length() == nodeIdSize() * 2,
+        "Invalid node ID: node ID must have exactly "
+            + nodeIdSize() * 2
+            + " hexadecimal characters and should not include any '0x' hex prefix.");
 
     final Bytes id = Bytes.fromHexString(uri.getUserInfo());
     String host = uri.getHost();
@@ -157,14 +178,28 @@ public class EnodeURLImpl implements EnodeURL {
   }
 
   public static Bytes parseNodeId(final String nodeId) {
-    int expectedSize = EnodeURLImpl.NODE_ID_SIZE * 2;
+    final int nodeIdSize = nodeIdSize();
+    int expectedSize = nodeIdSize * 2;
     if (nodeId.toLowerCase(Locale.ROOT).startsWith("0x")) {
       expectedSize += 2;
     }
     checkArgument(
-        nodeId.length() == expectedSize,
-        "Expected " + EnodeURLImpl.NODE_ID_SIZE + " bytes in " + nodeId);
-    return Bytes.fromHexString(nodeId, NODE_ID_SIZE);
+        nodeId.length() == expectedSize, "Expected " + nodeIdSize + " bytes in " + nodeId);
+    return Bytes.fromHexString(nodeId, nodeIdSize);
+  }
+
+  /**
+   * The classical half of a node id, which is what the RLPx ECIES handshake encrypts to.
+   *
+   * <p>A hybrid node id is the secp256k1 key followed by the ML-DSA-44 key, so the classical key is
+   * its leading bytes. For a purely classical node id the whole id is returned.
+   *
+   * @param nodeId the node id
+   * @return the uncompressed secp256k1 public key
+   */
+  public static Bytes secp256k1PublicKey(final Bytes nodeId) {
+    final int secpKeySize = DSAParametersSet.SECP256K1.getPublicKeyLength();
+    return nodeId.size() == secpKeySize ? nodeId : nodeId.slice(0, secpKeySize);
   }
 
   @Override

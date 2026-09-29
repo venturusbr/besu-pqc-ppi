@@ -39,6 +39,7 @@ import org.hyperledger.besu.cli.config.EthNetworkConfig;
 import org.hyperledger.besu.cli.config.NativeRequirement;
 import org.hyperledger.besu.cli.config.NativeRequirement.NativeRequirementResult;
 import org.hyperledger.besu.cli.config.ProfilesCompletionCandidates;
+import org.hyperledger.besu.cli.converter.DSAParametersSetConverter;
 import org.hyperledger.besu.cli.custom.JsonRPCAllowlistHostsProperty;
 import org.hyperledger.besu.cli.error.BesuExecutionExceptionHandler;
 import org.hyperledger.besu.cli.error.BesuParameterExceptionHandler;
@@ -109,17 +110,9 @@ import org.hyperledger.besu.crypto.config.DigitalSignatureAlgorithmConfiguration
 import org.hyperledger.besu.crypto.config.KeyConfiguration;
 import org.hyperledger.besu.crypto.key.PrivateKeyRepresentation;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3KeyPair;
-import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3PrivateKey;
-import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3PublicKey;
 import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconKeyPair;
-import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconPrivateKey;
-import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconPublicKey;
-import org.hyperledger.besu.crypto.pqc.keys.PqcKeyPair;
 import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusKeyPair;
-import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusPrivateKey;
-import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusPublicKey;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
-import org.hyperledger.besu.crypto.providers.DigitalSignatureAlgorithmProvider;
 import org.hyperledger.besu.crypto.providers.KeyManagementProvider;
 import org.hyperledger.besu.crypto.providers.NodeKeyProvider;
 import org.hyperledger.besu.cryptoservices.KeyPairSecurityModule;
@@ -234,7 +227,6 @@ import org.hyperledger.besu.util.PermissioningConfigurationValidator;
 import org.hyperledger.besu.util.number.Fraction;
 import org.hyperledger.besu.util.number.Percentage;
 import org.hyperledger.besu.util.number.PositiveNumber;
-import org.hyperledger.besu.cli.converter.DSAParametersSetConverter;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -430,21 +422,22 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
           "Use genesis state hash from data on startup if specified (default: ${DEFAULT-VALUE})")
   private final Boolean genesisStateHashCacheEnabled = false;
 
-  @SuppressWarnings({ "FieldCanBeFinal", "FieldMayBeFinal" }) // PicoCLI requires non-final Strings.
-  @Option(names = "--node-dsa", paramLabel = "<String>", description = "Name of the DSA algorithm. (default: ${DEFAULT-VALUE})", arity = "1..1")
+  @SuppressWarnings({"FieldCanBeFinal", "FieldMayBeFinal"}) // PicoCLI requires non-final Strings.
+  @Option(
+      names = "--node-dsa",
+      paramLabel = "<String>",
+      description = "Name of the DSA algorithm. (default: ${DEFAULT-VALUE})",
+      arity = "1..1")
   private String nodeDsa = DEFAULT_NODE_DSA;
 
-  @SuppressWarnings({ "FieldCanBeFinal", "FieldMayBeFinal" }) // PicoCLI requires non-final Strings.
+  @SuppressWarnings({"FieldCanBeFinal", "FieldMayBeFinal"}) // PicoCLI requires non-final Strings.
   @Option(
-    names = {"--accounts-supported-dsas"},
-    split = ",",
-    converter = DSAParametersSetConverter.class,
-    paramLabel = "<DSA>",
-    description =
-        "Digital signature algorithms supported by accounts.")
-  private List<DSAParametersSet> accountsSupportedDSAs =
-    List.of(DSAParametersSet.SECP256K1);
-  
+      names = {"--accounts-supported-dsas"},
+      split = ",",
+      converter = DSAParametersSetConverter.class,
+      paramLabel = "<DSA>",
+      description = "Digital signature algorithms supported by accounts.")
+  private List<DSAParametersSet> accountsSupportedDSAs = List.of(DSAParametersSet.SECP256K1);
 
   @Option(
       names = "--identity",
@@ -997,6 +990,10 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
 
       instantiateSignatureAlgorithmFactory();
 
+      // Must run before anything parses an enode URL: the node id size, and therefore enode
+      // validation, depends on the node's active DSA.
+      instantiateDsaProvider();
+
       logger.info("Starting Besu");
 
       // Need to create vertx after cmdline has been parsed, such that metricsSystem is configurable
@@ -1343,7 +1340,8 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
   }
 
   public SphincsPlusKeyPair loadSphincsKeyPair(final File nodePrivateKeyFile) {
-    return KeyPairUtil.loadSphincsKeyPair(resolveNodePQCPrivateKeyFile(nodePrivateKeyFile).toPath());
+    return KeyPairUtil.loadSphincsKeyPair(
+        resolveNodePQCPrivateKeyFile(nodePrivateKeyFile).toPath());
   }
 
   public FalconKeyPair loadFalconKeyPair(final File nodePrivateKeyFile) {
@@ -2627,7 +2625,12 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
     return dataPath.toAbsolutePath();
   }
 
-  private NodeKeyProvider nodeKeyProvider() {
+  /**
+   * Configures the DSA provider from the command line, which fixes the node's active algorithm and
+   * with it the size of a node id. This only registers the provider; the node key itself is still
+   * loaded later, by {@link #nodeKeyProvider()}.
+   */
+  private void instantiateDsaProvider() {
     DigitalSignatureAlgorithmConfiguration dsaConfig = new DigitalSignatureAlgorithmConfiguration();
 
     try {
@@ -2638,15 +2641,23 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
     }
 
     KeyConfiguration keyConfig;
-    if(dsaConfig.getNodeActiveDSA() instanceof HybridDigitalSignatureAlgorithm){
-      keyConfig = KeyConfiguration.createHybridKeyConfig(nodePrivateKeyFileOption.getNodePrivateKeyFile(), PrivateKeyRepresentation.EXPANDED, PrivateKeyRepresentation.EXPANDED);
+    if (dsaConfig.getNodeActiveDSA() instanceof HybridDigitalSignatureAlgorithm) {
+      keyConfig =
+          KeyConfiguration.createHybridKeyConfig(
+              nodePrivateKeyFileOption.getNodePrivateKeyFile(),
+              PrivateKeyRepresentation.EXPANDED,
+              PrivateKeyRepresentation.EXPANDED);
     } else {
-      keyConfig = KeyConfiguration.createSingleKeyConfig(nodePrivateKeyFileOption.getNodePrivateKeyFile(), PrivateKeyRepresentation.EXPANDED);
+      keyConfig =
+          KeyConfiguration.createSingleKeyConfig(
+              nodePrivateKeyFileOption.getNodePrivateKeyFile(), PrivateKeyRepresentation.EXPANDED);
     }
 
     DSAProviderFactory.setDsaProvider(dsaConfig, keyConfig);
+  }
 
-    if(!nodeDsa.equals(DEFAULT_NODE_DSA)){
+  private NodeKeyProvider nodeKeyProvider() {
+    if (!nodeDsa.equals(DEFAULT_NODE_DSA)) {
       KeyManagementProvider keyManagementProvider = DSAProviderFactory.getKeyManagementProvider();
       keyManagementProvider.loadNodeKeyPair();
 
@@ -2668,8 +2679,7 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
   }
 
   private File resolveNodePQCPrivateKeyFile(final File nodePrivateKeyFile) {
-    return Optional.ofNullable(nodePrivateKeyFile)
-        .orElseGet(() -> dataDir().toFile());
+    return Optional.ofNullable(nodePrivateKeyFile).orElseGet(() -> dataDir().toFile());
   }
 
   /**

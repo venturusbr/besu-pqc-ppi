@@ -58,9 +58,22 @@ import org.slf4j.LoggerFactory;
 public abstract class PeerDiscoveryAgentV4 implements PeerDiscoveryAgent {
   private static final Logger LOG = LoggerFactory.getLogger(PeerDiscoveryAgentV4.class);
 
-  // The devp2p specification says only accept packets up to 1280, but some
-  // clients ignore that, so we add in a little extra padding.
-  private static final int MAX_PACKET_SIZE_BYTES = 1600;
+  /**
+   * The devp2p specification says only accept packets up to 1280, but some clients ignore that, so
+   * we add in a little extra padding.
+   *
+   * <p>The limit is raised well beyond that padding because an ENR of the hybrid {@code vnt}
+   * identity scheme does not fit in it: the ML-DSA-44 public key is 1312 bytes and its signature
+   * 2420 bytes, so a single record already takes about 3.8kB. This matches {@code
+   * IncomingDataPacker.MAX_PACKET_SIZE} in the discovery library, which carries the same records
+   * over discv5.
+   *
+   * <p>This is a deliberate deviation from the specification. Packets above 1280 bytes rely on IP
+   * fragmentation, which is unreliable across NATs and firewalls, and peers that enforce the
+   * specified limit will drop them.
+   */
+  public static final int MAX_PACKET_SIZE_BYTES = 8192;
+
   protected final List<DiscoveryPeerV4> bootstrapPeers;
   private final List<PeerRequirement> peerRequirements = new CopyOnWriteArrayList<>();
   private final PeerPermissions peerPermissions;

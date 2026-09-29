@@ -20,7 +20,9 @@ import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.cryptoservices.NodeKey;
+import org.hyperledger.besu.ethereum.p2p.discovery.EnrSignatureValidator;
 import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.DaggerPacketPackage;
 import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.Packet;
 import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.PacketData;
@@ -169,6 +171,11 @@ public class PeerDiscoveryController {
   private final NeighborsPacketDataFactory neighborsPacketDataFactory;
   private final EnrRequestPacketDataFactory enrRequestPacketDataFactory;
   private final EnrResponsePacketDataFactory enrResponsePacketDataFactory;
+
+  // Resolved from the process-wide provider, as Transaction does for its own DSA: the
+  // algorithms are configured once at startup.
+  private final EnrSignatureValidator enrSignatureValidator =
+      new EnrSignatureValidator(DSAProviderFactory.getVerifierProvider());
 
   PeerDiscoveryController(
       final NodeKey nodeKey,
@@ -418,7 +425,15 @@ public class PeerDiscoveryController {
                   final Optional<EnrResponsePacketData> packetData =
                       packet.getPacketData(EnrResponsePacketData.class);
                   final NodeRecord enr = packetData.get().getEnr();
-                  peer.setNodeRecord(enr);
+                  // A record that does not prove possession of the key it advertises would let
+                  // this peer claim any node id, so it is dropped rather than stored.
+                  if (enrSignatureValidator.isValid(enr)) {
+                    peer.setNodeRecord(enr);
+                  } else {
+                    LOG.debug(
+                        "Discarding node record with an invalid signature from peer {}",
+                        peer.getLoggableId());
+                  }
                 });
         break;
     }

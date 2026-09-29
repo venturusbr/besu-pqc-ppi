@@ -18,13 +18,6 @@ import static org.hyperledger.besu.evm.account.Account.MAX_NONCE;
 import static org.hyperledger.besu.evm.internal.Words.clampedAdd;
 import static org.hyperledger.besu.evm.worldstate.CodeDelegationHelper.hasCodeDelegation;
 
-import java.math.BigInteger;
-import java.security.PublicKey;
-import java.util.Optional;
-import java.util.Set;
-
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureValidationContext;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
@@ -44,15 +37,21 @@ import org.hyperledger.besu.ethereum.mainnet.feemarket.FeeMarket;
 import org.hyperledger.besu.ethereum.transaction.TransactionInvalidReason;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+
+import java.math.BigInteger;
+import java.security.PublicKey;
+import java.util.Optional;
+import java.util.Set;
+
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Validates a transaction based on Frontier protocol runtime requirements.
  *
- * <p>
- * The {@link MainnetTransactionValidator} performs the intrinsic gas cost check
- * on the given
+ * <p>The {@link MainnetTransactionValidator} performs the intrinsic gas cost check on the given
  * {@link Transaction}.
  */
 public class MainnetTransactionValidator implements TransactionValidator {
@@ -95,12 +94,13 @@ public class MainnetTransactionValidator implements TransactionValidator {
     this.chainId = chainId;
     this.acceptedTransactionTypes = acceptedTransactionTypes;
     this.maxInitcodeSize = maxInitcodeSize;
-    this.blobsValidator = new MainnetBlobsValidator(acceptedBlobVersions, gasLimitCalculator, gasCalculator);
+    this.blobsValidator =
+        new MainnetBlobsValidator(acceptedBlobVersions, gasLimitCalculator, gasCalculator);
     this.dsaProvider = DSAProviderFactory.getVerifierProvider();
     this.verifyWriter = MetricWriters.getVerifyInstance();
     this.stringBuilder = new StringBuilder();
   }
-  
+
   @Override
   public ValidationResult<TransactionInvalidReason> validate(
       final Transaction transaction,
@@ -153,7 +153,8 @@ public class MainnetTransactionValidator implements TransactionValidator {
               transaction.getPayload().size(), maxInitcodeSize));
     }
 
-    if (transactionType == TransactionType.DELEGATE_CODE) {
+    if (transactionType == TransactionType.DELEGATE_CODE
+        || transactionType == TransactionType.FLEXIBLE_DELEGATE_CODE) {
       ValidationResult<TransactionInvalidReason> codeDelegationValidation =
           validateCodeDelegation(transaction);
       if (!codeDelegationValidation.isValid()) {
@@ -195,21 +196,24 @@ public class MainnetTransactionValidator implements TransactionValidator {
                           TransactionInvalidReason.INVALID_SIGNATURE,
                           "Missing code delegation signature");
                     }
-                    
-                    if(codeDelegation.dsaType().isPresent()){
-                      DigitalSignatureAlgorithm dsa = dsaProvider.getAccountEnabledDSAById(codeDelegation.dsaType().get());
-                                         
-                      Bytes32 authorizationHashNoSignature = codeDelegation.getOrComputeSenderRecoveryHash();
+
+                    if (codeDelegation.dsaType().isPresent()) {
+                      DigitalSignatureAlgorithm dsa =
+                          dsaProvider.getAccountEnabledDSAById(codeDelegation.dsaType().get());
+
+                      Bytes32 authorizationHashNoSignature =
+                          codeDelegation.getOrComputeSenderRecoveryHash();
 
                       long verifyStart = System.nanoTime();
-                      Boolean isValid = dsa.verify(
-                          authorizationHashNoSignature, 
-                          signature,
-                          codeDelegation.maybePublicKey().get()
-                      );
+                      Boolean isValid =
+                          dsa.verify(
+                              authorizationHashNoSignature,
+                              signature,
+                              codeDelegation.maybePublicKey().get());
                       long verifyEnd = System.nanoTime();
 
-                      saveMetrics(verifyStart, verifyEnd,"delegation", isValid, dsa.getDsaParametersSet());
+                      saveMetrics(
+                          verifyStart, verifyEnd, "delegation", isValid, dsa.getDsaParametersSet());
 
                       if (!isValid) {
                         return ValidationResult.invalid(
@@ -217,7 +221,7 @@ public class MainnetTransactionValidator implements TransactionValidator {
                             "Invalid code delegation signature");
                       }
                     }
-                    
+
                     // already checked in CodeDelegationSignature creation
                     // if (codeDelegation.r().compareTo(TWO_POW_256) >= 0) {
                     //   throw new IllegalArgumentException(
@@ -263,10 +267,11 @@ public class MainnetTransactionValidator implements TransactionValidator {
       // assert transaction.max_fee_per_gas >= transaction.max_priority_fee_per_gas
       if (transaction.getType().supports1559FeeMarket()
           && transaction
-              .getMaxPriorityFeePerGas()
-              .get()
-              .getAsBigInteger()
-              .compareTo(transaction.getMaxFeePerGas().get().getAsBigInteger()) > 0) {
+                  .getMaxPriorityFeePerGas()
+                  .get()
+                  .getAsBigInteger()
+                  .compareTo(transaction.getMaxFeePerGas().get().getAsBigInteger())
+              > 0) {
         return ValidationResult.invalid(
             TransactionInvalidReason.MAX_PRIORITY_FEE_PER_GAS_EXCEEDS_MAX_FEE_PER_GAS,
             "max priority fee per gas cannot be greater than max fee per gas");
@@ -316,7 +321,8 @@ public class MainnetTransactionValidator implements TransactionValidator {
               intrinsicGasCostOrFloor, transaction.getGasLimit()));
     }
 
-    if (transaction.calculateUpfrontGasCost(transaction.getMaxGasPrice(), Wei.ZERO, 0).bitLength() > 256) {
+    if (transaction.calculateUpfrontGasCost(transaction.getMaxGasPrice(), Wei.ZERO, 0).bitLength()
+        > 256) {
       return ValidationResult.invalid(
           TransactionInvalidReason.UPFRONT_COST_EXCEEDS_UINT256,
           "Upfront gas cost cannot exceed 2^256 Wei");
@@ -337,8 +343,7 @@ public class MainnetTransactionValidator implements TransactionValidator {
     if (sender != null) {
       senderBalance = sender.getBalance();
       senderNonce = sender.getNonce();
-      if (sender.getCodeHash() != null)
-        codeHash = sender.getCodeHash();
+      if (sender.getCodeHash() != null) codeHash = sender.getCodeHash();
     }
 
     final Wei upfrontCost =
@@ -385,7 +390,8 @@ public class MainnetTransactionValidator implements TransactionValidator {
     return codeHash.equals(Hash.EMPTY) || hasCodeDelegation(sender.getCode());
   }
 
-  private ValidationResult<TransactionInvalidReason> validateChainId(final Transaction transaction){
+  private ValidationResult<TransactionInvalidReason> validateChainId(
+      final Transaction transaction) {
     if (chainId.isPresent()
         && (transaction.getChainId().isPresent() && !transaction.getChainId().equals(chainId))) {
       return ValidationResult.invalid(
@@ -407,17 +413,16 @@ public class MainnetTransactionValidator implements TransactionValidator {
   @Override
   public ValidationResult<TransactionInvalidReason> validateTransactionSignature(
       final Transaction transaction) {
-    
+
     Signature txSignature = transaction.getSignature();
-    if(!txSignature.isValid(signatureContext)){
+    if (!txSignature.isValid(signatureContext)) {
       return ValidationResult.invalid(
-          TransactionInvalidReason.INVALID_SIGNATURE,
-          String.format(
-              "Invalid signature structure"));
+          TransactionInvalidReason.INVALID_SIGNATURE, String.format("Invalid signature structure"));
     }
 
-    if(transaction.getDsaType().isPresent()){ //is a flexible transaction
-      DigitalSignatureAlgorithm dsa = dsaProvider.getAccountEnabledDSAById(transaction.getDsaType().get());
+    if (transaction.getDsaType().isPresent()) { // is a flexible transaction
+      DigitalSignatureAlgorithm dsa =
+          dsaProvider.getAccountEnabledDSAById(transaction.getDsaType().get());
 
       PublicKey pk = transaction.getMountedPublicKey();
 
@@ -427,14 +432,10 @@ public class MainnetTransactionValidator implements TransactionValidator {
 
       saveMetrics(verifyStart, verifyEnd, "tx", isValid, dsa.getDsaParametersSet());
 
-      if(!isValid){
+      if (!isValid) {
         return ValidationResult.invalid(
-          TransactionInvalidReason.INVALID_SIGNATURE,
-          String.format(
-            "Invalid %s transaction signature",
-            txSignature.getAlgorithm()
-          )
-        );
+            TransactionInvalidReason.INVALID_SIGNATURE,
+            String.format("Invalid %s transaction signature", txSignature.getAlgorithm()));
       }
     }
     // org.bouncycastle.math.ec.ECCurve.AbstractFp.decompressPoint throws an
@@ -449,13 +450,27 @@ public class MainnetTransactionValidator implements TransactionValidator {
     return ValidationResult.valid();
   }
 
-  private void saveMetrics(final long verifyStart, final long verifyEnd, final String object, final Boolean isValid, final DSAParametersSet dsaParams){
-      long verifyTime = verifyEnd - verifyStart;
+  private void saveMetrics(
+      final long verifyStart,
+      final long verifyEnd,
+      final String object,
+      final Boolean isValid,
+      final DSAParametersSet dsaParams) {
+    long verifyTime = verifyEnd - verifyStart;
 
-      String data = stringBuilder.append(verifyTime + "," + object + "," + (isValid ? "yes," : "no,") + dsaParams.getName() + ",\n")
+    String data =
+        stringBuilder
+            .append(
+                verifyTime
+                    + ","
+                    + object
+                    + ","
+                    + (isValid ? "yes," : "no,")
+                    + dsaParams.getName()
+                    + ",\n")
             .toString();
-      verifyWriter.write(data);
+    verifyWriter.write(data);
 
-      stringBuilder.setLength(0);
+    stringBuilder.setLength(0);
   }
 }

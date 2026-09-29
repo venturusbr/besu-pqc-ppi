@@ -39,7 +39,7 @@ public interface Peer extends org.hyperledger.besu.plugin.data.p2p.Peer, PeerId 
    * @return The generated peer ID.
    */
   static Bytes randomId() {
-    final byte[] id = new byte[EnodeURLImpl.NODE_ID_SIZE];
+    final byte[] id = new byte[EnodeURLImpl.nodeIdSize()];
     SecureRandomProvider.publicSecureRandom().nextBytes(id);
     return Bytes.wrap(id);
   }

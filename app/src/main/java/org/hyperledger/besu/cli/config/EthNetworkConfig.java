@@ -31,6 +31,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * The Eth network config.
  *
@@ -60,6 +63,8 @@ public record EthNetworkConfig(
     Objects.requireNonNull(bootNodes);
   }
 
+  private static final Logger LOG = LoggerFactory.getLogger(EthNetworkConfig.class);
+
   /**
    * Gets network config.
    *
@@ -76,7 +81,10 @@ public record EthNetworkConfig(
         rawBootNodes
             .map(
                 strings ->
-                    strings.stream().map(EnodeURLImpl::fromString).collect(Collectors.toList()))
+                    strings.stream()
+                        .map(EthNetworkConfig::parseBootnode)
+                        .flatMap(Optional::stream)
+                        .collect(Collectors.toList()))
             .orElse(Collections.emptyList());
 
     return new EthNetworkConfig(
@@ -84,6 +92,24 @@ public record EthNetworkConfig(
         networkDefinition.getNetworkId(),
         bootNodes,
         genesisConfigOptions.getDiscoveryOptions().getDiscoveryDnsUrl().orElse(null));
+  }
+
+  /**
+   * Parses a bootnode that ships with a network definition, skipping it if it cannot be used.
+   *
+   * <p>These bootnodes are not supplied by the operator, and a node id that this node cannot even
+   * represent -- a classical bootnode on a node whose active DSA is hybrid, say -- is simply a
+   * bootnode on a network this node cannot join. Failing startup over it would make a node unusable
+   * with `--genesis-file` alone, so it is dropped with a warning instead. Bootnodes given on the
+   * command line still fail loudly, since a bad one there is an operator mistake.
+   */
+  private static Optional<EnodeURL> parseBootnode(final String enode) {
+    try {
+      return Optional.of(EnodeURLImpl.fromString(enode));
+    } catch (final IllegalArgumentException e) {
+      LOG.warn("Ignoring bootnode from the network definition: {}", e.getMessage());
+      return Optional.empty();
+    }
   }
 
   private static URL jsonConfigSource(final String resourceName) {

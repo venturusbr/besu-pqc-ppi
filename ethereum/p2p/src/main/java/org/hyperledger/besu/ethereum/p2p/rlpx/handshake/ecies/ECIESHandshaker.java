@@ -24,6 +24,7 @@ import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SecureRandomProvider;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.key.PublicKeyHandler;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.ethereum.p2p.rlpx.handshake.HandshakeException;
 import org.hyperledger.besu.ethereum.p2p.rlpx.handshake.HandshakeSecrets;
@@ -134,11 +135,18 @@ public class ECIESHandshaker implements Handshaker {
     if (version4) {
       initiatorMsg =
           InitiatorHandshakeMessageV4.create(
-              (SECPPublicKey) nodeKey.getPublicKey(), ephKeyPair, staticSharedSecret, initiatorNonce);
+              PublicKeyHandler.secp256k1(nodeKey.getPublicKey()),
+              ephKeyPair,
+              staticSharedSecret,
+              initiatorNonce);
     } else {
       initiatorMsg =
           InitiatorHandshakeMessageV1.create(
-              (SECPPublicKey) nodeKey.getPublicKey(), ephKeyPair, staticSharedSecret, initiatorNonce, false);
+              PublicKeyHandler.secp256k1(nodeKey.getPublicKey()),
+              ephKeyPair,
+              staticSharedSecret,
+              initiatorNonce,
+              false);
     }
     try {
       if (version4) {
@@ -282,10 +290,12 @@ public class ECIESHandshaker implements Handshaker {
       // Build the response message.
       if (version4) {
         responderMsg =
-            ResponderHandshakeMessageV4.create((SECPPublicKey) ephKeyPair.getPublicKey(), responderNonce);
+            ResponderHandshakeMessageV4.create(
+                (SECPPublicKey) ephKeyPair.getPublicKey(), responderNonce);
       } else {
         responderMsg =
-            ResponderHandshakeMessageV1.create((SECPPublicKey) ephKeyPair.getPublicKey(), responderNonce, false);
+            ResponderHandshakeMessageV1.create(
+                (SECPPublicKey) ephKeyPair.getPublicKey(), responderNonce, false);
       }
 
       LOG.trace(
@@ -361,7 +371,8 @@ public class ECIESHandshaker implements Handshaker {
   /** Computes the secrets from the two exchanged messages. */
   void computeSecrets() {
     final Bytes agreedSecret =
-        signatureAlgorithm.calculateECDHKeyAgreement((SECPPrivateKey) ephKeyPair.getPrivateKey(), partyEphPubKey);
+        signatureAlgorithm.calculateECDHKeyAgreement(
+            (SECPPrivateKey) ephKeyPair.getPrivateKey(), partyEphPubKey);
 
     final Bytes sharedSecret =
         keccak256(

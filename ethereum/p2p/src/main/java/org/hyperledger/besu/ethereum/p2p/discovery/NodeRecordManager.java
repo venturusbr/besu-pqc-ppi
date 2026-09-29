@@ -15,8 +15,12 @@
 package org.hyperledger.besu.ethereum.p2p.discovery;
 
 import org.hyperledger.besu.crypto.Hash;
+import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.ethereum.chain.VariablesStorage;
 import org.hyperledger.besu.ethereum.forkid.ForkIdManager;
@@ -26,6 +30,7 @@ import org.hyperledger.besu.ethereum.storage.StorageProvider;
 import org.hyperledger.besu.nat.NatService;
 import org.hyperledger.besu.plugin.data.EnodeURL;
 
+import java.security.PublicKey;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -69,6 +74,21 @@ public class NodeRecordManager {
   private final Supplier<List<Bytes>> forkIdSupplier;
   private final NatService natService;
 
+  /**
+   * The identity scheme of the local record: {@code vnt} when the node key is hybrid, {@code v4}
+   * otherwise.
+   */
+  private final IdentitySchema identitySchema;
+
+  /** Name of the ENR field holding the public key, which is scheme specific. */
+  private final String publicKeyFieldName;
+
+  /**
+   * The public key as it is published in the ENR: the whole hybrid key for {@code vnt}, the
+   * compressed secp256k1 key for {@code v4}.
+   */
+  private final Bytes enrPublicKey;
+
   private Optional<DiscoveryPeerV4> localNode = Optional.empty();
   private String advertisedAddress;
 
@@ -91,9 +111,26 @@ public class NodeRecordManager {
 
     this.variablesStorage = storageProvider.createVariablesStorage();
     this.nodeKey = nodeKey;
-    this.nodeId = Bytes.wrap(nodeKey.getPublicKey().getEncoded());
     this.forkIdSupplier = () -> forkIdManager.getForkIdForChainHead().getForkIdAsBytesList();
     this.natService = natService;
+
+    // The node id is the whole node key, so a hybrid node is identified by its secp256k1 and
+    // ML-DSA-44 keys together. The vnt scheme derives its own discv5 node id by hashing the same
+    // bytes, and the RLPx handshake takes the leading secp256k1 key out of it.
+    final PublicKey publicKey = nodeKey.getPublicKey();
+    this.nodeId = Bytes.wrap(publicKey.getEncoded());
+    if (publicKey instanceof CompositePublicKey) {
+      this.identitySchema = IdentitySchema.VNT;
+      this.publicKeyFieldName = EnrField.PKEY_SECP256K1_MLDSA44;
+      // The record publishes the hybrid key as is: the scheme slices the classical key back out.
+      this.enrPublicKey = nodeId;
+    } else {
+      final SignatureAlgorithm signatureAlgorithm = SIGNATURE_ALGORITHM.get();
+      this.identitySchema = IdentitySchema.V4;
+      this.publicKeyFieldName = signatureAlgorithm.getCurveName();
+      this.enrPublicKey =
+          signatureAlgorithm.compressPublicKey(signatureAlgorithm.createPublicKey(nodeId));
+    }
   }
 
   /**
@@ -165,18 +202,22 @@ public class NodeRecordManager {
 
     final int discoveryPort = enode.getDiscoveryPort().orElse(0);
     final int listeningPort = enode.getListeningPort().orElse(0);
-    final List<Bytes> forkId = forkIdSupplier.get();
+    // The record nests the fork id in a list, so build the field value once: comparing the
+    // bare fork id against the nested field never matches, and the record is rewritten with a
+    // bumped sequence number on every start.
+    final List<List<Bytes>> forkIdField = Collections.singletonList(forkIdSupplier.get());
 
     // Reuse the existing ENR if all relevant fields are unchanged.
     final NodeRecord nodeRecord =
         existingRecord
             .filter(
                 record ->
-                    nodeId.equals(record.get(EnrField.PKEY_SECP256K1))
+                    identitySchema.equals(record.getIdentityScheme())
+                        && enrPublicKey.equals(record.get(publicKeyFieldName))
                         && ipAddressBytes.equals(record.get(EnrField.IP_V4))
                         && Integer.valueOf(discoveryPort).equals(record.get(EnrField.UDP))
                         && Integer.valueOf(listeningPort).equals(record.get(EnrField.TCP))
-                        && forkId.equals(record.get(FORK_ID_ENR_FIELD)))
+                        && forkIdField.equals(record.get(FORK_ID_ENR_FIELD)))
             // Otherwise, create a new ENR with an incremented sequence number,
             // sign it with the local node key, and persist it to disk.
             .orElseGet(
@@ -187,7 +228,7 @@ public class NodeRecordManager {
                         ipAddressBytes,
                         discoveryPort,
                         listeningPort,
-                        forkId));
+                        forkIdField));
 
     localNode.get().setNodeRecord(nodeRecord);
   }
@@ -204,7 +245,7 @@ public class NodeRecordManager {
    * @param ipAddressBytes the IPv4 address encoded for the ENR
    * @param discoveryPort the UDP discovery port
    * @param listeningPort the TCP listening port
-   * @param forkId the current fork ID for the chain head
+   * @param forkIdField the current fork ID for the chain head, as the record nests it
    * @return the newly created and persisted {@link NodeRecord}
    */
   private NodeRecord createAndPersistNodeRecord(
@@ -213,26 +254,25 @@ public class NodeRecordManager {
       final Bytes ipAddressBytes,
       final int discoveryPort,
       final int listeningPort,
-      final List<Bytes> forkId) {
+      final List<List<Bytes>> forkIdField) {
 
     final UInt64 sequence = existingRecord.map(NodeRecord::getSeq).orElse(UInt64.ZERO).add(1);
-
-    final SignatureAlgorithm signatureAlgorithm = SIGNATURE_ALGORITHM.get();
 
     final NodeRecord record =
         factory.createFromValues(
             sequence,
-            new EnrField(EnrField.ID, IdentitySchema.V4),
-            new EnrField(
-                signatureAlgorithm.getCurveName(),
-                signatureAlgorithm.compressPublicKey(signatureAlgorithm.createPublicKey(nodeId))),
+            new EnrField(EnrField.ID, identitySchema),
+            new EnrField(publicKeyFieldName, enrPublicKey),
             new EnrField(EnrField.IP_V4, ipAddressBytes),
             new EnrField(EnrField.TCP, listeningPort),
             new EnrField(EnrField.UDP, discoveryPort),
-            new EnrField(FORK_ID_ENR_FIELD, Collections.singletonList(forkId)));
+            new EnrField(FORK_ID_ENR_FIELD, forkIdField));
 
-    record.setSignature(
-            nodeKey.sign(Hash.keccak256(record.serializeNoSignature()), "node-record").encodedBytes().slice(0, 64));
+    // Signed with the node's active DSA, which is hybrid when the node key is. What is signed is
+    // the keccak256 of the signature-less encoding, as both the v4 and the vnt scheme require.
+    final Signature signature =
+        nodeKey.sign(Hash.keccak256(record.serializeNoSignature()), "node-record");
+    record.setSignature(enrSignatureBytes(signature));
 
     LOG.info("Writing node record to disk. {}", record);
 
@@ -241,5 +281,23 @@ public class NodeRecordManager {
     updater.commit();
 
     return record;
+  }
+
+  /**
+   * The signature bytes as the ENR carries them.
+   *
+   * <p>A {@code v4} record carries only r || s, so the trailing recovery id of an ECDSA signature
+   * is dropped. A hybrid signature is carried whole: truncating it would discard the ML-DSA-44
+   * half, which is the entire point of the {@code vnt} scheme.
+   *
+   * @param signature the signature produced by the node's active DSA
+   * @return the bytes to store in the record
+   */
+  private static Bytes enrSignatureBytes(final Signature signature) {
+    final Bytes encoded = signature.encodedBytes();
+    // An ECDSA signature is encoded as r || s || v, and the ENR carries only r || s.
+    return signature instanceof SECPSignature
+        ? encoded.slice(0, DSAParametersSet.SECP256K1.getSignatureLength() - 1)
+        : encoded;
   }
 }
