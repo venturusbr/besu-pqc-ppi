@@ -10,6 +10,9 @@ public enum DSAParametersSet {
     MLDSA44((short) 0x0030, "MLDSA44", 2560, 1312, 2420, 32),
     MLDSA65((short) 0x0031, "MLDSA65", 4032, 1952, 3309, 32),
     MLDSA87((short) 0x0032, "MLDSA87", 4896, 2592, 4627, 32),
+    // Private key is f || g || F || h (see Falcon512PrivateKey). No fixed signature length:
+    // Falcon signatures are variable-length, so any hybrid split on this field fails loudly.
+    FALCON512((short) 0x0040, "FALCON512", 2176, 896, null, null),
     SECP256K1MLDSA44((short) 0x0060, "SECP256K1-MLDSA44", 2592, 1376, 2485, null)
     ;
 

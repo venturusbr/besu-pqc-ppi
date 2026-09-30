@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableMap;
 
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.SECP256K1;
+import org.hyperledger.besu.crypto.algorithms.Falcon512;
 import org.hyperledger.besu.crypto.algorithms.MLDSA;
 import org.hyperledger.besu.crypto.algorithms.hybrid.HybridStrongNestingConcatenation;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
@@ -23,6 +24,8 @@ public class SupportedAlgorithms {
                 () -> new MLDSA(DSAParametersSet.MLDSA65),
                 DSAParametersSet.MLDSA87.getName(),
                 () -> new MLDSA(DSAParametersSet.MLDSA87),
+                DSAParametersSet.FALCON512.getName(),
+                Falcon512::new,
                 DSAParametersSet.SECP256K1MLDSA44.getName(),
                 () ->
                     new HybridStrongNestingConcatenation(

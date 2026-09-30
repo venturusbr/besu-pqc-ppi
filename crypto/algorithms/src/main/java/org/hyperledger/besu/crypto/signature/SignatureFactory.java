@@ -6,6 +6,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.signature.types.CompositeSignature;
+import org.hyperledger.besu.crypto.signature.types.Falcon512Signature;
 import org.hyperledger.besu.crypto.signature.types.MLDSASignature;
 
 public class SignatureFactory {
@@ -21,6 +22,8 @@ public class SignatureFactory {
                 SignatureAlgorithmFactory.getInstance().decodeSignature(bytes);
             case MLDSA44, MLDSA65, MLDSA87 ->
                 MLDSASignature.create(algo.getName(), bytes);
+            case FALCON512 ->
+                Falcon512Signature.create(bytes);
             case SECP256K1MLDSA44 -> {
 
                 int expectedLength =

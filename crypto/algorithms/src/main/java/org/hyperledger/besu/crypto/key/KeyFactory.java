@@ -1,6 +1,5 @@
 package org.hyperledger.besu.crypto.key;
 
-import java.math.BigInteger;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Optional;
@@ -14,6 +13,8 @@ import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
 import org.hyperledger.besu.crypto.key.types.CompositePrivateKey;
+import org.hyperledger.besu.crypto.key.types.Falcon512PrivateKey;
+import org.hyperledger.besu.crypto.key.types.Falcon512PublicKey;
 import org.hyperledger.besu.crypto.key.types.MLDSAPrivateKey;
 import org.hyperledger.besu.crypto.key.types.MLDSAPublicKey;
 
@@ -33,6 +34,9 @@ public class KeyFactory {
             case MLDSA65:
             case MLDSA87:
                 sk = MLDSAPrivateKey.create(privateKeyBytes, paramsSet);
+                break;
+            case FALCON512:
+                sk = Falcon512PrivateKey.create(privateKeyBytes);
                 break;
             case SECP256K1MLDSA44:
                 Bytes secpSkBytes = keyExtractor.extractPrivateKeyBytesAtOffset(privateKeyBytes, 0, DSAParametersSet.SECP256K1, firstSkRep);
@@ -62,6 +66,9 @@ public class KeyFactory {
             case MLDSA87:
                 pk = MLDSAPublicKey.create(privateKey, paramsSet);
                 break;
+            case FALCON512:
+                pk = Falcon512PublicKey.create(privateKey);
+                break;
             case SECP256K1MLDSA44:
                 CompositePrivateKey compositeSk = (CompositePrivateKey) privateKey;
 
@@ -90,6 +97,9 @@ public class KeyFactory {
             case MLDSA65:
             case MLDSA87:
                 pk = MLDSAPublicKey.create(publicKeyBytes, paramsSet);
+                break;
+            case FALCON512:
+                pk = Falcon512PublicKey.create(publicKeyBytes);
                 break;
             case SECP256K1MLDSA44:
                 int expectedFullLength =
