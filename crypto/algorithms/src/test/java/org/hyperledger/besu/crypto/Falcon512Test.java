@@ -185,9 +185,9 @@ class Falcon512Test {
   }
 
   @Test
-  void aHybridSplitIsRefusedRatherThanSlicingGarbage() {
-    // With no fixed signature length, splitting a concatenated signature at an offset is
-    // impossible.
+  void fixedOffsetExtractionIsRefusedRatherThanSlicingGarbage() {
+    // With no fixed signature length, Falcon cannot be cut out of a concatenation at a fixed
+    // offset. Hybrids place it last and take the remainder (see Secp256k1Falcon512HybridTest).
     assertThatThrownBy(
             () ->
                 new SignatureExtractor()

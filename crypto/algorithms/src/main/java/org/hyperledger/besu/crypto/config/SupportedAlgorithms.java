@@ -31,7 +31,13 @@ public class SupportedAlgorithms {
                     new HybridStrongNestingConcatenation(
                         new SECP256K1(),
                         new MLDSA(DSAParametersSet.MLDSA44),
-                        DSAParametersSet.SECP256K1MLDSA44));
+                        DSAParametersSet.SECP256K1MLDSA44),
+                DSAParametersSet.SECP256K1FALCON512.getName(),
+                () ->
+                    new HybridStrongNestingConcatenation(
+                        new SECP256K1(),
+                        new Falcon512(),
+                        DSAParametersSet.SECP256K1FALCON512));
 
     public Supplier<DigitalSignatureAlgorithm> getDSAByName(final String algorithmName) {
         return DSA_ALGORITHMS.get(algorithmName);
