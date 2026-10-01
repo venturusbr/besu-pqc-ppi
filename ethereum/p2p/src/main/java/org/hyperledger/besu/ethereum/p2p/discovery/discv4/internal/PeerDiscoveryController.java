@@ -23,6 +23,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.ethereum.p2p.discovery.EnrSignatureValidator;
+import org.hyperledger.besu.ethereum.p2p.discovery.discv4.PeerDiscoveryAgentV4;
 import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.DaggerPacketPackage;
 import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.Packet;
 import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.PacketData;
@@ -172,10 +173,7 @@ public class PeerDiscoveryController {
   private final EnrRequestPacketDataFactory enrRequestPacketDataFactory;
   private final EnrResponsePacketDataFactory enrResponsePacketDataFactory;
 
-  // Resolved from the process-wide provider, as Transaction does for its own DSA: the
-  // algorithms are configured once at startup.
-  private final EnrSignatureValidator enrSignatureValidator =
-      new EnrSignatureValidator(DSAProviderFactory.getVerifierProvider());
+  private final EnrSignatureValidator enrSignatureValidator = new EnrSignatureValidator();
 
   PeerDiscoveryController(
       final NodeKey nodeKey,
@@ -739,14 +737,34 @@ public class PeerDiscoveryController {
     if (packetData.getExpiration() < Instant.now().getEpochSecond()) {
       return;
     }
-    // Each peer is encoded as 16 bytes for address, 4 bytes for port, 4 bytes for tcp port
-    // and 64 bytes for id. This is prepended by 97 bytes of hash, signature and type.
-    // 16 + 4 + 4 + 64 = 88 bytes
-    // 88 * 13 = 1144 bytes
-    // To fit under 1280 bytes, we must return just 13 peers maximum.
-    final List<DiscoveryPeerV4> peers = peerTable.nearestBondedPeers(packetData.getTarget(), 13);
+    final List<DiscoveryPeerV4> peers =
+        peerTable.nearestBondedPeers(packetData.getTarget(), maxNeighborsPerResponse());
     final PacketData data = neighborsPacketDataFactory.create(peers);
     sendPacket(sender, PacketType.NEIGHBORS, data);
+  }
+
+  /**
+   * How many neighbours fit in one response.
+   *
+   * <p>Each entry carries the peer's whole node id, so the count follows the active DSA: a
+   * classical id is 64 bytes and 13 of them fit the 1280 bytes the devp2p specification allows,
+   * while a hybrid id is 1376 and only a handful fit even the raised limit. Returning fewer per
+   * response costs more round trips, which is the cheaper trade: an oversized response is
+   * rejected outright by the requester's size check, so discovery would stop working.
+   *
+   * @return the number of peers to put in a NEIGHBORS response
+   */
+  private static int maxNeighborsPerResponse() {
+    // address, udp port and tcp port, then the id
+    final int perPeer =
+        16 + 4 + 4 + DSAProviderFactory.getActiveDsaParametersSet().getPublicKeyLength();
+    // the RLP list headers and the expiration field, generously
+    final int rlpOverhead = 64;
+    final int budget =
+        PeerDiscoveryAgentV4.MAX_PACKET_SIZE_BYTES - Packet.packetDataIndex() - rlpOverhead;
+
+    // 13 is what the specification's 1280 bytes allows for classical ids, and stays the ceiling
+    return Math.max(1, Math.min(13, budget / perPeer));
   }
 
   private void respondToENRRequest(

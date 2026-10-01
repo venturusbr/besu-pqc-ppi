@@ -14,10 +14,16 @@
  */
 package org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet;
 
+import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.Hash;
-import org.hyperledger.besu.crypto.SECPSignature;
-import org.hyperledger.besu.crypto.SignatureAlgorithm;
+import org.hyperledger.besu.crypto.HybridDigitalSignatureAlgorithm;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.key.KeyFactory;
+import org.hyperledger.besu.crypto.key.PublicKeyHandler;
+import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
+import org.hyperledger.besu.crypto.signature.SignatureFactory;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.ethereum.p2p.discovery.PeerDiscoveryPacketDecodingException;
 import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.PacketType;
@@ -37,6 +43,7 @@ import org.hyperledger.besu.ethereum.rlp.RLP;
 
 import java.math.BigInteger;
 import java.security.PublicKey;
+import java.util.Optional;
 import java.util.Arrays;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -53,7 +60,6 @@ public class PacketFactory {
   private final NeighborsPacketDataRlpWriter neighborsPacketDataRlpWriter;
   private final EnrRequestPacketDataRlpWriter enrRequestPacketDataRlpWriter;
   private final EnrResponsePacketDataRlpWriter enrResponsePacketDataRlpWriter;
-  private final SignatureAlgorithm signatureAlgorithm;
   private final PacketSignatureEncoder packetSignatureEncoder;
 
   public @Inject PacketFactory(
@@ -63,7 +69,6 @@ public class PacketFactory {
       final NeighborsPacketDataRlpWriter neighborsPacketDataRlpWriter,
       final EnrRequestPacketDataRlpWriter enrRequestPacketDataRlpWriter,
       final EnrResponsePacketDataRlpWriter enrResponsePacketDataRlpWriter,
-      final SignatureAlgorithm signatureAlgorithm,
       final PacketSignatureEncoder packetSignatureEncoder) {
     this.pingPacketDataRlpWriter = pingPacketDataRlpWriter;
     this.pongPacketDataRlpWriter = pongPacketDataRlpWriter;
@@ -71,7 +76,6 @@ public class PacketFactory {
     this.neighborsPacketDataRlpWriter = neighborsPacketDataRlpWriter;
     this.enrRequestPacketDataRlpWriter = enrRequestPacketDataRlpWriter;
     this.enrResponsePacketDataRlpWriter = enrResponsePacketDataRlpWriter;
-    this.signatureAlgorithm = signatureAlgorithm;
     this.packetSignatureEncoder = packetSignatureEncoder;
   }
 
@@ -96,22 +100,32 @@ public class PacketFactory {
             });
 
     Signature signature = nodeKey.sign(Hash.keccak256(Bytes.wrap(typeBytes, dataBytes)), "packet");
+    PublicKey publicKey = nodeKey.getPublicKey();
+
+    // The hash covers everything after itself, so the key bytes on the wire are bound to the
+    // packet by it: swapping them alone breaks the integrity check.
     Bytes32 hash =
         Hash.keccak256(
             Bytes.concatenate(
-                packetSignatureEncoder.encodeSignature((SECPSignature) signature), typeBytes, dataBytes));
-    PublicKey publicKey = nodeKey.getPublicKey();
+                packetSignatureEncoder.encodeSignature(signature),
+                partialPublicKey(publicKey),
+                typeBytes,
+                dataBytes));
 
     return new Packet(type, data, hash, signature, publicKey);
   }
 
   public Packet create(
       final PacketType packetType, final PacketData packetData, final Bytes message) {
+    final DSAParametersSet params = DSAProviderFactory.getActiveDsaParametersSet();
+    final int publicKeyIndex = Packet.publicKeyIndex();
+    final int packetTypeIndex = Packet.packetTypeIndex();
+
     final Bytes hash = message.slice(0, Packet.SIGNATURE_INDEX);
     final Bytes encodedSignature =
-        message.slice(Packet.SIGNATURE_INDEX, Packet.PACKET_TYPE_INDEX - Packet.SIGNATURE_INDEX);
-    final Bytes signedPayload =
-        message.slice(Packet.PACKET_TYPE_INDEX, message.size() - Packet.PACKET_TYPE_INDEX);
+        message.slice(Packet.SIGNATURE_INDEX, params.getSignatureLength());
+    final Bytes encodedPublicKey = message.slice(publicKeyIndex, Packet.publicKeyLength());
+    final Bytes signedPayload = message.slice(packetTypeIndex, message.size() - packetTypeIndex);
 
     // Perform hash integrity check.
     final Bytes rest =
@@ -120,25 +134,46 @@ public class PacketFactory {
       throw new PeerDiscoveryPacketDecodingException(
           "Integrity check failed: non-matching hashes.");
     }
-    /*TODO: resolve publicKey without PKR and Signature decoder */
-    Signature signature = decodeSignature(encodedSignature);
-    PublicKey publicKey =
-        signatureAlgorithm
-            .recoverPublicKeyFromSignature(Hash.keccak256(signedPayload), (SECPSignature) signature)
+
+    final Signature signature = SignatureFactory.createSignatureFromBytes(encodedSignature, params);
+    final Bytes32 recoveryHash = Hash.keccak256(signedPayload);
+    final DigitalSignatureAlgorithm activeDsa = DSAProviderFactory.getActiveDSA();
+
+    // The node id is assembled the way a flexible transaction assembles its sender: the classical
+    // half is recovered from its half of the signature, and the half that cannot be recovered is
+    // the one the packet carried. A forged classical half therefore yields a different node id
+    // rather than an impersonation, which is what authenticates it.
+    final PublicKey publicKey =
+        PublicKeyHandler.resolvePublicKey(
+                activeDsa, signature, partialPublicKey(encodedPublicKey, activeDsa), recoveryHash)
             .orElseThrow(
                 () ->
                     new PeerDiscoveryPacketDecodingException(
-                        "Invalid packet signature, cannot recover public key"));
+                        "Invalid packet: the sender's public key could not be resolved"));
+
+    // Verifies the half that is not covered by the recovery above.
+    if (!activeDsa.verify(recoveryHash, signature, publicKey)) {
+      throw new PeerDiscoveryPacketDecodingException(
+          "Invalid packet signature for the sender's public key");
+    }
+
     return new Packet(packetType, packetData, hash, signature, publicKey);
   }
 
-  private SECPSignature decodeSignature(final Bytes encodedSignature) {
-    Preconditions.checkArgument(
-        encodedSignature != null && encodedSignature.size() == 65,
-        "encodedSignature is not 65 bytes");
-    final BigInteger r = encodedSignature.slice(0, 32).toUnsignedBigInteger();
-    final BigInteger s = encodedSignature.slice(32, 32).toUnsignedBigInteger();
-    final int recId = encodedSignature.get(64);
-    return signatureAlgorithm.createSignature(r, s, (byte) recId);
+  /** The bytes of the sender's key that go on the wire, which is the half without recovery. */
+  private static Bytes partialPublicKey(final PublicKey publicKey) {
+    return publicKey instanceof CompositePublicKey composite
+        ? Bytes.wrap(composite.getSecondKey().getEncoded())
+        : Bytes.EMPTY;
+  }
+
+  /** The same half, read back off the wire, or empty when the algorithm carries none. */
+  private static Optional<PublicKey> partialPublicKey(
+      final Bytes encoded, final DigitalSignatureAlgorithm activeDsa) {
+    if (!(activeDsa instanceof HybridDigitalSignatureAlgorithm hybrid)) {
+      return Optional.empty();
+    }
+    return KeyFactory.createPublicKey(
+        encoded, hybrid.getSecondAlgorithm().getDsaParametersSet());
   }
 }

@@ -19,8 +19,6 @@ import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.Packet
 import org.apache.tuweni.bytes.Bytes;
 
 public class FindNeighborsPacketData implements PacketData {
-  public static final int TARGET_SIZE = 64;
-
   /* Node ID. */
   private final Bytes target;
 

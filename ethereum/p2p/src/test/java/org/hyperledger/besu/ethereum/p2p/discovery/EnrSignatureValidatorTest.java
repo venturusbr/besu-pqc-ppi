@@ -184,7 +184,7 @@ class EnrSignatureValidatorTest {
   }
 
   private static EnrSignatureValidator validator() {
-    return new EnrSignatureValidator(DSAProviderFactory.getVerifierProvider());
+    return new EnrSignatureValidator();
   }
 
   private NodeRecord buildLocalRecord(final KeyPair keyPair) {

@@ -21,7 +21,7 @@ import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.KeyFactory;
 import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
-import org.hyperledger.besu.crypto.providers.VerifierProvider;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.SignatureFactory;
 import org.hyperledger.besu.crypto.signature.types.CompositeSignature;
@@ -52,12 +52,6 @@ import org.slf4j.LoggerFactory;
 public class EnrSignatureValidator {
 
   private static final Logger LOG = LoggerFactory.getLogger(EnrSignatureValidator.class);
-
-  private final VerifierProvider verifierProvider;
-
-  public EnrSignatureValidator(final VerifierProvider verifierProvider) {
-    this.verifierProvider = verifierProvider;
-  }
 
   /**
    * Whether the record is structurally sound and carries a signature made by the key it advertises.
@@ -135,7 +129,7 @@ public class EnrSignatureValidator {
         LOG.trace("Node record rejected: the ML-DSA-44 signature does not verify. {}", nodeRecord);
         return false;
       }
-      if (!isEcdsaHalfValid(preimage, signature, publicKey)) {
+      if (!isRecoverableHalfValid(preimage, signature, publicKey)) {
         LOG.trace(
             "Node record rejected: the recovered secp256k1 key is not the advertised one. {}",
             nodeRecord);
@@ -151,25 +145,33 @@ public class EnrSignatureValidator {
   }
 
   /**
-   * Goes through the node's active DSA, which for a hybrid key verifies the ML-DSA-44 half and
-   * waves the classical one through.
+   * The active DSA verifies the ML-DSA-44 half and waves the classical one through, since a
+   * recoverable signature is authenticated by recovering its key rather than by verifying against
+   * a given one.
    */
-  private boolean isMlDsaHalfValid(
-      final Bytes32 preimage, final CompositeSignature signature, final CompositePublicKey key) {
-    return verifierProvider.getActiveDSA().verify(preimage, signature, key);
+  private static boolean isMlDsaHalfValid(
+      final Bytes32 data, final CompositeSignature signature, final CompositePublicKey key) {
+    return DSAProviderFactory.getActiveDSA().verify(data, signature, key);
   }
 
-  /** Recovers the classical key from its half of the signature and compares it to the record's. */
-  private boolean isEcdsaHalfValid(
-      final Bytes32 preimage, final CompositeSignature signature, final CompositePublicKey key) {
+  /**
+   * Does that recovery and compares the result with the key the record states.
+   *
+   * <p>A flexible transaction gets this for free: its sender address is derived from the recovered
+   * key, so a forged classical half simply produces a different sender. A record states its own
+   * key instead of deriving it, so nothing forces the stated key and the recovered one to agree
+   * unless they are compared here. The same is true of a discovery packet, which is why that one
+   * assembles its node id through public key recovery rather than trusting a stated key.
+   */
+  private static boolean isRecoverableHalfValid(
+      final Bytes32 data, final CompositeSignature signature, final CompositePublicKey key) {
     if (!(signature.getFirstSignature() instanceof SECPSignature ecdsaSignature)) {
       return false;
     }
     final Optional<SECPPublicKey> recovered =
-        SignatureAlgorithmFactory.getInstance()
-            .recoverPublicKeyFromSignature(preimage, ecdsaSignature);
+        SignatureAlgorithmFactory.getInstance().recoverPublicKeyFromSignature(data, ecdsaSignature);
     // Compared on the key material alone: SECPPublicKey.equals also compares the algorithm label
-    // it was built with, which differs between a recovered key and one decoded from the record.
+    // it was built with, which differs between a recovered key and one that was decoded.
     return recovered.isPresent()
         && Bytes.wrap(recovered.get().getEncoded())
             .equals(Bytes.wrap(key.getFirstKey().getEncoded()));

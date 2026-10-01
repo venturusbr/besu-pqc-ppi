@@ -14,7 +14,6 @@
  */
 package org.hyperledger.besu.consensus.common;
 
-import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.chain.Blockchain;
@@ -65,9 +64,8 @@ public class PoaQueryServiceImpl implements PoaQueryService {
   }
 
 
-  //TODO: remove SECP dependency
   @Override
   public Address getLocalSignerAddress() {
-    return org.hyperledger.besu.datatypes.Address.extract((SECPPublicKey) nodeKey.getPublicKey());
+    return org.hyperledger.besu.datatypes.Address.extract(nodeKey.getPublicKey());
   }
 }

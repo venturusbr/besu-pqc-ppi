@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 public class MLDSA implements DigitalSignatureAlgorithm{
     private static final Map<String, MLDSAParameters> RENAMING_TO_LIB = new HashMap<>();
     private final DSAParametersSet mldsaParameters;
-    private final MLDSASigner signerAndVerifier;
     private final MLDSAParameters selectedBCParameter;
     private static final Logger LOG = LoggerFactory.getLogger(MLDSA.class);
 
@@ -44,19 +43,22 @@ public class MLDSA implements DigitalSignatureAlgorithm{
     public MLDSA(final DSAParametersSet mldsaParameters){
         Security.addProvider(new BouncyCastlePQCProvider());
         this.mldsaParameters = mldsaParameters;
-        this.signerAndVerifier = new MLDSASigner();
         this.selectedBCParameter = RENAMING_TO_LIB.get(mldsaParameters.getName());
     }
 
     @Override
     public Signature sign(final Bytes data, final PrivateKey sk) {
         MLDSAPrivateKeyParameters skParams = new MLDSAPrivateKeyParameters(selectedBCParameter, sk.getEncoded());
-        signerAndVerifier.init(true, skParams);
-        signerAndVerifier.update(data.toArrayUnsafe(), 0, data.size());
+        // A signer per call: MLDSASigner accumulates the message in an internal SHAKE state
+        // between init and generateSignature, so one instance shared by the node's threads
+        // corrupts that state when two of them sign or verify at once.
+        final MLDSASigner signer = new MLDSASigner();
+        signer.init(true, skParams);
+        signer.update(data.toArrayUnsafe(), 0, data.size());
 
         byte[] signature = null;
         try {
-            signature = signerAndVerifier.generateSignature();
+            signature = signer.generateSignature();
         } catch (DataLengthException | CryptoException e) {
             LOG.error("Error while signing MLDSA", e);
         }
@@ -66,10 +68,12 @@ public class MLDSA implements DigitalSignatureAlgorithm{
     @Override
     public Boolean verify(final Bytes data, final Signature signature, final PublicKey pk) {
         MLDSAPublicKeyParameters pkParams = new MLDSAPublicKeyParameters(selectedBCParameter, pk.getEncoded());
-        signerAndVerifier.init(false, pkParams);
-        signerAndVerifier.update(data.toArrayUnsafe(), 0, data.size());
+        // See sign: the signer is stateful, so it is never shared between calls.
+        final MLDSASigner verifier = new MLDSASigner();
+        verifier.init(false, pkParams);
+        verifier.update(data.toArrayUnsafe(), 0, data.size());
 
-        return signerAndVerifier.verifySignature(signature.encodedBytes().toArrayUnsafe());
+        return verifier.verifySignature(signature.encodedBytes().toArrayUnsafe());
     }
 
     @Override

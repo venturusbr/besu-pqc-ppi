@@ -14,15 +14,24 @@
  */
 package org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.hyperledger.besu.crypto.SECPSignature;
+import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.signature.Signature;
+
+import java.math.BigInteger;
 
 import com.google.common.base.Strings;
 import org.apache.tuweni.bytes.Bytes;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+/**
+ * The encoder no longer knows how any particular algorithm is laid out: each signature encodes
+ * itself, which is what lets a hybrid one travel whole instead of being cut down to 65 bytes.
+ */
 public class PacketSignatureEncoderTest {
 
   private PacketSignatureEncoder packetSignatureEncoder;
@@ -33,24 +42,26 @@ public class PacketSignatureEncoderTest {
   }
 
   @Test
+  public void defersToTheSignatureForItsEncoding() {
+    final Signature signature = Mockito.mock(Signature.class);
+    final Bytes encoded = Bytes.repeat((byte) 0x07, 2485);
+    Mockito.when(signature.encodedBytes()).thenReturn(encoded);
+
+    assertThat(packetSignatureEncoder.encodeSignature(signature)).isEqualTo(encoded);
+    Mockito.verify(signature).encodedBytes();
+  }
+
+  @Test
   @SuppressWarnings("InlineMeInliner")
-  public void testEncodeSignature() {
-    final SECPSignature signature = Mockito.mock(SECPSignature.class);
-    Bytes r = Bytes.repeat((byte) 0x01, 32);
-    Bytes s = Bytes.repeat((byte) 0x02, 32);
-    byte recId = (byte) 0x03;
-    Mockito.when(signature.getR()).thenReturn(r.toBigInteger());
-    Mockito.when(signature.getS()).thenReturn(s.toBigInteger());
-    Mockito.when(signature.getRecId()).thenReturn(recId);
+  public void aClassicalSignatureStillEncodesToRSV() {
+    final SECPSignature signature =
+        SignatureAlgorithmFactory.getInstance()
+            .createSignature(
+                new BigInteger(1, Bytes.repeat((byte) 0x01, 32).toArray()),
+                new BigInteger(1, Bytes.repeat((byte) 0x02, 32).toArray()),
+                (byte) 0x01);
 
-    Bytes encodedSignature = packetSignatureEncoder.encodeSignature(signature);
-
-    Mockito.verify(signature).getR();
-    Mockito.verify(signature).getS();
-    Mockito.verify(signature).getRecId();
-
-    Assertions.assertEquals(
-        "0x" + Strings.repeat("01", 32) + Strings.repeat("02", 32) + "03",
-        encodedSignature.toHexString());
+    assertThat(packetSignatureEncoder.encodeSignature(signature).toHexString())
+        .isEqualTo("0x" + Strings.repeat("01", 32) + Strings.repeat("02", 32) + "01");
   }
 }
