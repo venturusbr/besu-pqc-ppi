@@ -18,12 +18,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.algorithms.Falcon512;
+import org.hyperledger.besu.crypto.algorithms.Falcon;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.config.DigitalSignatureAlgorithmConfiguration;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
-import org.hyperledger.besu.crypto.signature.types.Falcon512Signature;
+import org.hyperledger.besu.crypto.signature.types.FalconSignature;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.TransactionType;
 import org.hyperledger.besu.datatypes.Wei;
@@ -50,7 +50,7 @@ class FlexibleEIP1559Falcon512TransactionTest {
 
   private static final short FALCON512_ID = DSAParametersSet.FALCON512.getId();
 
-  private final Falcon512 falcon = new Falcon512();
+  private final Falcon falcon = new Falcon(DSAParametersSet.FALCON512);
 
   @BeforeEach
   void setUp() throws InvalidAlgorithmParameterException {
@@ -76,7 +76,8 @@ class FlexibleEIP1559Falcon512TransactionTest {
 
     assertThat(decoded.getType()).isEqualTo(TransactionType.FLEXIBLE_EIP1559);
     assertThat(decoded.getDsaType()).contains(FALCON512_ID);
-    assertThat(decoded.getSignature()).isInstanceOf(Falcon512Signature.class)
+    assertThat(decoded.getSignature())
+        .isInstanceOf(FalconSignature.class)
         .isEqualTo(signed.getSignature());
     assertThat(decoded.getMountedPublicKey()).isEqualTo(keyPair.getPublicKey());
     assertThat(decoded.getSender()).isEqualTo(Address.extract(keyPair.getPublicKey()));
@@ -119,7 +120,7 @@ class FlexibleEIP1559Falcon512TransactionTest {
     final Bytes signingHash =
         Bytes.wrap(
             unsigned(keyPair.getPublicKey(), value)
-                .signature(Falcon512Signature.create(Bytes.of(0)))
+                .signature(FalconSignature.create(Bytes.of(0), DSAParametersSet.FALCON512))
                 .build()
                 .getSigningHash());
     final Signature signature = falcon.sign(signingHash, keyPair.getPrivateKey());

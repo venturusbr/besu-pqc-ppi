@@ -78,7 +78,8 @@ class FlexibleEIP1559Secp256k1Falcon512TransactionTest {
 
     assertThat(decoded.getDsaType()).contains(HYBRID.getId());
     assertThat(decoded.getSignature()).isInstanceOf(CompositeSignature.class);
-    assertThat(decoded.getSignature().encodedBytes()).isEqualTo(signed.getSignature().encodedBytes());
+    assertThat(decoded.getSignature().encodedBytes())
+        .isEqualTo(signed.getSignature().encodedBytes());
     // The SECP256K1 half was recovered; together with the carried Falcon half it is the full key.
     assertThat(decoded.getMountedPublicKey().getEncoded())
         .isEqualTo(keyPair.getPublicKey().getEncoded());
@@ -104,9 +105,7 @@ class FlexibleEIP1559Secp256k1Falcon512TransactionTest {
     final Transaction signed = sign(signer, Wei.of(1_000));
 
     final Transaction forged =
-        unsigned(falconHalf(impersonated), Wei.of(1_000))
-            .signature(signed.getSignature())
-            .build();
+        unsigned(falconHalf(impersonated), Wei.of(1_000)).signature(signed.getSignature()).build();
 
     assertThat(verifyAsTheValidatorDoes(roundTrip(forged))).isFalse();
   }
@@ -117,10 +116,7 @@ class FlexibleEIP1559Secp256k1Falcon512TransactionTest {
     final Signature placeholder = hybrid.sign(Bytes.wrap(new byte[32]), keyPair.getPrivateKey());
     final Bytes signingHash =
         Bytes.wrap(
-            unsigned(falconHalf(keyPair), value)
-                .signature(placeholder)
-                .build()
-                .getSigningHash());
+            unsigned(falconHalf(keyPair), value).signature(placeholder).build().getSigningHash());
     final Signature signature = hybrid.sign(signingHash, keyPair.getPrivateKey());
     return unsigned(falconHalf(keyPair), value).signature(signature).build();
   }

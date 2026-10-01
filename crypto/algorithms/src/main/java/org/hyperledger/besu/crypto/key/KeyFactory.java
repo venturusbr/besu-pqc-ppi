@@ -13,8 +13,8 @@ import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
 import org.hyperledger.besu.crypto.key.types.CompositePrivateKey;
-import org.hyperledger.besu.crypto.key.types.Falcon512PrivateKey;
-import org.hyperledger.besu.crypto.key.types.Falcon512PublicKey;
+import org.hyperledger.besu.crypto.key.types.FalconPrivateKey;
+import org.hyperledger.besu.crypto.key.types.FalconPublicKey;
 import org.hyperledger.besu.crypto.key.types.MLDSAPrivateKey;
 import org.hyperledger.besu.crypto.key.types.MLDSAPublicKey;
 
@@ -36,7 +36,7 @@ public class KeyFactory {
                 sk = MLDSAPrivateKey.create(privateKeyBytes, paramsSet);
                 break;
             case FALCON512:
-                sk = Falcon512PrivateKey.create(privateKeyBytes);
+                sk = FalconPrivateKey.create(privateKeyBytes, paramsSet);
                 break;
             case SECP256K1MLDSA44:
                 Bytes secpSkBytes = keyExtractor.extractPrivateKeyBytesAtOffset(privateKeyBytes, 0, DSAParametersSet.SECP256K1, firstSkRep);
@@ -50,10 +50,11 @@ public class KeyFactory {
             case SECP256K1FALCON512: {
                 // Both halves are fixed-length: SECP256K1 || Falcon-512 (f || g || F || h).
                 final int secpSkLength = DSAParametersSet.SECP256K1.getPrivateKeyLength();
-                if (privateKeyBytes.size() != secpSkLength + Falcon512PrivateKey.LENGTH) {
+                final int falconSkLength = DSAParametersSet.FALCON512.getPrivateKeyLength();
+                if (privateKeyBytes.size() != secpSkLength + falconSkLength) {
                     throw new IllegalArgumentException(
                         "SECP256K1-FALCON512 private key must be "
-                            + (secpSkLength + Falcon512PrivateKey.LENGTH)
+                            + (secpSkLength + falconSkLength)
                             + " bytes, got "
                             + privateKeyBytes.size());
                 }
@@ -64,7 +65,8 @@ public class KeyFactory {
                             DSAParametersSet.SECP256K1,
                             PrivateKeyRepresentation.EXPANDED,
                             null),
-                        Falcon512PrivateKey.create(privateKeyBytes.slice(secpSkLength)));
+                        FalconPrivateKey.create(
+                            privateKeyBytes.slice(secpSkLength), DSAParametersSet.FALCON512));
                 break;
             }
             default:
@@ -87,7 +89,7 @@ public class KeyFactory {
                 pk = MLDSAPublicKey.create(privateKey, paramsSet);
                 break;
             case FALCON512:
-                pk = Falcon512PublicKey.create(privateKey);
+                pk = FalconPublicKey.create(privateKey);
                 break;
             case SECP256K1MLDSA44:
                 CompositePrivateKey compositeSk = (CompositePrivateKey) privateKey;
@@ -127,7 +129,7 @@ public class KeyFactory {
                 pk = MLDSAPublicKey.create(publicKeyBytes, paramsSet);
                 break;
             case FALCON512:
-                pk = Falcon512PublicKey.create(publicKeyBytes);
+                pk = FalconPublicKey.create(publicKeyBytes, paramsSet);
                 break;
             case SECP256K1MLDSA44:
                 int expectedFullLength =
@@ -159,17 +161,20 @@ public class KeyFactory {
                 throw new IllegalArgumentException("Wrong public key size for: " + paramsSet.getName());
             case SECP256K1FALCON512: {
                 final int secpPkLength = DSAParametersSet.SECP256K1.getPublicKeyLength();
-                if (publicKeyBytes.size() == secpPkLength + Falcon512PublicKey.LENGTH) {
+                final int falconPkLength = DSAParametersSet.FALCON512.getPublicKeyLength();
+                if (publicKeyBytes.size() == secpPkLength + falconPkLength) {
                     return Optional.of(
                         CompositePublicKey.create(
                             SECPPublicKey.create(
                                 publicKeyBytes.slice(0, secpPkLength),
                                 DSAParametersSet.SECP256K1.getName()),
-                            Falcon512PublicKey.create(publicKeyBytes.slice(secpPkLength))));
+                            FalconPublicKey.create(
+                                publicKeyBytes.slice(secpPkLength), DSAParametersSet.FALCON512)));
                 }
                 // Transactions carry only the Falcon half: SECP256K1's is recovered from its signature.
-                if (publicKeyBytes.size() == Falcon512PublicKey.LENGTH) {
-                    return Optional.of(Falcon512PublicKey.create(publicKeyBytes));
+                if (publicKeyBytes.size() == falconPkLength) {
+                    return Optional.of(
+                        FalconPublicKey.create(publicKeyBytes, DSAParametersSet.FALCON512));
                 }
                 throw new IllegalArgumentException(
                     "Wrong public key size for " + paramsSet.getName() + ": " + publicKeyBytes.size());

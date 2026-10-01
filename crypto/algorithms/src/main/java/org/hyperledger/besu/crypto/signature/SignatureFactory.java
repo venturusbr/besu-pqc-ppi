@@ -6,7 +6,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.signature.types.CompositeSignature;
-import org.hyperledger.besu.crypto.signature.types.Falcon512Signature;
+import org.hyperledger.besu.crypto.signature.types.FalconSignature;
 import org.hyperledger.besu.crypto.signature.types.MLDSASignature;
 
 public class SignatureFactory {
@@ -23,19 +23,20 @@ public class SignatureFactory {
             case MLDSA44, MLDSA65, MLDSA87 ->
                 MLDSASignature.create(algo.getName(), bytes);
             case FALCON512 ->
-                Falcon512Signature.create(bytes);
+                FalconSignature.create(bytes, algo);
             case SECP256K1FALCON512 -> {
                 // SECP256K1's signature is fixed-length and comes first, so Falcon's variable-length
                 // signature is simply the remainder. The enclosing RLP item carries the total length.
                 final int secpLength = DSAParametersSet.SECP256K1.getSignatureLength();
                 checkArgument(
                     bytes.size() > secpLength
-                        && bytes.size() <= secpLength + Falcon512Signature.MAX_LENGTH,
+                        && bytes.size()
+                            <= secpLength + FalconSignature.maxLength(DSAParametersSet.FALCON512),
                     "Invalid signature length for SECP256K1-FALCON512: %s",
                     bytes.size());
                 yield CompositeSignature.create(
                     createSignatureFromBytes(bytes.slice(0, secpLength), DSAParametersSet.SECP256K1),
-                    Falcon512Signature.create(bytes.slice(secpLength)));
+                    FalconSignature.create(bytes.slice(secpLength), DSAParametersSet.FALCON512));
             }
             case SECP256K1MLDSA44 -> {
 

@@ -6,7 +6,7 @@ import com.google.common.collect.ImmutableMap;
 
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.SECP256K1;
-import org.hyperledger.besu.crypto.algorithms.Falcon512;
+import org.hyperledger.besu.crypto.algorithms.Falcon;
 import org.hyperledger.besu.crypto.algorithms.MLDSA;
 import org.hyperledger.besu.crypto.algorithms.hybrid.HybridStrongNestingConcatenation;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
@@ -25,7 +25,7 @@ public class SupportedAlgorithms {
                 DSAParametersSet.MLDSA87.getName(),
                 () -> new MLDSA(DSAParametersSet.MLDSA87),
                 DSAParametersSet.FALCON512.getName(),
-                Falcon512::new,
+                () -> new Falcon(DSAParametersSet.FALCON512),
                 DSAParametersSet.SECP256K1MLDSA44.getName(),
                 () ->
                     new HybridStrongNestingConcatenation(
@@ -36,7 +36,7 @@ public class SupportedAlgorithms {
                 () ->
                     new HybridStrongNestingConcatenation(
                         new SECP256K1(),
-                        new Falcon512(),
+                        new Falcon(DSAParametersSet.FALCON512),
                         DSAParametersSet.SECP256K1FALCON512));
 
     public Supplier<DigitalSignatureAlgorithm> getDSAByName(final String algorithmName) {
