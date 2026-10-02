@@ -19,6 +19,7 @@ import java.security.PublicKey;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
@@ -26,6 +27,7 @@ import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.PublicKeyHandler;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
+import org.hyperledger.besu.crypto.providers.VerifierProvider;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.SignatureFactory;
 import org.hyperledger.besu.datatypes.Address;
@@ -34,7 +36,7 @@ import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.core.encoding.CodeDelegationEncoder;
 import org.hyperledger.besu.ethereum.core.json.ChainIdDeserializer;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPOutput;
-import org.hyperledger.besu.crypto.key.KeyFactory;
+import org.hyperledger.besu.ethereum.core.encoding.PublicKeyDecoder;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -177,9 +179,11 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
     final Signature sig =
         SignatureFactory.createSignatureFromBytes(signature, dsaParams);
 
+    // Same rules as a code delegation decoded from RLP: only the halves that cannot be recovered
+    // may be provided, so a stated recoverable half is never taken on trust.
     final Optional<PublicKey> maybePk =
         maybePublicKey != null
-            ? KeyFactory.createPublicKey(maybePublicKey, dsaParams)
+            ? PublicKeyDecoder.fromProvidedBytes(enabledDsa(dsaType), maybePublicKey)
             : Optional.empty();
 
     return new CodeDelegation(
@@ -190,6 +194,16 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
         nonce,
         maybePk,
         sig);
+  }
+
+  private static DigitalSignatureAlgorithm enabledDsa(final Short dsaType) {
+    final VerifierProvider verifierProvider = DSAProviderFactory.getVerifierProvider();
+    final DigitalSignatureAlgorithm dsa =
+        verifierProvider != null ? verifierProvider.getAccountEnabledDSAById(dsaType) : null;
+    if (dsa == null) {
+      throw new IllegalArgumentException("DSA type " + dsaType + " is not enabled");
+    }
+    return dsa;
   }
 
   @JsonProperty("type")

@@ -101,6 +101,9 @@ public final class PeerDiscoveryAgentFactoryV5 implements PeerDiscoveryAgentFact
             .bootnodes(
                 BootnodeRecordFactory.buildBootnodeRecords(config.getDiscovery().getBootnodes()))
             .signer(new LocalNodeKeySigner(nodeKey))
+            // Records arriving from the network are decoded through this factory, which verifies
+            // the hybrid signature of vnt records that the library leaves unchecked.
+            .nodeRecordFactory(VerifyingVntInterpreter.nodeRecordFactory())
             .localNodeRecord(localNodeRecord)
             .localNodeRecordListener((previous, updated) -> nodeRecordManager.updateNodeRecord())
             .newAddressHandler((nodeRecord, newAddress) -> Optional.of(nodeRecord))

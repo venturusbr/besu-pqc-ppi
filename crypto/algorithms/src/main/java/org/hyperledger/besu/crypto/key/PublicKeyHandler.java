@@ -24,6 +24,7 @@ import org.hyperledger.besu.crypto.signature.types.CompositeSignature;
 
 import java.security.PublicKey;
 import java.util.Optional;
+import java.util.function.Function;
 
 import org.apache.tuweni.bytes.Bytes32;
 
@@ -49,17 +50,29 @@ public class PublicKeyHandler {
     return secpPublicKey;
   }
 
+  /**
+   * The public key behind a signature: recovered from the signature wherever the algorithm
+   * supports it, and taken from the provided key otherwise.
+   *
+   * <p>A half whose algorithm supports recovery is always recovered, even when the caller hands in
+   * a whole composite key. Verifying a hybrid signature does not check that half, since recovery
+   * is what authenticates it, so a stated one would go unchecked and the signature would pass on
+   * its other half alone.
+   *
+   * @param signatureAlgorithm the algorithm that produced the signature
+   * @param signature the signature
+   * @param maybePartialPk the key that travelled with the payload, if any: the halves that cannot
+   *     be recovered, or a whole composite key whose recoverable halves are ignored
+   * @param recoveryHash the hash the signature was made over
+   * @return the signer's public key
+   */
   public static Optional<PublicKey> resolvePublicKey(
       final DigitalSignatureAlgorithm signatureAlgorithm,
       final Signature signature,
       final Optional<PublicKey> maybePartialPk,
       final Bytes32 recoveryHash) {
-    if (maybePartialPk.isPresent()) {
-      if (maybePartialPk.get() instanceof CompositePublicKey) return maybePartialPk;
-
-      if (signatureAlgorithm instanceof HybridDigitalSignatureAlgorithm hybrid) {
-        return Optional.of(extractHybridPublicKey(hybrid, signature, maybePartialPk, recoveryHash));
-      }
+    if (signatureAlgorithm instanceof HybridDigitalSignatureAlgorithm hybrid) {
+      return Optional.of(extractHybridPublicKey(hybrid, signature, maybePartialPk, recoveryHash));
     }
 
     return Optional.of(
@@ -79,13 +92,30 @@ public class PublicKeyHandler {
     CompositeSignature hybridSignature = (CompositeSignature) signature;
     PublicKey firstPk =
         resolveSingleAlgorithmPublicKey(
-            first, hybridSignature.getFirstSignature(), maybePartialPk, recoveryHash);
+            first,
+            hybridSignature.getFirstSignature(),
+            halfOf(maybePartialPk, CompositePublicKey::getFirstKey),
+            recoveryHash);
 
     PublicKey secondPk =
         resolveSingleAlgorithmPublicKey(
-            second, hybridSignature.getSecondSignature(), maybePartialPk, recoveryHash);
+            second,
+            hybridSignature.getSecondSignature(),
+            halfOf(maybePartialPk, CompositePublicKey::getSecondKey),
+            recoveryHash);
 
     return CompositePublicKey.create(firstPk, secondPk);
+  }
+
+  /**
+   * The half of the provided key that belongs to one algorithm of the hybrid. A partial key is
+   * already the half that cannot be recovered, so it is offered to both: the recoverable half
+   * ignores it.
+   */
+  private static Optional<PublicKey> halfOf(
+      final Optional<PublicKey> maybePartialPk, final Function<CompositePublicKey, PublicKey> half) {
+    return maybePartialPk.map(
+        pk -> pk instanceof CompositePublicKey composite ? half.apply(composite) : pk);
   }
 
   private static PublicKey resolveSingleAlgorithmPublicKey(

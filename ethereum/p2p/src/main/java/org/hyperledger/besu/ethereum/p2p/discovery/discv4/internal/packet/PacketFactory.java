@@ -17,6 +17,7 @@ package org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet;
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.Hash;
 import org.hyperledger.besu.crypto.HybridDigitalSignatureAlgorithm;
+import org.hyperledger.besu.crypto.PublicKeyRecoverable;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.KeyFactory;
 import org.hyperledger.besu.crypto.key.PublicKeyHandler;
@@ -151,8 +152,11 @@ public class PacketFactory {
                     new PeerDiscoveryPacketDecodingException(
                         "Invalid packet: the sender's public key could not be resolved"));
 
-    // Verifies the half that is not covered by the recovery above.
-    if (!activeDsa.verify(recoveryHash, signature, publicKey)) {
+    // Verifies the half that is not covered by the recovery above. A classical key is recovered
+    // whole, and a recovered key always verifies against its own signature, so there is nothing
+    // left to check.
+    if (!(activeDsa instanceof PublicKeyRecoverable)
+        && !activeDsa.verify(recoveryHash, signature, publicKey)) {
       throw new PeerDiscoveryPacketDecodingException(
           "Invalid packet signature for the sender's public key");
     }

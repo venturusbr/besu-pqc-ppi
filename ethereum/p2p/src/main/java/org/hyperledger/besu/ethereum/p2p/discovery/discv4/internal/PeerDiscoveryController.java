@@ -424,12 +424,13 @@ public class PeerDiscoveryController {
                       packet.getPacketData(EnrResponsePacketData.class);
                   final NodeRecord enr = packetData.get().getEnr();
                   // A record that does not prove possession of the key it advertises would let
-                  // this peer claim any node id, so it is dropped rather than stored.
-                  if (enrSignatureValidator.isValid(enr)) {
+                  // this peer claim any node id, and a genuine record of another node would let
+                  // it pass that node's details off as its own, so both are dropped.
+                  if (enrSignatureValidator.isValidFor(enr, peer.getId())) {
                     peer.setNodeRecord(enr);
                   } else {
                     LOG.debug(
-                        "Discarding node record with an invalid signature from peer {}",
+                        "Discarding node record that is invalid or not the sender's from peer {}",
                         peer.getLoggableId());
                   }
                 });
@@ -749,8 +750,8 @@ public class PeerDiscoveryController {
    * <p>Each entry carries the peer's whole node id, so the count follows the active DSA: a
    * classical id is 64 bytes and 13 of them fit the 1280 bytes the devp2p specification allows,
    * while a hybrid id is 1376 and only a handful fit even the raised limit. Returning fewer per
-   * response costs more round trips, which is the cheaper trade: an oversized response is
-   * rejected outright by the requester's size check, so discovery would stop working.
+   * response costs more round trips, which is the cheaper trade: an oversized response is rejected
+   * outright by the requester's size check, so discovery would stop working.
    *
    * @return the number of peers to put in a NEIGHBORS response
    */

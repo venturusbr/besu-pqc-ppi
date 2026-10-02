@@ -29,9 +29,8 @@ import org.hyperledger.besu.crypto.signature.types.CompositeSignature;
 import java.security.PublicKey;
 import java.util.Optional;
 
-import org.apache.tuweni.bytes.Bytes32;
-
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.ethereum.beacon.discovery.schema.EnrField;
 import org.ethereum.beacon.discovery.schema.IdentitySchema;
 import org.ethereum.beacon.discovery.schema.NodeRecord;
@@ -67,6 +66,31 @@ public class EnrSignatureValidator {
     // field and the ECDSA signature over the same preimage.
     if (!nodeRecord.isValid()) {
       LOG.trace("Node record rejected: failed the identity scheme's own checks. {}", nodeRecord);
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Whether the record is valid and belongs to the given node.
+   *
+   * <p>A valid signature only proves the record was signed by the key it advertises, not that the
+   * peer handing it over owns that key: any peer can replay another node's genuine record. Tying
+   * the record to the node id the peer proved, by signing the packet it arrived in, closes that.
+   *
+   * @param nodeRecord the record as it arrived
+   * @param nodeId the id of the peer that sent it
+   * @return true when the record can be trusted to speak for that peer
+   */
+  public boolean isValidFor(final NodeRecord nodeRecord, final Bytes nodeId) {
+    if (!isValid(nodeRecord)) {
+      return false;
+    }
+    // Both v4 and vnt derive the record's node id as the keccak256 of the advertised key, which
+    // is what a discovery peer id holds: the 64-byte secp256k1 key, or the whole hybrid key.
+    if (!nodeRecord.getNodeId().equals(Hash.keccak256(nodeId))) {
+      LOG.trace(
+          "Node record rejected: it advertises a key other than the sender's. {}", nodeRecord);
       return false;
     }
     return true;

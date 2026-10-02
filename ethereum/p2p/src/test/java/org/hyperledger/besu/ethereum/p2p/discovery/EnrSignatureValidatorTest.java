@@ -69,8 +69,7 @@ class EnrSignatureValidatorTest {
   }
 
   @Test
-  void acceptsAHybridRecordSignedByTheKeyItAdvertises()
-      throws InvalidAlgorithmParameterException {
+  void acceptsAHybridRecordSignedByTheKeyItAdvertises() throws InvalidAlgorithmParameterException {
     final NodeRecord record = buildLocalRecord(useHybridDsa());
 
     assertThat(record.getIdentityScheme()).isEqualTo(IdentitySchema.VNT);
@@ -138,11 +137,11 @@ class EnrSignatureValidatorTest {
   }
 
   /**
-   * The case the two-part check exists for. {@code SECP256K1.verify} returns true unconditionally,
-   * so an attacker holding only the ML-DSA-44 half could otherwise forge a record: keep a
-   * well-formed classical signature made by some other key, and re-sign the ML-DSA half over it so
-   * the nesting still lines up. Only recovering the classical key and comparing it to the one the
-   * record advertises catches that.
+   * The case the recovery check exists for. The hybrid DSA does not verify the secp256k1 half,
+   * which is meant to be authenticated by recovery, so an attacker holding only the ML-DSA-44 half
+   * could otherwise forge a record: keep a well-formed classical signature made by some other key,
+   * and re-sign the ML-DSA half over it so the nesting still lines up. Only recovering the
+   * classical key and comparing it to the one the record advertises catches that.
    */
   @Test
   void rejectsAHybridRecordWhoseClassicalHalfBelongsToAnotherKey()
@@ -154,8 +153,7 @@ class EnrSignatureValidatorTest {
     // a classical signature over the same preimage, but made by a key the victim does not hold
     final KeyPair attacker = hybridKeyPair();
     final Signature foreignEcdsa =
-        SignatureAlgorithmFactory.getInstance()
-            .sign(preimage, secpHalfOf(attacker));
+        SignatureAlgorithmFactory.getInstance().sign(preimage, secpHalfOf(attacker));
 
     // the ML-DSA half is re-made over data || foreignEcdsa, which is what strong nesting signs,
     // so that half verifies cleanly
@@ -169,14 +167,60 @@ class EnrSignatureValidatorTest {
     record.setSignature(
         SignatureFactory.createCompositeConcSignature(foreignEcdsa, reforgedMlDsa).encodedBytes());
 
-    // the ML-DSA half alone is happy with this record, which is exactly the gap being closed
-    assertThat(DSAProviderFactory.getVerifierProvider().getActiveDSA().verify(
-                preimage,
-                SignatureFactory.createSignatureFromBytes(record.getSignature(), HYBRID),
-                victim.getPublicKey()))
+    // the hybrid DSA alone is happy with this record, which is exactly the gap being closed
+    assertThat(
+            DSAProviderFactory.getVerifierProvider()
+                .getActiveDSA()
+                .verify(
+                    preimage,
+                    SignatureFactory.createSignatureFromBytes(record.getSignature(), HYBRID),
+                    victim.getPublicKey()))
         .isTrue();
 
     assertThat(validator().isValid(record)).isFalse();
+  }
+
+  @Test
+  void acceptsAHybridRecordFromTheNodeItBelongsTo() throws InvalidAlgorithmParameterException {
+    final KeyPair keyPair = useHybridDsa();
+    final NodeRecord record = buildLocalRecord(keyPair);
+
+    assertThat(validator().isValidFor(record, nodeIdOf(keyPair))).isTrue();
+  }
+
+  /**
+   * A genuine record replayed by another peer: its signature holds up, but it speaks for a
+   * different node than the one that sent it.
+   */
+  @Test
+  void rejectsAHybridRecordReplayedByAnotherPeer() throws InvalidAlgorithmParameterException {
+    final NodeRecord victimRecord = buildLocalRecord(useHybridDsa());
+    final KeyPair sender = hybridKeyPair();
+
+    assertThat(validator().isValid(victimRecord)).isTrue();
+    assertThat(validator().isValidFor(victimRecord, nodeIdOf(sender))).isFalse();
+  }
+
+  @Test
+  void acceptsAClassicalRecordFromTheNodeItBelongsTo() throws InvalidAlgorithmParameterException {
+    final KeyPair keyPair = useClassicalDsa();
+    final NodeRecord record = buildLocalRecord(keyPair);
+
+    assertThat(validator().isValidFor(record, nodeIdOf(keyPair))).isTrue();
+  }
+
+  @Test
+  void rejectsAClassicalRecordReplayedByAnotherPeer() throws InvalidAlgorithmParameterException {
+    final NodeRecord victimRecord = buildLocalRecord(useClassicalDsa());
+    final KeyPair sender = SignatureAlgorithmFactory.getInstance().generateKeyPair();
+
+    assertThat(validator().isValid(victimRecord)).isTrue();
+    assertThat(validator().isValidFor(victimRecord, nodeIdOf(sender))).isFalse();
+  }
+
+  /** A discovery peer id is the encoded public key: 64 bytes classical, the whole key hybrid. */
+  private static Bytes nodeIdOf(final KeyPair keyPair) {
+    return Bytes.wrap(keyPair.getPublicKey().getEncoded());
   }
 
   private static SECPPrivateKey secpHalfOf(final KeyPair hybrid) {

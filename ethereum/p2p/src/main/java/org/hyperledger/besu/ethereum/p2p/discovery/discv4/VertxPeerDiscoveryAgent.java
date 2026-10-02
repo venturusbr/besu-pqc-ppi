@@ -71,6 +71,18 @@ import org.slf4j.LoggerFactory;
 public class VertxPeerDiscoveryAgent extends PeerDiscoveryAgentV4 {
   private static final Logger LOG = LoggerFactory.getLogger(VertxPeerDiscoveryAgent.class);
 
+  /**
+   * Receive buffer size for the discovery socket, matching Linux's default {@code
+   * net.core.rmem_default}.
+   *
+   * <p>Vert.x applies this one value twice: as the socket's {@code SO_RCVBUF}, the kernel queue
+   * that absorbs bursts of datagrams, and as Netty's per-read buffer. The read buffer only has to
+   * hold {@link #MAX_PACKET_SIZE_BYTES}, but sizing the option to that alone would shrink the
+   * kernel queue to a few packets and drop bursts silently. Linux doubles the value asked for and
+   * caps it at {@code net.core.rmem_max}, so this never leaves the queue below the OS default.
+   */
+  private static final int RECEIVE_BUFFER_SIZE_BYTES = 212_992;
+
   private final Vertx vertx;
   /* The vert.x UDP socket. */
   private DatagramSocket socket;
@@ -166,9 +178,9 @@ public class VertxPeerDiscoveryAgent extends PeerDiscoveryAgentV4 {
             new DatagramSocketOptions()
                 .setIpV6(NetworkUtility.isIPv6Available())
                 // Netty sizes the datagram read buffer at 2048 bytes by default, which silently
-                // truncates anything larger. Size it to the packet limit so oversized packets are
-                // rejected by validatePacketSize rather than arriving corrupted.
-                .setReceiveBufferSize(MAX_PACKET_SIZE_BYTES))
+                // truncates anything larger. A buffer above the packet limit lets oversized
+                // packets be rejected by validatePacketSize rather than arriving corrupted.
+                .setReceiveBufferSize(RECEIVE_BUFFER_SIZE_BYTES))
         .listen(
             config.getBindPort(), config.getBindHost(), res -> handleListenerSetup(res, future));
     return future;

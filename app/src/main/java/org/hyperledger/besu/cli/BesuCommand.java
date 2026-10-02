@@ -2150,6 +2150,10 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
    * @return instance of BesuControllerBuilder
    */
   public BesuControllerBuilder setupControllerBuilder() {
+    // Subcommands such as `blocks import` build the controller without going through run(), so
+    // the provider is set up here as well: the bootnodes parsed below, the node key and the
+    // transaction validator all depend on it.
+    instantiateDsaProvider();
     pluginCommonConfiguration
         .init(dataDir(), dataDir().resolve(DATABASE_PATH), getDataStorageConfiguration())
         .withMiningParameters(miningParametersSupplier.get())
@@ -2628,7 +2632,10 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
   /**
    * Configures the DSA provider from the command line, which fixes the node's active algorithm and
    * with it the size of a node id. This only registers the provider; the node key itself is still
-   * loaded later, by {@link #nodeKeyProvider()}.
+   * loaded later, by {@link #nodeKeyProvider()}. Called both by {@link #run()}, before any enode is
+   * parsed, and by {@link #setupControllerBuilder()}, which subcommands reach without run(). Each
+   * call replaces the provider with one built from the same options, so calling it twice is
+   * harmless.
    */
   private void instantiateDsaProvider() {
     DigitalSignatureAlgorithmConfiguration dsaConfig = new DigitalSignatureAlgorithmConfiguration();
