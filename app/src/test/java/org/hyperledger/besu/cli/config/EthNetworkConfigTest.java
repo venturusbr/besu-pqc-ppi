@@ -25,9 +25,15 @@ import static org.hyperledger.besu.ethereum.p2p.config.DefaultDiscoveryConfigura
 
 import org.hyperledger.besu.config.GenesisConfig;
 import org.hyperledger.besu.config.NetworkDefinition;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.config.DigitalSignatureAlgorithmConfiguration;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 
 import java.math.BigInteger;
+import java.security.InvalidAlgorithmParameterException;
+import java.util.List;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -113,5 +119,31 @@ public class EthNetworkConfigTest {
       assertThat(config.genesisConfig().getConfigOptions().getChainId().orElseThrow())
           .isEqualTo(network.getChainId());
     }
+  }
+
+  @AfterEach
+  public void resetDsa() {
+    DSAProviderFactory.resetDsaProvider();
+  }
+
+  /**
+   * A node whose active DSA is hybrid cannot even represent a classical node id, so the bootnodes
+   * that ship with a network definition become unusable. Startup must not fail over them: they are
+   * bootnodes of a network this node cannot join, not an operator mistake.
+   */
+  @Test
+  public void bootnodesThatCannotBeRepresentedAreSkippedRatherThanFailingStartup()
+      throws InvalidAlgorithmParameterException {
+    final DigitalSignatureAlgorithmConfiguration dsaConfig =
+        new DigitalSignatureAlgorithmConfiguration();
+    dsaConfig.buildAccountSupportedAlgorithms(
+        List.of(DSAParametersSet.SECP256K1, DSAParametersSet.SECP256K1MLDSA44));
+    dsaConfig.setNodeActiveDSA(DSAParametersSet.SECP256K1MLDSA44.getName());
+    DSAProviderFactory.setDsaProvider(dsaConfig, null);
+
+    final EthNetworkConfig config = EthNetworkConfig.getNetworkConfig(NetworkDefinition.MAINNET);
+
+    assertThat(config.bootNodes()).isEmpty();
+    assertThat(config.networkId()).isEqualTo(BigInteger.ONE);
   }
 }

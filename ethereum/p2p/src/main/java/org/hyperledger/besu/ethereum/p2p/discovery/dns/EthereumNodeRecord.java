@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import org.apache.tuweni.bytes.Bytes;
+import org.ethereum.beacon.discovery.schema.EnrField;
 import org.ethereum.beacon.discovery.schema.NodeRecord;
 import org.ethereum.beacon.discovery.schema.NodeRecordFactory;
 
@@ -61,7 +62,7 @@ public record EthereumNodeRecord(
     final Map<String, Object> fields = new HashMap<>();
     nodeRecord.forEachField(fields::put);
     return new EthereumNodeRecord(
-        initPublicKeyBytes(fields),
+        initPublicKeyBytes(nodeRecord),
         initIPAddr(fields),
         initTCP(fields),
         initUDP(fields),
@@ -73,10 +74,16 @@ public record EthereumNodeRecord(
    *
    * @return the public key of the ENR
    */
-  static Bytes initPublicKeyBytes(final Map<String, Object> fields) {
-    final Object value = fields.get("secp256k1");
+  static Bytes initPublicKeyBytes(final NodeRecord nodeRecord) {
+    // A vnt record already carries the hybrid key in the layout the node id uses, so it is taken
+    // as is. A v4 record carries the compressed secp256k1 key and has to be expanded.
+    final Object hybridKey = nodeRecord.get(EnrField.PKEY_SECP256K1_MLDSA44);
+    if (hybridKey instanceof Bytes hybridKeyBytes) {
+      return hybridKeyBytes;
+    }
+    final Object value = nodeRecord.get(EnrField.PKEY_SECP256K1);
     if (!(value instanceof Bytes keyBytes)) {
-      throw new IllegalArgumentException("Missing secp256k1 entry in ENR");
+      throw new IllegalArgumentException("Missing public key entry in ENR");
     }
     // convert 33 bytes compressed public key to uncompressed using Bouncy Castle
     var curve = SignatureAlgorithmFactory.getInstance().getCurve();

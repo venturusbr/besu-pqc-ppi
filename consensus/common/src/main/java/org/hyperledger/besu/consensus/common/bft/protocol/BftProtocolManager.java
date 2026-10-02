@@ -18,7 +18,6 @@ import org.hyperledger.besu.consensus.common.bft.BftEventQueue;
 import org.hyperledger.besu.consensus.common.bft.events.BftEvent;
 import org.hyperledger.besu.consensus.common.bft.events.BftEvents;
 import org.hyperledger.besu.consensus.common.bft.network.PeerConnectionTracker;
-import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.p2p.network.ProtocolManager;
 import org.hyperledger.besu.ethereum.p2p.rlpx.connections.PeerConnection;
 import org.hyperledger.besu.ethereum.p2p.rlpx.wire.Capability;
@@ -95,8 +94,15 @@ public class BftProtocolManager implements ProtocolManager {
   public void processMessage(final Capability cap, final Message message) {
     final MessageData messageData = message.getData();
     final int code = messageData.getCode();
-    final Address address = message.getConnection().getPeerInfo().getAddress();
-    LOG.trace("Process message {}, {}, from = {}", cap, code, address);
+    // Only resolved when it is going to be logged: deriving the sender's address is not needed to
+    // process the message, and a failure there must not stop it reaching the event queue.
+    if (LOG.isTraceEnabled()) {
+      LOG.trace(
+          "Process message {}, {}, from = {}",
+          cap,
+          code,
+          message.getConnection().getPeerInfo().getAddress());
+    }
 
     final BftEvent messageEvent = BftEvents.fromMessage(message);
     bftEventQueue.add(messageEvent);

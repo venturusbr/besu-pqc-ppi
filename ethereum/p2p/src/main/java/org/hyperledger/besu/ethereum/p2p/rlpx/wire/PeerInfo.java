@@ -16,10 +16,8 @@ package org.hyperledger.besu.ethereum.p2p.rlpx.wire;
 
 import static org.apache.tuweni.bytes.Bytes.wrap;
 
-import org.hyperledger.besu.crypto.SECPPublicKey;
-import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.Hash;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.ethereum.core.Util;
 import org.hyperledger.besu.ethereum.rlp.RLPInput;
 import org.hyperledger.besu.ethereum.rlp.RLPOutput;
 
@@ -106,9 +104,10 @@ public class PeerInfo
   @Override
   public Address getAddress() {
     if (address == null) {
-      final SECPPublicKey remotePublicKey =
-          SignatureAlgorithmFactory.getInstance().createPublicKey(nodeId);
-      address = Util.publicKeyToAddress(remotePublicKey);
+      // The node id is the encoded public key, so this is what Address.extract(PublicKey) computes,
+      // without first rebuilding a key from the bytes: going through a SECPPublicKey only accepted
+      // 64 bytes and threw on every hybrid id.
+      address = Address.extract(Hash.keccak256(nodeId));
     }
     return address;
   }

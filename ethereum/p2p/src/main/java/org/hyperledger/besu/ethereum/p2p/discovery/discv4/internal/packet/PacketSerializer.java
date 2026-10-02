@@ -15,6 +15,7 @@
 package org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet;
 
 import org.hyperledger.besu.crypto.SECPSignature;
+import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
 import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.enrrequest.EnrRequestPacketData;
 import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.enrrequest.EnrRequestPacketDataRlpWriter;
 import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.enrresponse.EnrResponsePacketData;
@@ -31,6 +32,8 @@ import org.hyperledger.besu.ethereum.rlp.BytesValueRLPOutput;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import java.security.PublicKey;
 
 import io.vertx.core.buffer.Buffer;
 import org.apache.tuweni.bytes.Bytes;
@@ -63,9 +66,24 @@ public class PacketSerializer {
     this.enrResponsePacketDataRlpWriter = enrResponsePacketDataRlpWriter;
   }
 
+  /**
+   * The part of the sender's key that has to travel, which is the half belonging to an algorithm
+   * without public key recovery.
+   *
+   * @param publicKey the sender's key
+   * @return those bytes, or empty when every half can be recovered
+   */
+  private static Bytes partialPublicKey(final PublicKey publicKey) {
+    return publicKey instanceof CompositePublicKey composite
+        ? Bytes.wrap(composite.getSecondKey().getEncoded())
+        : Bytes.EMPTY;
+  }
+
   public Buffer encode(final Packet packet) {
-    // TODO: remove SECP dependency
-    final Bytes encodedSignature = packetSignatureEncoder.encodeSignature((SECPSignature) packet.getSignature());
+    final Bytes encodedSignature = packetSignatureEncoder.encodeSignature(packet.getSignature());
+    // Only the half the receiver cannot recover: the classical half comes back out of the
+    // signature. A classical node writes nothing here.
+    final Bytes encodedPublicKey = partialPublicKey(packet.getPublicKey());
     final BytesValueRLPOutput encodedData = new BytesValueRLPOutput();
     switch (packet.getType()) {
       case PING ->
@@ -90,9 +108,14 @@ public class PacketSerializer {
 
     final Buffer buffer =
         Buffer.buffer(
-            packet.getHash().size() + encodedSignature.size() + 1 + encodedData.encodedSize());
+            packet.getHash().size()
+                + encodedSignature.size()
+                + encodedPublicKey.size()
+                + 1
+                + encodedData.encodedSize());
     packet.getHash().appendTo(buffer);
     encodedSignature.appendTo(buffer);
+    encodedPublicKey.appendTo(buffer);
     buffer.appendByte(packet.getType().getValue());
     appendEncoded(encodedData, buffer);
     return buffer;

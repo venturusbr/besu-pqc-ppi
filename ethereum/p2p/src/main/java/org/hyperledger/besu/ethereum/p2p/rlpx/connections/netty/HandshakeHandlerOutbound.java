@@ -16,6 +16,7 @@ package org.hyperledger.besu.ethereum.p2p.rlpx.connections.netty;
 
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.cryptoservices.NodeKey;
+import org.hyperledger.besu.ethereum.p2p.peers.EnodeURLImpl;
 import org.hyperledger.besu.ethereum.p2p.peers.LocalNode;
 import org.hyperledger.besu.ethereum.p2p.peers.Peer;
 import org.hyperledger.besu.ethereum.p2p.rlpx.connections.PeerConnection;
@@ -64,8 +65,12 @@ final class HandshakeHandlerOutbound extends AbstractHandshakeHandler {
         framerProvider,
         false,
         peerLookup);
+    // The ECIES handshake is classical: it encrypts to the peer's secp256k1 key, which is the
+    // leading part of a hybrid node id.
     handshaker.prepareInitiator(
-        nodeKey, SignatureAlgorithmFactory.getInstance().createPublicKey(peer.getId()));
+        nodeKey,
+        SignatureAlgorithmFactory.getInstance()
+            .createPublicKey(EnodeURLImpl.secp256k1PublicKey(peer.getId())));
     this.first = handshaker.firstMessage();
   }
 

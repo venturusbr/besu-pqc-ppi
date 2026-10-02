@@ -54,8 +54,9 @@ public class SignedData<M extends Payload> implements Authored {
    *
    * <p>When the active algorithm supports public key recovery, recovering a key that hashes to the
    * claimed author is itself the proof of authenticity, so no separate verification is performed.
-   * When it does not, {@link PublicKeyHandler#resolvePublicKey} simply trusts {@code
-   * maybePublicKey}, so the signature is explicitly verified against the resolved key here. This is
+   * When it does not, {@link PublicKeyHandler#resolvePublicKey} takes the halves that cannot be
+   * recovered from {@code maybePublicKey}, so the signature is explicitly verified against the
+   * resolved key here. This is
    * the single point at which an inbound message signature is checked -- the derived author is
    * cached, so every later {@link #getAuthor()} call is free.
    *
@@ -115,9 +116,16 @@ public class SignedData<M extends Payload> implements Authored {
   public static <T extends Payload> SignedData<T> createLocallySigned(
       final T payload, final Signature signature, final Optional<PublicKey> maybePublicKey) {
     final Hash msgHash = payload.hashForSignature();
+    // The key, when given, is this node's own, so the sender is derived from it directly.
+    // Resolving it would recover its recoverable half from the signature just to get the same
+    // key back.
     final Address sender =
-        Address.signatureToAddress(
-            DSAProviderFactory.getActiveDSA(), signature, maybePublicKey, msgHash);
+        maybePublicKey
+            .map(Address::extract)
+            .orElseGet(
+                () ->
+                    Address.signatureToAddress(
+                        DSAProviderFactory.getActiveDSA(), signature, maybePublicKey, msgHash));
     return new SignedData<>(payload, sender, signature, maybePublicKey);
   }
 

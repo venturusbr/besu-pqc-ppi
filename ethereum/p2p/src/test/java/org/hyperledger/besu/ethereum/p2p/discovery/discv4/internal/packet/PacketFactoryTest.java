@@ -15,9 +15,11 @@
 package org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet;
 
 import org.hyperledger.besu.crypto.Hash;
+import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
+import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.PacketType;
 import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.enrrequest.EnrRequestPacketData;
@@ -72,7 +74,6 @@ public class PacketFactoryTest {
             neighborsPacketDataRlpWriter,
             enrRequestPacketDataRlpWriter,
             enrResponsePacketDataRlpWriter,
-            signatureAlgorithm,
             packetSignatureEncoder);
   }
 
@@ -449,37 +450,23 @@ public class PacketFactoryTest {
   }
 
   @Test
-  public void testCreateFromMessage() throws IllegalAccessException {
-    final PacketType packetType = PacketType.PING;
-    final PacketData packetData = Mockito.mock(PacketData.class);
-    final Bytes encodedSignature =
-        Bytes.repeat((byte) 0x02, Packet.PACKET_TYPE_INDEX - Packet.SIGNATURE_INDEX);
+  public void testCreateFromMessage() {
+    // Exercises the real path rather than mocking it: a classical node writes no public key, so
+    // the sender is recovered from the signature and the node id has to come back out as the key
+    // that signed.
+    final SignatureAlgorithm algorithm = SignatureAlgorithmFactory.getInstance();
+    final KeyPair keyPair = algorithm.generateKeyPair();
+
+    // the type byte and the RLP payload, which is what the signature covers
     final Bytes signedPayload = Bytes.repeat((byte) 0x03, 128);
+    final Bytes encodedSignature =
+        algorithm.sign(Hash.keccak256(signedPayload), keyPair).encodedBytes();
     final Bytes hash = Hash.keccak256(Bytes.concatenate(encodedSignature, signedPayload));
     final Bytes message = Bytes.concatenate(hash, encodedSignature, signedPayload);
-    final SECPSignature secpSignature = Mockito.mock(SECPSignature.class);
-    final SECPPublicKey secpPublicKey = Mockito.mock(SECPPublicKey.class);
 
-    Mockito.when(
-            signatureAlgorithm.createSignature(
-                Bytes.repeat((byte) 0x02, 32).toUnsignedBigInteger(),
-                Bytes.repeat((byte) 0x02, 32).toUnsignedBigInteger(),
-                (byte) 0x02))
-        .thenReturn(secpSignature);
-    Mockito.when(
-            signatureAlgorithm.recoverPublicKeyFromSignature(
-                Hash.keccak256(signedPayload), secpSignature))
-        .thenReturn(Optional.of(secpPublicKey));
+    final PacketData packetData = Mockito.mock(PacketData.class);
+    final Packet packet = factory.create(PacketType.PING, packetData, message);
 
-    Packet packet = factory.create(packetType, packetData, message);
-
-    Mockito.verify(signatureAlgorithm)
-        .createSignature(
-            Bytes.repeat((byte) 0x02, 32).toUnsignedBigInteger(),
-            Bytes.repeat((byte) 0x02, 32).toUnsignedBigInteger(),
-            (byte) 0x02);
-    Mockito.verify(signatureAlgorithm)
-        .recoverPublicKeyFromSignature(Hash.keccak256(signedPayload), secpSignature);
     Mockito.verifyNoInteractions(
         pingPacketDataRlpWriter,
         pongPacketDataRlpWriter,
@@ -489,19 +476,32 @@ public class PacketFactoryTest {
         enrResponsePacketDataRlpWriter,
         packetSignatureEncoder);
 
-    Assertions.assertNotNull(packet);
-    Assertions.assertEquals(packetType, packet.getType());
+    Assertions.assertEquals(PacketType.PING, packet.getType());
     Assertions.assertEquals(packetData, packet.getPacketData());
     Assertions.assertEquals(hash, packet.getHash());
-    Assertions.assertEquals(secpSignature, packet.getSignature());
-    Field publicKeyField =
-        ReflectionUtils.findFields(
-                Packet.class,
-                (f) -> f.getName().equals("publicKey"),
-                ReflectionUtils.HierarchyTraversalMode.TOP_DOWN)
-            .getFirst();
-    publicKeyField.setAccessible(true);
-    Assertions.assertEquals(secpPublicKey, publicKeyField.get(packet));
-    publicKeyField.setAccessible(false);
+    Assertions.assertEquals(encodedSignature, packet.getSignature().encodedBytes());
+    Assertions.assertEquals(
+        Bytes.wrap(keyPair.getPublicKey().getEncoded()), packet.getNodeId());
+  }
+
+  @Test
+  public void aMessageWhoseSignatureDoesNotMatchItsPayloadIsRejected() {
+    final SignatureAlgorithm algorithm = SignatureAlgorithmFactory.getInstance();
+    final KeyPair keyPair = algorithm.generateKeyPair();
+
+    // signed over one payload, then sent with another
+    final Bytes signedPayload = Bytes.repeat((byte) 0x03, 128);
+    final Bytes encodedSignature =
+        algorithm.sign(Hash.keccak256(Bytes.repeat((byte) 0x04, 128)), keyPair).encodedBytes();
+    final Bytes hash = Hash.keccak256(Bytes.concatenate(encodedSignature, signedPayload));
+    final Bytes message = Bytes.concatenate(hash, encodedSignature, signedPayload);
+
+    final Packet packet =
+        factory.create(PacketType.PING, Mockito.mock(PacketData.class), message);
+
+    // the recovery still yields a key, just not the one that holds the private half, so the
+    // packet is attributed to a different node id rather than being accepted as this one
+    Assertions.assertNotEquals(
+        Bytes.wrap(keyPair.getPublicKey().getEncoded()), packet.getNodeId());
   }
 }

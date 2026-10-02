@@ -14,7 +14,7 @@
  */
 package org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.validation;
 
-import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.findneighbors.FindNeighborsPacketData;
+import org.hyperledger.besu.ethereum.p2p.peers.EnodeURLImpl;
 
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Assertions;
@@ -32,7 +32,7 @@ public class TargetValidatorTest {
   @Test
   public void testValidateWithValidTarget() {
     Assertions.assertDoesNotThrow(
-        () -> validator.validate(Bytes.repeat((byte) 0x00, FindNeighborsPacketData.TARGET_SIZE)));
+        () -> validator.validate(Bytes.repeat((byte) 0x00, EnodeURLImpl.nodeIdSize())));
   }
 
   @Test
@@ -45,6 +45,6 @@ public class TargetValidatorTest {
     Assertions.assertThrows(
         IllegalArgumentException.class,
         () ->
-            validator.validate(Bytes.repeat((byte) 0x00, FindNeighborsPacketData.TARGET_SIZE + 1)));
+            validator.validate(Bytes.repeat((byte) 0x00, EnodeURLImpl.nodeIdSize() + 1)));
   }
 }

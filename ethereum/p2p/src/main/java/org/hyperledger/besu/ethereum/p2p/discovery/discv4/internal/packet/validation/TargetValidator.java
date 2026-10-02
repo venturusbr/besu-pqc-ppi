@@ -16,7 +16,7 @@ package org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.valid
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.findneighbors.FindNeighborsPacketData;
+import org.hyperledger.besu.ethereum.p2p.peers.EnodeURLImpl;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -28,9 +28,16 @@ public class TargetValidator {
 
   public @Inject TargetValidator() {}
 
+  /**
+   * A target is a node id, whose size follows the active DSA: 64 bytes for a classical key, 1376
+   * for a hybrid one. Checking against a fixed size here, while {@code Peer.randomId()} generates
+   * targets of the active size, made every FIND_NEIGHBORS on a hybrid node fail to be built.
+   *
+   * @param target the node id being looked up
+   */
   public void validate(final Bytes target) {
     checkArgument(
-        target != null && target.size() == FindNeighborsPacketData.TARGET_SIZE,
+        target != null && target.size() == EnodeURLImpl.nodeIdSize(),
         "target must be a valid node id");
   }
 }

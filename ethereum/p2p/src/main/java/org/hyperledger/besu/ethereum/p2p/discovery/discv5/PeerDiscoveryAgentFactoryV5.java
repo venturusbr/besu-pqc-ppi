@@ -17,6 +17,8 @@ package org.hyperledger.besu.ethereum.p2p.discovery.discv5;
 import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.key.PublicKeyHandler;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.ethereum.forkid.ForkIdManager;
 import org.hyperledger.besu.ethereum.p2p.config.NetworkingConfiguration;
@@ -95,7 +97,13 @@ public final class PeerDiscoveryAgentFactoryV5 implements PeerDiscoveryAgentFact
     final MutableDiscoverySystem discoverySystem =
         new DiscoverySystemBuilder()
             .listen(config.getDiscovery().getBindHost(), config.getDiscovery().getBindPort())
+            // Without these DiscV5 has nothing to ping on startup and never discovers a peer.
+            .bootnodes(
+                BootnodeRecordFactory.buildBootnodeRecords(config.getDiscovery().getBootnodes()))
             .signer(new LocalNodeKeySigner(nodeKey))
+            // Records arriving from the network are decoded through this factory, which verifies
+            // the hybrid signature of vnt records that the library leaves unchecked.
+            .nodeRecordFactory(VerifyingVntInterpreter.nodeRecordFactory())
             .localNodeRecord(localNodeRecord)
             .localNodeRecordListener((previous, updated) -> nodeRecordManager.updateNodeRecord())
             .newAddressHandler((nodeRecord, newAddress) -> Optional.of(nodeRecord))
@@ -146,17 +154,43 @@ public final class PeerDiscoveryAgentFactoryV5 implements PeerDiscoveryAgentFact
     /**
      * Derives a shared secret using ECDH with the given peer public key.
      *
-     * @param remotePubKey the destination peer's public key
+     * <p>The handshake carries the peer key compressed, which is how a node record stores it, while
+     * Besu represents a secp256k1 key uncompressed. The key is expanded here rather than at the
+     * call site because the discovery library has no notion of either form.
+     *
+     * @param remotePubKey the destination peer's public key, compressed or uncompressed
      * @return the derived shared secret
      */
     @Override
     public Bytes deriveECDHKeyAgreement(final Bytes remotePubKey) {
-      SECPPublicKey publicKey = signatureAlgorithm.createPublicKey(remotePubKey);
+      final SECPPublicKey publicKey =
+          signatureAlgorithm.createPublicKey(uncompressed(remotePubKey));
       return nodeKey.calculateECDHKeyAgreement(publicKey);
+    }
+
+    /** Expands a compressed secp256k1 key, leaving an already uncompressed one untouched. */
+    private Bytes uncompressed(final Bytes publicKey) {
+      if (publicKey.size() == DSAParametersSet.SECP256K1.getPublicKeyLength()) {
+        return publicKey;
+      }
+      final Bytes encoded =
+          Bytes.wrap(
+              signatureAlgorithm
+                  .getCurve()
+                  .getCurve()
+                  .decodePoint(publicKey.toArrayUnsafe())
+                  .getEncoded(false));
+      // Drop the leading 0x04 tag that marks an uncompressed point.
+      return encoded.slice(1);
     }
 
     /**
      * Creates a signature of message `x`.
+     *
+     * <p>The discv5 handshake is classical regardless of the identity scheme: the ID signature is
+     * verified as a plain ECDSA signature against the record's secp256k1 key. A hybrid node key
+     * signs with the classical key first, so taking the leading r || s yields that signature and
+     * discards the post-quantum part, which the handshake does not carry.
      *
      * @param messageHash message, hashed
      * @return ECDSA signature with properties merged together: r || s
@@ -176,7 +210,9 @@ public final class PeerDiscoveryAgentFactoryV5 implements PeerDiscoveryAgentFact
     @Override
     public Bytes deriveCompressedPublicKeyFromPrivate() {
       return Bytes.wrap(
-          signatureAlgorithm.publicKeyAsEcPoint((SECPPublicKey) nodeKey.getPublicKey()).getEncoded(true));
+          signatureAlgorithm
+              .publicKeyAsEcPoint(PublicKeyHandler.secp256k1(nodeKey.getPublicKey()))
+              .getEncoded(true));
     }
   }
 }

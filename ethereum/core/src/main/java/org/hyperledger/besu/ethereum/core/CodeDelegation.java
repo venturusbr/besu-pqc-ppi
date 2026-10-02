@@ -19,6 +19,7 @@ import java.security.PublicKey;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
@@ -26,6 +27,7 @@ import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.PublicKeyHandler;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
+import org.hyperledger.besu.crypto.providers.VerifierProvider;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.SignatureFactory;
 import org.hyperledger.besu.datatypes.Address;
@@ -34,7 +36,7 @@ import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.core.encoding.CodeDelegationEncoder;
 import org.hyperledger.besu.ethereum.core.json.ChainIdDeserializer;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPOutput;
-import org.hyperledger.besu.crypto.key.KeyFactory;
+import org.hyperledger.besu.ethereum.core.encoding.PublicKeyDecoder;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -60,6 +62,8 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
   private final long nonce;
   private final Signature signature;
   private final Optional<PublicKey> maybePublicKey;
+  private final Supplier<Optional<PublicKey>> signerPublicKeySupplier =
+      Suppliers.memoize(this::computeSignerPublicKey);
   private final Supplier<Optional<Address>> authorizerSupplier = Suppliers.memoize(this::computeAuthority);
 
   /**
@@ -177,9 +181,11 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
     final Signature sig =
         SignatureFactory.createSignatureFromBytes(signature, dsaParams);
 
+    // Same rules as a code delegation decoded from RLP: only the halves that cannot be recovered
+    // may be provided, so a stated recoverable half is never taken on trust.
     final Optional<PublicKey> maybePk =
         maybePublicKey != null
-            ? KeyFactory.createPublicKey(maybePublicKey, dsaParams)
+            ? PublicKeyDecoder.fromProvidedBytes(enabledDsa(dsaType), maybePublicKey)
             : Optional.empty();
 
     return new CodeDelegation(
@@ -190,6 +196,16 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
         nonce,
         maybePk,
         sig);
+  }
+
+  private static DigitalSignatureAlgorithm enabledDsa(final Short dsaType) {
+    final VerifierProvider verifierProvider = DSAProviderFactory.getVerifierProvider();
+    final DigitalSignatureAlgorithm dsa =
+        verifierProvider != null ? verifierProvider.getAccountEnabledDSAById(dsaType) : null;
+    if (dsa == null) {
+      throw new IllegalArgumentException("DSA type " + dsaType + " is not enabled");
+    }
+    return dsa;
   }
 
   @JsonProperty("type")
@@ -280,59 +296,56 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
     return secp.getS();
   }
 
-  private Optional<Address> computeAuthority() {
-    Bytes32 hashToRecovery = getOrComputeSenderRecoveryHash();
-
-    Optional<Address> authorityAddress;
-    try {
-      return switch (authorizationType) {
-        case LEGACY -> computeLegacyAuthority(hashToRecovery);
-        case FLEXIBLE -> computeFlexibleAuthority(hashToRecovery);
-      };
-    } catch (final IllegalArgumentException e) {
-      authorityAddress = Optional.empty();
-    }
-
-    return authorityAddress;
+  /**
+   * The signer's public key, resolved once and shared by the authority and by signature
+   * validation, so the key is recovered from the signature only once.
+   */
+  @Override
+  public Optional<PublicKey> signerPublicKey() {
+    return signerPublicKeySupplier.get();
   }
 
-  private Optional<Address> computeLegacyAuthority(final Bytes32 hash) {
+  private Optional<Address> computeAuthority() {
+    return signerPublicKey()
+        .map(
+            pk -> Address.extract(Bytes32.wrap(Hash.hash(Bytes.wrap(pk.getEncoded())).getBytes())));
+  }
+
+  private Optional<PublicKey> computeSignerPublicKey() {
+    final Bytes32 hashToRecovery = getOrComputeSenderRecoveryHash();
+    try {
+      return switch (authorizationType) {
+        case LEGACY -> computeLegacySignerPublicKey(hashToRecovery);
+        case FLEXIBLE -> computeFlexibleSignerPublicKey(hashToRecovery);
+      };
+    } catch (final IllegalArgumentException e) {
+      return Optional.empty();
+    }
+  }
+
+  private Optional<PublicKey> computeLegacySignerPublicKey(final Bytes32 hash) {
     if (!(signature instanceof SECPSignature)) {
       return Optional.empty();
     }
 
-    final Optional<PublicKey> maybeRecovered = PublicKeyHandler.resolvePublicKey(
+    return PublicKeyHandler.resolvePublicKey(
         SIGNATURE_ALGORITHM.get(),
         signature,
         maybePublicKey,
         hash
       );
-
-    return maybeRecovered.map(
-      pk -> Address.extract(
-        Bytes32.wrap(
-            Hash.hash(Bytes.wrap(pk.getEncoded())).getBytes()
-        )
-      )
-    );
   }
 
-  private Optional<Address> computeFlexibleAuthority(final Bytes32 hash) {
+  private Optional<PublicKey> computeFlexibleSignerPublicKey(final Bytes32 hash) {
     if (dsaType.isEmpty()) {
       throw new IllegalStateException("Missing dsaType for FLEXIBLE");
     }
 
-    Optional<PublicKey> publicKey = PublicKeyHandler.resolvePublicKey(
+    return PublicKeyHandler.resolvePublicKey(
         DSAProviderFactory.getVerifierProvider().getAccountEnabledDSAById(dsaType.get()),
         signature,
         maybePublicKey,
         hash
-    );
-
-    return Optional.of(
-        Address.extract(
-            Bytes32.wrap(Hash.hash(Bytes.wrap(publicKey.get().getEncoded())).getBytes())
-        )
     );
   }
 

@@ -78,6 +78,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.List;
 
 import io.vertx.core.Vertx;
 import org.apache.tuweni.bytes.Bytes;
@@ -97,6 +98,7 @@ public final class RunnerBuilderTest {
   @TempDir private Path dataDir;
 
   @Mock BesuController besuController;
+  private GenesisConfigOptions genesisConfigOptions;
   @Mock ProtocolSchedule protocolSchedule;
   @Mock ProtocolContext protocolContext;
   @Mock WorldStateArchive worldstateArchive;
@@ -139,7 +141,7 @@ public final class RunnerBuilderTest {
     when(besuController.getMiningCoordinator()).thenReturn(new NoopMiningCoordinator());
     when(besuController.getMiningCoordinator()).thenReturn(mock(MergeMiningCoordinator.class));
     when(besuController.getEthPeers()).thenReturn(mock(EthPeers.class));
-    final GenesisConfigOptions genesisConfigOptions = mock(GenesisConfigOptions.class);
+    genesisConfigOptions = mock(GenesisConfigOptions.class);
     when(genesisConfigOptions.getForkBlockNumbers()).thenReturn(Collections.emptyList());
     when(genesisConfigOptions.getForkBlockTimestamps()).thenReturn(Collections.emptyList());
     when(besuController.getGenesisConfigOptions()).thenReturn(genesisConfigOptions);
@@ -190,6 +192,9 @@ public final class RunnerBuilderTest {
 
   @Test
   public void movingAcrossProtocolSpecsUpdatesNodeRecord() {
+    // The record only has to be reissued when the fork id it advertises actually changes, so the
+    // chain needs forks to cross: without them the record is current and is reused as-is.
+    when(genesisConfigOptions.getForkBlockNumbers()).thenReturn(List.of(1L, 2L));
     final BlockDataGenerator gen = new BlockDataGenerator();
     final String p2pAdvertisedHost = "172.0.0.1";
     final int p2pListenPort = 30301;

@@ -926,7 +926,7 @@ public class EnodeURLImplTest {
   public void parseNodeId_valid() {
     final String validId = VALID_NODE_ID;
     final Bytes nodeId = EnodeURLImpl.parseNodeId(validId);
-    assertThat(nodeId.size()).isEqualTo(EnodeURLImpl.NODE_ID_SIZE);
+    assertThat(nodeId.size()).isEqualTo(EnodeURLImpl.nodeIdSize());
     assertThat(nodeId.toUnprefixedHexString()).isEqualTo(validId);
   }
 

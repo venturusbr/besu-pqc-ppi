@@ -16,11 +16,21 @@ package org.hyperledger.besu.ethereum.p2p.discovery.dns;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.config.SupportedAlgorithms;
+import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
+
 import java.net.InetAddress;
 import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt64;
+import org.ethereum.beacon.discovery.schema.EnrField;
+import org.ethereum.beacon.discovery.schema.IdentitySchema;
+import org.ethereum.beacon.discovery.schema.NodeRecord;
+import org.ethereum.beacon.discovery.schema.NodeRecordFactory;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -64,5 +74,37 @@ class EthereumNodeRecordTest {
             InetAddress.getByAddress(new byte[] {15, (byte) 204, (byte) 180, 57}),
             30303,
             30303));
+  }
+
+  /**
+   * A vnt record keeps its key under a different field, and that key is the node id as a whole, not
+   * the compressed classical key a v4 record stores.
+   */
+  @Test
+  void aVntRecordYieldsTheWholeHybridKey() {
+    final CompositePublicKey hybridKey =
+        (CompositePublicKey)
+            new SupportedAlgorithms()
+                .getDSAByName(DSAParametersSet.SECP256K1MLDSA44.getName())
+                .get()
+                .generateNodeKeyPair()
+                .getPublicKey();
+    final Bytes encodedKey = Bytes.wrap(hybridKey.getEncoded());
+
+    final EthereumNodeRecord record = EthereumNodeRecord.fromNodeRecord(vntRecord(encodedKey));
+
+    assertThat(record.publicKey()).isEqualTo(encodedKey);
+    assertThat(record.tcp()).contains(30304);
+    assertThat(record.udp()).contains(30303);
+  }
+
+  private static NodeRecord vntRecord(final Bytes hybridKey) {
+    return NodeRecordFactory.DEFAULT.createFromValues(
+        UInt64.ONE,
+        new EnrField(EnrField.ID, IdentitySchema.VNT),
+        new EnrField(EnrField.PKEY_SECP256K1_MLDSA44, hybridKey),
+        new EnrField(EnrField.IP_V4, Bytes.of(127, 0, 0, 1)),
+        new EnrField(EnrField.UDP, 30303),
+        new EnrField(EnrField.TCP, 30304));
   }
 }

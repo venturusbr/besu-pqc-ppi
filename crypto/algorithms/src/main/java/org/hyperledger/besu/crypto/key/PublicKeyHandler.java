@@ -1,81 +1,138 @@
+/*
+ * Copyright contributors to Besu.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.hyperledger.besu.crypto.key;
 
-import java.security.PublicKey;
-import java.util.Optional;
-
-import org.apache.tuweni.bytes.Bytes32;
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.HybridDigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.PublicKeyRecoverable;
+import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.types.CompositeSignature;
 
+import java.security.PublicKey;
+import java.util.Optional;
+import java.util.function.Function;
+
+import org.apache.tuweni.bytes.Bytes32;
+
 public class PublicKeyHandler {
-    private PublicKeyHandler() {}
-    
-    public static Optional<PublicKey> resolvePublicKey(
-        final DigitalSignatureAlgorithm signatureAlgorithm,
-        final Signature signature,
-        final Optional<PublicKey> maybePartialPk,
-        final Bytes32 recoveryHash) {
-        if(maybePartialPk.isPresent()){
-            if(maybePartialPk.get() instanceof CompositePublicKey) return maybePartialPk;
+  private PublicKeyHandler() {}
 
-            if (signatureAlgorithm instanceof HybridDigitalSignatureAlgorithm hybrid) {
-                return Optional.of(extractHybridPublicKey(hybrid, signature, maybePartialPk, recoveryHash));
-            }
-        }
+  /**
+   * The classical secp256k1 half of a key.
+   *
+   * <p>The RLPx ECIES handshake and the discv5 handshake are classical regardless of the node's
+   * DSA, so they need this key even when the node key is hybrid.
+   *
+   * @param publicKey a classical or hybrid public key
+   * @return the secp256k1 public key
+   */
+  public static SECPPublicKey secp256k1(final PublicKey publicKey) {
+    final PublicKey classicalKey =
+        publicKey instanceof CompositePublicKey hybridKey ? hybridKey.getFirstKey() : publicKey;
+    if (!(classicalKey instanceof SECPPublicKey secpPublicKey)) {
+      throw new IllegalArgumentException(
+          "Expected a secp256k1 public key, but found " + classicalKey.getAlgorithm());
+    }
+    return secpPublicKey;
+  }
 
-        return Optional.of(resolveSingleAlgorithmPublicKey(
-            signatureAlgorithm,
-            signature,
-            maybePartialPk,
-            recoveryHash));
+  /**
+   * The public key behind a signature: recovered from the signature wherever the algorithm
+   * supports it, and taken from the provided key otherwise.
+   *
+   * <p>A half whose algorithm supports recovery is always recovered, even when the caller hands in
+   * a whole composite key. Verifying a hybrid signature does not check that half, since recovery
+   * is what authenticates it, so a stated one would go unchecked and the signature would pass on
+   * its other half alone.
+   *
+   * @param signatureAlgorithm the algorithm that produced the signature
+   * @param signature the signature
+   * @param maybePartialPk the key that travelled with the payload, if any: the halves that cannot
+   *     be recovered, or a whole composite key whose recoverable halves are ignored
+   * @param recoveryHash the hash the signature was made over
+   * @return the signer's public key
+   */
+  public static Optional<PublicKey> resolvePublicKey(
+      final DigitalSignatureAlgorithm signatureAlgorithm,
+      final Signature signature,
+      final Optional<PublicKey> maybePartialPk,
+      final Bytes32 recoveryHash) {
+    if (signatureAlgorithm instanceof HybridDigitalSignatureAlgorithm hybrid) {
+      return Optional.of(extractHybridPublicKey(hybrid, signature, maybePartialPk, recoveryHash));
     }
 
-    private static PublicKey extractHybridPublicKey(
-        final HybridDigitalSignatureAlgorithm hybrid,
-        final Signature signature,
-        final Optional<PublicKey> maybePartialPk,
-        final Bytes32 recoveryHash) {
+    return Optional.of(
+        resolveSingleAlgorithmPublicKey(
+            signatureAlgorithm, signature, maybePartialPk, recoveryHash));
+  }
 
-        final DigitalSignatureAlgorithm first = hybrid.getFirstAlgorithm();
-        final DigitalSignatureAlgorithm second = hybrid.getSecondAlgorithm();
+  private static PublicKey extractHybridPublicKey(
+      final HybridDigitalSignatureAlgorithm hybrid,
+      final Signature signature,
+      final Optional<PublicKey> maybePartialPk,
+      final Bytes32 recoveryHash) {
 
-        CompositeSignature hybridSignature = (CompositeSignature) signature;
-        PublicKey firstPk =
-            resolveSingleAlgorithmPublicKey(
-                first,
-                hybridSignature.getFirstSignature(),
-                maybePartialPk,
-                recoveryHash);
+    final DigitalSignatureAlgorithm first = hybrid.getFirstAlgorithm();
+    final DigitalSignatureAlgorithm second = hybrid.getSecondAlgorithm();
 
-        PublicKey secondPk =
-            resolveSingleAlgorithmPublicKey(
-                second,
-                hybridSignature.getSecondSignature(),
-                maybePartialPk,
-                recoveryHash);
+    CompositeSignature hybridSignature = (CompositeSignature) signature;
+    PublicKey firstPk =
+        resolveSingleAlgorithmPublicKey(
+            first,
+            hybridSignature.getFirstSignature(),
+            halfOf(maybePartialPk, CompositePublicKey::getFirstKey),
+            recoveryHash);
 
-        return CompositePublicKey.create(firstPk, secondPk);
+    PublicKey secondPk =
+        resolveSingleAlgorithmPublicKey(
+            second,
+            hybridSignature.getSecondSignature(),
+            halfOf(maybePartialPk, CompositePublicKey::getSecondKey),
+            recoveryHash);
+
+    return CompositePublicKey.create(firstPk, secondPk);
+  }
+
+  /**
+   * The half of the provided key that belongs to one algorithm of the hybrid. A partial key is
+   * already the half that cannot be recovered, so it is offered to both: the recoverable half
+   * ignores it.
+   */
+  private static Optional<PublicKey> halfOf(
+      final Optional<PublicKey> maybePartialPk, final Function<CompositePublicKey, PublicKey> half) {
+    return maybePartialPk.map(
+        pk -> pk instanceof CompositePublicKey composite ? half.apply(composite) : pk);
+  }
+
+  private static PublicKey resolveSingleAlgorithmPublicKey(
+      final DigitalSignatureAlgorithm dsa,
+      final Signature signature,
+      final Optional<PublicKey> maybePartialPk,
+      final Bytes32 recoveryHash) {
+
+    if (dsa instanceof PublicKeyRecoverable recoverable) {
+      return recoverable
+          .recoverPublicKeyFromSignature(recoveryHash, signature)
+          .orElseThrow(() -> new IllegalStateException("Cannot recover public key"));
     }
 
-    private static PublicKey resolveSingleAlgorithmPublicKey(
-        final DigitalSignatureAlgorithm dsa,
-        final Signature signature,
-        final Optional<PublicKey> maybePartialPk,
-        final Bytes32 recoveryHash) {
-
-        if (dsa instanceof PublicKeyRecoverable recoverable) {
-            return recoverable
-                .recoverPublicKeyFromSignature(recoveryHash, signature)
-                .orElseThrow(
-                    () -> new IllegalStateException("Cannot recover public key"));
-        }
-
-        return maybePartialPk.orElseThrow(
-            () -> new IllegalStateException(
+    return maybePartialPk.orElseThrow(
+        () ->
+            new IllegalStateException(
                 "Public key must be provided when algorithm does not support PKR"));
-    }
+  }
 }

@@ -63,13 +63,13 @@ public class PacketDeserializer {
 
   public Packet decode(final Buffer message) {
     checkGuard(
-        message.length() >= Packet.PACKET_DATA_INDEX,
+        message.length() >= Packet.packetDataIndex(),
         PeerDiscoveryPacketDecodingException::new,
         "Packet too short: expected at least %s bytes, got %s",
-        Packet.PACKET_DATA_INDEX,
+        Packet.packetDataIndex(),
         message.length());
 
-    final byte type = message.getByte(Packet.PACKET_TYPE_INDEX);
+    final byte type = message.getByte(Packet.packetTypeIndex());
 
     final PacketType packetType =
         PacketType.forByte(type)
@@ -93,8 +93,8 @@ public class PacketDeserializer {
               RLP.input(
                   Bytes.wrapBuffer(
                       message,
-                      Packet.PACKET_DATA_INDEX,
-                      message.length() - Packet.PACKET_DATA_INDEX)));
+                      Packet.packetDataIndex(),
+                      message.length() - Packet.packetDataIndex())));
     } catch (final RLPException e) {
       throw new PeerDiscoveryPacketDecodingException("Malformed packet of type: " + packetType, e);
     } catch (final IllegalArgumentException e) {

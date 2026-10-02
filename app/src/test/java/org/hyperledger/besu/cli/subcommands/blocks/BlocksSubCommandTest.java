@@ -26,6 +26,7 @@ import static org.mockito.Mockito.verify;
 
 import org.hyperledger.besu.cli.CommandTestAbstract;
 import org.hyperledger.besu.controller.BesuController;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.util.BesuVersionUtils;
 
 import java.io.File;
@@ -208,6 +209,24 @@ public class BlocksSubCommandTest extends CommandTestAbstract {
     assertThat(pathArgumentCaptor.getValue()).isEqualByComparingTo(fileToImport.toPath());
 
     assertThat(commandOutput.toString(UTF_8)).isEmpty();
+    assertThat(commandErrorOutput.toString(UTF_8)).isEmpty();
+  }
+
+  /**
+   * Subcommands build the controller without going through BesuCommand.run(), so the DSA provider
+   * has to be set up on that path too: the node key and the transaction validator both read it.
+   */
+  @Test
+  public void blocksImportSetsUpTheDsaProviderWithoutRun(final @TempDir File fileToImport) {
+    DSAProviderFactory.resetDsaProvider();
+
+    parseCommand(
+        BLOCK_SUBCOMMAND_NAME,
+        BLOCK_IMPORT_SUBCOMMAND_NAME,
+        "--from",
+        fileToImport.getAbsolutePath());
+
+    assertThat(DSAProviderFactory.getVerifierProvider()).isNotNull();
     assertThat(commandErrorOutput.toString(UTF_8)).isEmpty();
   }
 

@@ -14,14 +14,12 @@
  */
 package org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet;
 
-import org.hyperledger.besu.crypto.SECPSignature;
+import org.hyperledger.besu.crypto.signature.Signature;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.MutableBytes;
-import org.apache.tuweni.units.bigints.UInt256;
 
 // TODO: delete this class
 @Singleton
@@ -29,12 +27,17 @@ public class PacketSignatureEncoder {
 
   public @Inject PacketSignatureEncoder() {}
 
-  public Bytes encodeSignature(final SECPSignature signature) {
-    final MutableBytes encoded = MutableBytes.create(65);
-    UInt256.valueOf(signature.getR()).copyTo(encoded, 0);
-    UInt256.valueOf(signature.getS()).copyTo(encoded, 32);
-    final int v = signature.getRecId();
-    encoded.set(64, (byte) v);
-    return encoded;
+  /**
+   * The signature as it travels on the wire.
+   *
+   * <p>Each algorithm already knows its own encoding, so this defers to it rather than assuming
+   * the 65-byte {@code r || s || v} of ECDSA: a hybrid signature is the concatenation of a
+   * classical one and an ML-DSA-44 one, and truncating it would drop the half that matters.
+   *
+   * @param signature the signature to encode
+   * @return its encoded bytes
+   */
+  public Bytes encodeSignature(final Signature signature) {
+    return signature.encodedBytes();
   }
 }

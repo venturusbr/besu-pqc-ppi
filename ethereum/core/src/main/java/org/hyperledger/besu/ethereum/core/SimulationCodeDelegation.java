@@ -117,6 +117,12 @@ public class SimulationCodeDelegation implements CodeDelegation {
   }
 
   @Override
+  public Optional<PublicKey> signerPublicKey() {
+    // The authority is given, not signed for, so there is no signer key to resolve.
+    return Optional.empty();
+  }
+
+  @Override
   @JsonIgnore
   public Optional<String> publicKey(){
     return Optional.empty();

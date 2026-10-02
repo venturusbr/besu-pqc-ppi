@@ -130,7 +130,7 @@ public class PeerDiscoveryAgentV4Test {
   }
 
   @Test
-  public void testNodeRecordCreatedUpdatesDiscoveryPeer() {
+  public void testNodeRecordIsReusedWhenNothingChanged() {
     final KeyPair keyPair =
         SIGNATURE_ALGORITHM
             .get()
@@ -151,7 +151,10 @@ public class PeerDiscoveryAgentV4Test {
     final NodeRecord pre = agent.getLocalNode().get().getNodeRecord().get();
     agent.updateNodeRecord();
     final NodeRecord post = agent.getLocalNode().get().getNodeRecord().get();
-    assertThat(pre).isNotEqualTo(post);
+    // updateNodeRecord reuses the record as-is when no relevant field changed, so the sequence
+    // number does not move and peers are not asked to refresh a record that is still current
+    assertThat(post).isEqualTo(pre);
+    assertThat(post.getSeq()).isEqualTo(pre.getSeq());
   }
 
   @Test
