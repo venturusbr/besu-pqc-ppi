@@ -16,7 +16,6 @@ package org.hyperledger.besu.consensus.common.bft;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.core.ParsedExtraData;
 
@@ -28,7 +27,7 @@ import org.apache.tuweni.bytes.Bytes;
 /** The Bft extra data. */
 public class BftExtraData implements ParsedExtraData {
   private final Bytes vanityData;
-  private final Collection<Signature> seals;
+  private final Collection<CommitSeal> seals;
   private final Collection<Address> validators;
   private final Optional<Vote> vote;
   private final int round;
@@ -44,7 +43,7 @@ public class BftExtraData implements ParsedExtraData {
    */
   public BftExtraData(
       final Bytes vanityData,
-      final Collection<Signature> seals,
+      final Collection<CommitSeal> seals,
       final Optional<Vote> vote,
       final int round,
       final Collection<Address> validators) {
@@ -72,7 +71,7 @@ public class BftExtraData implements ParsedExtraData {
    *
    * @return the seals
    */
-  public Collection<Signature> getSeals() {
+  public Collection<CommitSeal> getSeals() {
     return seals;
   }
 

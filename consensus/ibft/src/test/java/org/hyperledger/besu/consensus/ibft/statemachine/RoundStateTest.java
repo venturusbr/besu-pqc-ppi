@@ -21,6 +21,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.hyperledger.besu.consensus.common.bft.CommitSeal;
 import org.hyperledger.besu.consensus.common.bft.ConsensusRoundIdentifier;
 import org.hyperledger.besu.consensus.common.bft.messagewrappers.BftMessage;
 import org.hyperledger.besu.consensus.common.bft.payload.SignedData;
@@ -261,7 +262,8 @@ public class RoundStateTest {
     assertThat(roundState.setProposedBlock(proposal)).isTrue();
     assertThat(roundState.isPrepared()).isFalse();
     assertThat(roundState.isCommitted()).isFalse();
-    assertThat(roundState.getCommitSeals()).containsOnly(validCommit.getCommitSeal());
+    assertThat(roundState.getCommitSeals())
+        .containsOnly(new CommitSeal(validCommit.getCommitSeal()));
   }
 
   @Test
@@ -325,7 +327,9 @@ public class RoundStateTest {
     assertThat(roundState.isCommitted()).isTrue();
 
     assertThat(roundState.getCommitSeals())
-        .containsOnly(firstCommit.getCommitSeal(), secondCommit.getCommitSeal());
+        .containsOnly(
+            new CommitSeal(firstCommit.getCommitSeal()),
+            new CommitSeal(secondCommit.getCommitSeal()));
   }
 
   @Test

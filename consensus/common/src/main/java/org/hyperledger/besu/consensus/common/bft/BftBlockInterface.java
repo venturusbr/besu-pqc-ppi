@@ -17,7 +17,6 @@ package org.hyperledger.besu.consensus.common.bft;
 import org.hyperledger.besu.consensus.common.BlockInterface;
 import org.hyperledger.besu.consensus.common.validator.ValidatorVote;
 import org.hyperledger.besu.consensus.common.validator.VoteType;
-import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.core.Block;
@@ -118,6 +117,9 @@ public class BftBlockInterface implements BlockInterface {
   /**
    * Gets committers.
    *
+   * <p>Only seals that verify against their signer's key are counted; see {@link
+   * CommitSeal#recoverVerifiedAuthor}.
+   *
    * @param header the header
    * @return the committers
    */
@@ -132,10 +134,8 @@ public class BftBlockInterface implements BlockInterface {
                 bftExtraDataCodec));
 
     return bftExtraData.getSeals().stream()
-        .map(
-            p ->
-                Address.signatureToAddress(
-                    DSAProviderFactory.getActiveDSA(), p, Optional.empty(), committerHash))
+        .map(seal -> seal.recoverVerifiedAuthor(committerHash))
+        .flatMap(Optional::stream)
         .collect(Collectors.toList());
   }
 }

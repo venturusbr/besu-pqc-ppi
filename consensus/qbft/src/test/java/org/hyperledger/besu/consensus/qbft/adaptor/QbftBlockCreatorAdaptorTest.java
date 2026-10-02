@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import org.hyperledger.besu.consensus.common.bft.BftExtraData;
+import org.hyperledger.besu.consensus.common.bft.CommitSeal;
 import org.hyperledger.besu.consensus.common.bft.Vote;
 import org.hyperledger.besu.consensus.qbft.QbftExtraDataCodec;
 import org.hyperledger.besu.consensus.qbft.core.types.QbftBlock;
@@ -81,13 +82,14 @@ class QbftBlockCreatorAdaptorTest {
 
     QbftBlockCreatorAdaptor qbftBlockCreator =
         new QbftBlockCreatorAdaptor(blockCreator, qbftExtraDataCodec);
-    QbftBlock sealedBlock = qbftBlockCreator.createSealedBlock(block, 1, List.of(seal));
+    QbftBlock sealedBlock =
+        qbftBlockCreator.createSealedBlock(block, 1, List.of(new CommitSeal(seal)));
     BftExtraData sealedExtraData =
         qbftExtraDataCodec.decode(AdaptorUtil.toBesuBlockHeader(sealedBlock.getHeader()));
     assertThat(sealedExtraData.getVanityData()).isEqualTo(Bytes.wrap(new byte[32]));
     assertThat(sealedExtraData.getVote()).contains(Vote.authVote(Address.ZERO));
     assertThat(sealedExtraData.getValidators()).isEqualTo(List.of(Address.ZERO));
     assertThat(sealedExtraData.getRound()).isEqualTo(1);
-    assertThat(sealedExtraData.getSeals()).isEqualTo(List.of(seal));
+    assertThat(sealedExtraData.getSeals()).isEqualTo(List.of(new CommitSeal(seal)));
   }
 }

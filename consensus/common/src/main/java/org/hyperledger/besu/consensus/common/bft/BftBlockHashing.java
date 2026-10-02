@@ -14,7 +14,6 @@
  */
 package org.hyperledger.besu.consensus.common.bft;
 
-import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
@@ -92,21 +91,23 @@ public class BftBlockHashing {
   }
 
   /**
-   * Recovers the {@link Address} for each validator that contributed a committed seal to the block.
+   * Recovers the {@link Address} for each validator that contributed a verified committed seal to
+   * the block. Seals that do not verify against their signer's key are omitted, so a block carrying
+   * forged seals falls short of quorum and is rejected by {@link
+   * org.hyperledger.besu.consensus.common.bft.headervalidationrules.BftCommitSealsValidationRule}
+   * rather than being accepted on the strength of an unchecked signature.
    *
    * @param header the block header that was signed by the committed seals
    * @param bftExtraData the parsed {@link BftExtraData} from the header
-   * @return the addresses of validators that provided a committed seal
+   * @return the addresses of validators that provided a verified committed seal
    */
   public List<Address> recoverCommitterAddresses(
       final BlockHeader header, final BftExtraData bftExtraData) {
     final Hash committerHash = calculateDataHashForCommittedSeal(header, bftExtraData);
 
     return bftExtraData.getSeals().stream()
-        .map(
-            p ->
-                Address.signatureToAddress(
-                    DSAProviderFactory.getActiveDSA(), p, Optional.empty(), committerHash))
+        .map(seal -> seal.recoverVerifiedAuthor(committerHash))
+        .flatMap(Optional::stream)
         .collect(Collectors.toList());
   }
 
