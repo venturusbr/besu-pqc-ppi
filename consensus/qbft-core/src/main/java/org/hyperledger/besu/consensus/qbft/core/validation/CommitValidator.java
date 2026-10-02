@@ -14,11 +14,11 @@
  */
 package org.hyperledger.besu.consensus.qbft.core.validation;
 
+import org.hyperledger.besu.consensus.common.bft.CommitSeal;
 import org.hyperledger.besu.consensus.common.bft.ConsensusRoundIdentifier;
 import org.hyperledger.besu.consensus.common.bft.payload.SignedData;
 import org.hyperledger.besu.consensus.qbft.core.messagewrappers.Commit;
 import org.hyperledger.besu.consensus.qbft.core.payload.CommitPayload;
-import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 
@@ -101,18 +101,24 @@ public class CommitValidator {
       return false;
     }
 
-    final Address commitSealCreator =
-        Address.signatureToAddress(
-            DSAProviderFactory.getActiveDSA(),
-            payload.getCommitSeal(),
-            Optional.empty(),
-            expectedCommitDigest);
+    // The seal is signed with the same key as the message carrying it, so that key -- which the
+    // message brings along when the algorithm cannot recover it -- identifies the seal's creator.
+    // CommitSeal verifies the seal against it rather than trusting it, and reports a seal that
+    // does not hold up as absent instead of throwing.
+    final Optional<Address> commitSealCreator =
+        new CommitSeal(payload.getCommitSeal(), signedPayload.getPublicKey())
+            .recoverVerifiedAuthor(expectedCommitDigest);
 
-    if (!commitSealCreator.equals(signedPayload.getAuthor())) {
+    if (commitSealCreator.isEmpty()) {
+      LOG.info("{}: Seal could not be verified", ERROR_PREFIX);
+      return false;
+    }
+
+    if (!commitSealCreator.get().equals(signedPayload.getAuthor())) {
       LOG.info(
           "{}: Seal was not created by the message transmitter {} was {}",
           ERROR_PREFIX,
-          commitSealCreator,
+          commitSealCreator.get(),
           signedPayload.getAuthor());
       return false;
     }

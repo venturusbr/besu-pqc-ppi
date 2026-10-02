@@ -14,13 +14,13 @@
  */
 package org.hyperledger.besu.consensus.ibft.validation;
 
+import org.hyperledger.besu.consensus.common.bft.CommitSeal;
 import org.hyperledger.besu.consensus.common.bft.ConsensusRoundIdentifier;
 import org.hyperledger.besu.consensus.common.bft.payload.Payload;
 import org.hyperledger.besu.consensus.common.bft.payload.SignedData;
 import org.hyperledger.besu.consensus.ibft.payload.CommitPayload;
 import org.hyperledger.besu.consensus.ibft.payload.PreparePayload;
 import org.hyperledger.besu.consensus.ibft.payload.ProposalPayload;
-import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 
@@ -147,14 +147,15 @@ public class SignedDataValidator {
     }
 
     final Hash proposedBlockDigest = proposal.get().getPayload().getDigest();
-    final Address commitSealCreator =
-        Address.signatureToAddress(
-            DSAProviderFactory.getActiveDSA(),
-            msg.getPayload().getCommitSeal(),
-            Optional.empty(),
-            proposedBlockDigest);
+    // The seal is signed with the same key as the message carrying it, so that key -- which the
+    // message brings along when the algorithm cannot recover it -- identifies the seal's creator.
+    // CommitSeal verifies the seal against it rather than trusting it, and reports a seal that
+    // does not hold up as absent instead of throwing.
+    final Optional<Address> commitSealCreator =
+        new CommitSeal(msg.getPayload().getCommitSeal(), msg.getPublicKey())
+            .recoverVerifiedAuthor(proposedBlockDigest);
 
-    if (!commitSealCreator.equals(msg.getAuthor())) {
+    if (commitSealCreator.isEmpty() || !commitSealCreator.get().equals(msg.getAuthor())) {
       LOG.info("Invalid Commit message. Seal was not created by the message transmitter.");
       return false;
     }
