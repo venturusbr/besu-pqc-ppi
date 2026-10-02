@@ -62,6 +62,8 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
   private final long nonce;
   private final Signature signature;
   private final Optional<PublicKey> maybePublicKey;
+  private final Supplier<Optional<PublicKey>> signerPublicKeySupplier =
+      Suppliers.memoize(this::computeSignerPublicKey);
   private final Supplier<Optional<Address>> authorizerSupplier = Suppliers.memoize(this::computeAuthority);
 
   /**
@@ -294,59 +296,56 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
     return secp.getS();
   }
 
-  private Optional<Address> computeAuthority() {
-    Bytes32 hashToRecovery = getOrComputeSenderRecoveryHash();
-
-    Optional<Address> authorityAddress;
-    try {
-      return switch (authorizationType) {
-        case LEGACY -> computeLegacyAuthority(hashToRecovery);
-        case FLEXIBLE -> computeFlexibleAuthority(hashToRecovery);
-      };
-    } catch (final IllegalArgumentException e) {
-      authorityAddress = Optional.empty();
-    }
-
-    return authorityAddress;
+  /**
+   * The signer's public key, resolved once and shared by the authority and by signature
+   * validation, so the key is recovered from the signature only once.
+   */
+  @Override
+  public Optional<PublicKey> signerPublicKey() {
+    return signerPublicKeySupplier.get();
   }
 
-  private Optional<Address> computeLegacyAuthority(final Bytes32 hash) {
+  private Optional<Address> computeAuthority() {
+    return signerPublicKey()
+        .map(
+            pk -> Address.extract(Bytes32.wrap(Hash.hash(Bytes.wrap(pk.getEncoded())).getBytes())));
+  }
+
+  private Optional<PublicKey> computeSignerPublicKey() {
+    final Bytes32 hashToRecovery = getOrComputeSenderRecoveryHash();
+    try {
+      return switch (authorizationType) {
+        case LEGACY -> computeLegacySignerPublicKey(hashToRecovery);
+        case FLEXIBLE -> computeFlexibleSignerPublicKey(hashToRecovery);
+      };
+    } catch (final IllegalArgumentException e) {
+      return Optional.empty();
+    }
+  }
+
+  private Optional<PublicKey> computeLegacySignerPublicKey(final Bytes32 hash) {
     if (!(signature instanceof SECPSignature)) {
       return Optional.empty();
     }
 
-    final Optional<PublicKey> maybeRecovered = PublicKeyHandler.resolvePublicKey(
+    return PublicKeyHandler.resolvePublicKey(
         SIGNATURE_ALGORITHM.get(),
         signature,
         maybePublicKey,
         hash
       );
-
-    return maybeRecovered.map(
-      pk -> Address.extract(
-        Bytes32.wrap(
-            Hash.hash(Bytes.wrap(pk.getEncoded())).getBytes()
-        )
-      )
-    );
   }
 
-  private Optional<Address> computeFlexibleAuthority(final Bytes32 hash) {
+  private Optional<PublicKey> computeFlexibleSignerPublicKey(final Bytes32 hash) {
     if (dsaType.isEmpty()) {
       throw new IllegalStateException("Missing dsaType for FLEXIBLE");
     }
 
-    Optional<PublicKey> publicKey = PublicKeyHandler.resolvePublicKey(
+    return PublicKeyHandler.resolvePublicKey(
         DSAProviderFactory.getVerifierProvider().getAccountEnabledDSAById(dsaType.get()),
         signature,
         maybePublicKey,
         hash
-    );
-
-    return Optional.of(
-        Address.extract(
-            Bytes32.wrap(Hash.hash(Bytes.wrap(publicKey.get().getEncoded())).getBytes())
-        )
     );
   }
 

@@ -63,6 +63,14 @@ public interface CodeDelegation {
   Optional<String> publicKey();
 
   /**
+   * Return the signer's public key, resolved from the signature and the provided key: every part
+   * that can be recovered from the signature is recovered, and the rest is the provided key.
+   *
+   * @return the signer's public key, or empty when it cannot be resolved
+   */
+  Optional<PublicKey> signerPublicKey();
+
+  /**
    * Return the signature.
    *
    * @return signature

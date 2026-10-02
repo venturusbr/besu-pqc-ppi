@@ -19,6 +19,7 @@ import static org.hyperledger.besu.evm.internal.Words.clampedAdd;
 import static org.hyperledger.besu.evm.worldstate.CodeDelegationHelper.hasCodeDelegation;
 
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
+import org.hyperledger.besu.crypto.PublicKeyRecoverable;
 import org.hyperledger.besu.crypto.SignatureValidationContext;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.pqc.metrics.CSVWriter;
@@ -201,24 +202,53 @@ public class MainnetTransactionValidator implements TransactionValidator {
                       DigitalSignatureAlgorithm dsa =
                           dsaProvider.getAccountEnabledDSAById(codeDelegation.dsaType().get());
 
-                      Bytes32 authorizationHashNoSignature =
-                          codeDelegation.getOrComputeSenderRecoveryHash();
-
-                      long verifyStart = System.nanoTime();
-                      Boolean isValid =
-                          dsa.verify(
-                              authorizationHashNoSignature,
-                              signature,
-                              codeDelegation.maybePublicKey().get());
-                      long verifyEnd = System.nanoTime();
-
-                      saveMetrics(
-                          verifyStart, verifyEnd, "delegation", isValid, dsa.getDsaParametersSet());
-
-                      if (!isValid) {
+                      if (dsa == null) {
                         return ValidationResult.invalid(
                             TransactionInvalidReason.INVALID_SIGNATURE,
-                            "Invalid code delegation signature");
+                            "Code delegation DSA type "
+                                + codeDelegation.dsaType().get()
+                                + " is not enabled");
+                      }
+
+                      // A key that is recovered whole from the signature is authenticated by that
+                      // recovery, which the authority already does, so there is nothing to
+                      // verify. Anything else is verified against the resolved signer key rather
+                      // than the provided one: a hybrid only provides its ML-DSA half, and its
+                      // secp256k1 half comes from recovery.
+                      if (!(dsa instanceof PublicKeyRecoverable)) {
+                        Optional<PublicKey> signerPublicKey;
+                        try {
+                          signerPublicKey = codeDelegation.signerPublicKey();
+                        } catch (final RuntimeException e) {
+                          signerPublicKey = Optional.empty();
+                        }
+                        if (signerPublicKey.isEmpty()) {
+                          return ValidationResult.invalid(
+                              TransactionInvalidReason.INVALID_SIGNATURE,
+                              "Code delegation signer key could not be resolved");
+                        }
+
+                        Bytes32 authorizationHashNoSignature =
+                            codeDelegation.getOrComputeSenderRecoveryHash();
+
+                        long verifyStart = System.nanoTime();
+                        Boolean isValid =
+                            dsa.verify(
+                                authorizationHashNoSignature, signature, signerPublicKey.get());
+                        long verifyEnd = System.nanoTime();
+
+                        saveMetrics(
+                            verifyStart,
+                            verifyEnd,
+                            "delegation",
+                            isValid,
+                            dsa.getDsaParametersSet());
+
+                        if (!Boolean.TRUE.equals(isValid)) {
+                          return ValidationResult.invalid(
+                              TransactionInvalidReason.INVALID_SIGNATURE,
+                              "Invalid code delegation signature");
+                        }
                       }
                     }
 

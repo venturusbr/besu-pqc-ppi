@@ -9,7 +9,10 @@ public class FlexibleCodeDelegationEncoder {
         out.writeByte(codeDelegation.getType().getSerializedType());
         out.writeShort(codeDelegation.dsaType().orElseThrow());
         LegacyCodeDelegationEncoder.encodeAuthorizationDetails(codeDelegation, out);
-        PublicKeyEncoder.encodeByDsaId(codeDelegation.maybePublicKey().get(), codeDelegation.dsaType().get(), out);
+        // A delegation whose key is recovered whole from its signature carries no key, and the
+        // decoder reads none back for it.
+        codeDelegation.maybePublicKey().ifPresent(
+            publicKey -> PublicKeyEncoder.encodeByDsaId(publicKey, codeDelegation.dsaType().get(), out));
         if(includeSignature){
             TransactionSignatureEncoder.writeSignatureBytes(codeDelegation.signature(), out);
         }
