@@ -1559,10 +1559,15 @@ public class Transaction
 
   private CodeDelegation codeDelegationDetachedCopy(final CodeDelegation codeDelegation) {
     final Address detachedAddress = Address.wrap(codeDelegation.address().getBytes().copy());
+    // Every field is carried over: the legacy constructor would turn a flexible delegation into a
+    // legacy one and drop its DSA type and public key.
     return new org.hyperledger.besu.ethereum.core.CodeDelegation(
+        codeDelegation.getType(),
+        codeDelegation.dsaType(),
         codeDelegation.chainId(),
         detachedAddress,
         codeDelegation.nonce(),
+        codeDelegation.maybePublicKey(),
         codeDelegation.signature());
   }
 

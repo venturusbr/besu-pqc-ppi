@@ -44,7 +44,7 @@ public class CodeDelegationTransactionEncoder {
     out.writeUInt256Scalar(transaction.getValue());
     out.writeBytes(transaction.getPayload());
     writeAccessList(out, transaction.getAccessList());
-    CodeDelegationEncoder.encodeCodeDelegationInner(
+    CodeDelegationEncoder.encodeCodeDelegationWire(
         transaction
             .getCodeDelegationList()
             .orElseThrow(

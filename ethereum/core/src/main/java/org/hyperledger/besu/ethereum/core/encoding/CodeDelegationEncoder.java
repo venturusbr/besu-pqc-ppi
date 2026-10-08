@@ -26,10 +26,34 @@ public class CodeDelegationEncoder {
         FlexibleCodeDelegationEncoder::encode
     );
 
+    /**
+     * The delegation list as it enters a transaction's signing preimage. It is not the wire layout
+     * (see {@link #encodeCodeDelegationWire}), and changing it would invalidate every transaction
+     * already signed.
+     */
     public static void encodeCodeDelegationInner(
       final List<CodeDelegation> payloads, final RLPOutput rlpOutput) {
         rlpOutput.startList();
         payloads.forEach(payload -> encodeOpaqueBytes(payload, rlpOutput));
+        rlpOutput.endList();
+    }
+
+    /**
+     * The delegation list as it travels inside an encoded transaction, which is what
+     * {@link CodeDelegationDecoder#decodeRLP} reads back: a legacy delegation as a bare RLP list, a
+     * typed one as a single byte string holding its type byte and the RLP list of its fields.
+     */
+    public static void encodeCodeDelegationWire(
+      final List<CodeDelegation> payloads, final RLPOutput rlpOutput) {
+        rlpOutput.startList();
+        payloads.forEach(payload -> {
+            final CodeDelegationType type = getType(payload);
+            if (CodeDelegationType.LEGACY.equals(type)) {
+                LegacyCodeDelegationEncoder.encode(payload, rlpOutput, true);
+            } else {
+                rlpOutput.writeBytes(FlexibleCodeDelegationEncoder.encodeWire(payload));
+            }
+        });
         rlpOutput.endList();
     }
 

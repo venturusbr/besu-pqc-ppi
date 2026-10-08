@@ -14,6 +14,7 @@
  */
 package org.hyperledger.besu.ethereum.api.jsonrpc.internal.results;
 
+import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.datatypes.CodeDelegation;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -29,8 +30,11 @@ public class CodeDelegationResult {
   private final String chainId;
   private final String address;
   private final String nonce;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private final String yParity;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private final String r;
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private final String s;
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private final String publicKey;
@@ -45,9 +49,17 @@ public class CodeDelegationResult {
     chainId = Quantity.create(UInt256.valueOf(codeDelegation.chainId()));
     address = codeDelegation.address().getBytes().toHexString();
     nonce = Quantity.create(codeDelegation.nonce());
-    yParity = Quantity.create(codeDelegation.v());
-    r = Quantity.create(codeDelegation.r());
-    s = Quantity.create(codeDelegation.s());
+    // yParity, r and s only exist for a secp256k1 signature; any other signature (ML-DSA or a
+    // hybrid one) is reported whole in "signature", and these fields are left out.
+    if (codeDelegation.signature() instanceof SECPSignature) {
+      yParity = Quantity.create(codeDelegation.v());
+      r = Quantity.create(codeDelegation.r());
+      s = Quantity.create(codeDelegation.s());
+    } else {
+      yParity = null;
+      r = null;
+      s = null;
+    }
     publicKey = codeDelegation.publicKey().orElse(null);
     signature = codeDelegation.signature().encodedBytes().toString();
   }

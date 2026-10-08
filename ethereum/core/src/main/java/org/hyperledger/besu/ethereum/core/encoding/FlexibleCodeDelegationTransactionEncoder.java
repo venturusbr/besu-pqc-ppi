@@ -22,7 +22,7 @@ public class FlexibleCodeDelegationTransactionEncoder {
         out.writeUInt256Scalar(transaction.getValue());
         out.writeBytes(transaction.getPayload());
         AccessListTransactionEncoder.writeAccessList(out, transaction.getAccessList());
-        CodeDelegationEncoder.encodeCodeDelegationInner(
+        CodeDelegationEncoder.encodeCodeDelegationWire(
             transaction
                 .getCodeDelegationList()
                 .orElseThrow(

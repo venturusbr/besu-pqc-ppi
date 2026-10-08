@@ -21,7 +21,6 @@ import static org.hyperledger.besu.evm.worldstate.CodeDelegationHelper.hasCodeDe
 import org.hyperledger.besu.datatypes.AccessListEntry;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
-import org.hyperledger.besu.datatypes.TransactionType;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.ethereum.core.ProcessableBlockHeader;
 import org.hyperledger.besu.ethereum.core.Transaction;
@@ -275,7 +274,8 @@ public class MainnetTransactionProcessor {
       }
 
       long codeDelegationRefund = 0L;
-      if (transaction.getType().equals(TransactionType.DELEGATE_CODE)) {
+      // Both the EIP-7702 type and its DSA-agnostic counterpart carry code delegations.
+      if (transaction.getType().supportsDelegateCode()) {
         if (maybeCodeDelegationProcessor.isEmpty()) {
           throw new RuntimeException("Code delegation processor is required for 7702 transactions");
         }
