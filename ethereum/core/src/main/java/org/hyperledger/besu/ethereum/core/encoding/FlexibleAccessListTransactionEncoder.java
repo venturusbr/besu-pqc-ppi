@@ -59,6 +59,8 @@ public class FlexibleAccessListTransactionEncoder {
             accessList,
             out
         );
-        PublicKeyEncoder.encodeByDsaId(pk.get(), dsaType.get(), out);
+        // A transaction whose key is recovered whole from its signature carries no key, and the
+        // decoder reads none back for it.
+        pk.ifPresent(publicKey -> PublicKeyEncoder.encodeByDsaId(publicKey, dsaType.get(), out));
     }
 }

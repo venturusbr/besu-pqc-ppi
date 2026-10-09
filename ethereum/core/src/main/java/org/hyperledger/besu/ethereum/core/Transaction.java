@@ -1122,7 +1122,8 @@ public class Transaction
                   chainId,
                   accessList,
                   rlpOutput);
-          rlpOutput.writeBytes(Bytes.wrap(pk.get().getEncoded()));
+          // Only a transaction whose key cannot be recovered carries one to commit to.
+          pk.ifPresent(publicKey -> rlpOutput.writeBytes(Bytes.wrap(publicKey.getEncoded())));
           rlpOutput.endList();
         });
     return Bytes.concatenate(Bytes.of(TransactionType.FLEXIBLE_EIP1559.getSerializedType()), encoded);
@@ -1218,7 +1219,8 @@ public class Transaction
                   rlpOutput);
             rlpOutput.writeUInt256Scalar(maxFeePerBlobGas);
             BlobTransactionEncoder.writeBlobVersionedHashes(rlpOutput, versionedHashes);
-            rlpOutput.writeBytes(Bytes.wrap(pk.get().getEncoded()));
+            // Only a transaction whose key cannot be recovered carries one to commit to.
+            pk.ifPresent(publicKey -> rlpOutput.writeBytes(Bytes.wrap(publicKey.getEncoded())));
             rlpOutput.endList();
           }
         );
@@ -1344,7 +1346,9 @@ public class Transaction
               CodeDelegationEncoder.encodeCodeDelegationInner(
                   authorizationList, rlpOutput);
                   
-              rlpOutput.writeBytes(Bytes.wrap(providedPublicKey.get().getEncoded()));
+              // Only a transaction whose key cannot be recovered carries one to commit to.
+              providedPublicKey.ifPresent(
+                  publicKey -> rlpOutput.writeBytes(Bytes.wrap(publicKey.getEncoded())));
               rlpOutput.endList();
             });
     return Bytes.concatenate(Bytes.of(TransactionType.FLEXIBLE_DELEGATE_CODE.getSerializedType()), encoded);
