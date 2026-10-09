@@ -21,7 +21,10 @@ public class FlexibleBlobTransactionEncoder {
         AccessListTransactionEncoder.writeAccessList(out, transaction.getAccessList());
         out.writeUInt256Scalar(transaction.getMaxFeePerBlobGas().orElseThrow());
         BlobTransactionEncoder.writeBlobVersionedHashes(out, transaction.getVersionedHashes().get());
-        PublicKeyEncoder.encodeByDsaId(transaction.getMaybePublicKey().get(), transaction.getDsaType().get(), out);
+        // A transaction whose key is recovered whole from its signature carries no key, and the
+        // decoder reads none back for it.
+        transaction.getMaybePublicKey().ifPresent(
+            publicKey -> PublicKeyEncoder.encodeByDsaId(publicKey, transaction.getDsaType().get(), out));
         TransactionSignatureEncoder.writeSignatureBytes(transaction.getSignature(), out);
         out.endList();
     }

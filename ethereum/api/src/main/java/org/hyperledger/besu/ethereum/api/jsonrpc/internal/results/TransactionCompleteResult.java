@@ -148,7 +148,9 @@ public class TransactionCompleteResult implements TransactionResult {
       this.s = null;
       this.v = null;
       this.dsaType = String.format("0x%04X", transaction.getDsaType().get() & 0xFFFF);
-      this.publicKey = Bytes.wrap(transaction.getMaybePublicKey().get().getEncoded()).toHexString();
+      // A flexible transaction whose key is recovered from its signature carries none.
+      this.publicKey =
+          transaction.getMaybePublicKey().map(pk -> Bytes.wrap(pk.getEncoded()).toHexString()).orElse(null);
       this.signature = transaction.getSignature().encodedBytes().toHexString();
     } else {
       this.type = Quantity.create(transactionType.getSerializedType());

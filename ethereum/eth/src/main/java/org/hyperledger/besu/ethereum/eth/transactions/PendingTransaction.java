@@ -526,7 +526,8 @@ public abstract class PendingTransaction
     int ACCESS_LIST_ENTRY_SHALLOW_SIZE = 160;
     int OPTIONAL_ACCESS_LIST_SHALLOW_SIZE = 40;
     int OPTIONAL_CODE_DELEGATION_LIST_SHALLOW_SIZE = 40;
-    int CODE_DELEGATION_ENTRY_SIZE = 680;
+    // Includes the memoized signer public key each CodeDelegation keeps.
+    int CODE_DELEGATION_ENTRY_SIZE = 736;
     int OPTIONAL_SHALLOW_SIZE = 16;
     int CODE_DELEGATION_TYPE_SIZE = 8;
     int KZG_PROOF_CONTAINER_SHALLOW_SIZE = 24;

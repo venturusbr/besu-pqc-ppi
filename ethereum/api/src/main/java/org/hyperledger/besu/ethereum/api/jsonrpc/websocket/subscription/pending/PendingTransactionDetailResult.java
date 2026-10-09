@@ -85,7 +85,9 @@ public class PendingTransactionDetailResult implements JsonRpcResult {
       this.s = null;
       this.v = null;
       this.dsaType = String.format("0x%04X", tx.getDsaType().get() & 0xFFFF);
-      this.publicKey = Bytes.wrap(tx.getMaybePublicKey().get().getEncoded()).toHexString();
+      // A flexible transaction whose key is recovered from its signature carries none.
+      this.publicKey =
+          tx.getMaybePublicKey().map(pk -> Bytes.wrap(pk.getEncoded()).toHexString()).orElse(null);
       this.signature = tx.getSignature().encodedBytes().toHexString();
     } else {
       this.type = Quantity.create(transactionType.getSerializedType());
