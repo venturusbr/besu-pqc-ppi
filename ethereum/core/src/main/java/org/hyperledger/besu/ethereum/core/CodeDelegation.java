@@ -379,7 +379,9 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
 
   /** Builder for CodeDelegation authorizations. */
   public static class Builder {
-    private CodeDelegationType authorizationType;
+    // Legacy unless set otherwise, as for the EIP-7702 delegations this builder signs: without a
+    // type, the delegation cannot be encoded.
+    private CodeDelegationType authorizationType = CodeDelegationType.LEGACY;
     private Short dsaType;
     private BigInteger chainId = BigInteger.ZERO;
     private Address address;
