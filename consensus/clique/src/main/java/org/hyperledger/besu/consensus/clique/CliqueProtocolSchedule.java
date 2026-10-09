@@ -18,14 +18,12 @@ import org.hyperledger.besu.config.CliqueConfigOptions;
 import org.hyperledger.besu.config.GenesisConfigOptions;
 import org.hyperledger.besu.consensus.common.EpochManager;
 import org.hyperledger.besu.consensus.common.ForksSchedule;
-import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.ethereum.MainnetBlockValidatorBuilder;
 import org.hyperledger.besu.ethereum.chain.BadBlockManager;
 import org.hyperledger.besu.ethereum.core.MiningConfiguration;
-import org.hyperledger.besu.ethereum.core.Util;
 import org.hyperledger.besu.ethereum.mainnet.BalConfiguration;
 import org.hyperledger.besu.ethereum.mainnet.BlockHeaderValidator;
 import org.hyperledger.besu.ethereum.mainnet.MainnetBlockBodyValidator;
@@ -83,8 +81,7 @@ public class CliqueProtocolSchedule {
 
     final CliqueConfigOptions cliqueConfig = config.getCliqueConfigOptions();
 
-    // TODO: remove SECP dependency
-    final Address localNodeAddress = Util.publicKeyToAddress((SECPPublicKey) nodeKey.getPublicKey());
+    final Address localNodeAddress = Address.extract(nodeKey.getPublicKey());
 
     if (cliqueConfig.getEpochLength() <= 0) {
       throw new IllegalArgumentException("Epoch length in config must be greater than zero");

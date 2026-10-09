@@ -20,7 +20,6 @@ import org.hyperledger.besu.consensus.clique.CliqueExtraData;
 import org.hyperledger.besu.consensus.common.ConsensusHelpers;
 import org.hyperledger.besu.consensus.common.EpochManager;
 import org.hyperledger.besu.consensus.common.ForksSchedule;
-import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.ProtocolContext;
@@ -30,7 +29,6 @@ import org.hyperledger.besu.ethereum.chain.MinedBlockObserver;
 import org.hyperledger.besu.ethereum.chain.PoWObserver;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.MiningConfiguration;
-import org.hyperledger.besu.ethereum.core.Util;
 import org.hyperledger.besu.ethereum.eth.manager.EthScheduler;
 import org.hyperledger.besu.ethereum.eth.transactions.TransactionPool;
 import org.hyperledger.besu.ethereum.mainnet.ProtocolSchedule;
@@ -84,8 +82,7 @@ public class CliqueMinerExecutor extends AbstractMinerExecutor<CliqueBlockMiner>
         blockScheduler,
         ethScheduler);
     this.nodeKey = nodeKey;
-    //TODO: remove SECP dependency
-    this.localAddress = Util.publicKeyToAddress((SECPPublicKey) nodeKey.getPublicKey());
+    this.localAddress = Address.extract(nodeKey.getPublicKey());
     this.epochManager = epochManager;
     this.forksSchedule = forksSchedule;
   }
