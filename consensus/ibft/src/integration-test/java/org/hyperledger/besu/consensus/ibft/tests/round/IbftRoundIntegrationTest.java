@@ -35,8 +35,7 @@ import org.hyperledger.besu.consensus.ibft.payload.MessageFactory;
 import org.hyperledger.besu.consensus.ibft.statemachine.IbftRound;
 import org.hyperledger.besu.consensus.ibft.statemachine.RoundState;
 import org.hyperledger.besu.consensus.ibft.validation.MessageValidator;
-import org.hyperledger.besu.crypto.SECPSignature;
-import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
 import org.hyperledger.besu.datatypes.Hash;
@@ -54,10 +53,10 @@ import org.hyperledger.besu.ethereum.worldstate.WorldStateArchive;
 import org.hyperledger.besu.plugin.services.securitymodule.SecurityModuleException;
 import org.hyperledger.besu.util.Subscribers;
 
-import java.math.BigInteger;
 import java.util.Optional;
 
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -93,9 +92,9 @@ public class IbftRoundIntegrationTest {
 
   private Block proposedBlock;
 
-  private final SECPSignature remoteCommitSeal =
-      SignatureAlgorithmFactory.getInstance()
-          .createSignature(BigInteger.ONE, BigInteger.ONE, (byte) 1);
+  // Any well-formed seal of the active algorithm: the sealed block is encoded and decoded on
+  // import, so a seal of another algorithm would not survive it.
+  private final Signature remoteCommitSeal = NodeKeyUtils.generate().sign(Bytes32.ZERO, "seal");
   private final IbftExtraDataCodec bftExtraDataEncoder = new IbftExtraDataCodec();
 
   @BeforeEach

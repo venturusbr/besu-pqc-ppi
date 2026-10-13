@@ -78,3 +78,5 @@ dependencies {
 
   testSupportImplementation 'org.mockito:mockito-core'
 }
+
+apply from: rootProject.file('gradle/consensus-dsa-integration-tests.gradle')

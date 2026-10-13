@@ -79,3 +79,5 @@ dependencies {
   testImplementation 'com.google.dagger:dagger'
   testAnnotationProcessor 'com.google.dagger:dagger-compiler'
 }
+
+apply from: rootProject.file('gradle/consensus-dsa-integration-tests.gradle')

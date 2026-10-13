@@ -17,7 +17,9 @@ package org.hyperledger.besu.consensus.ibft.support;
 import static java.util.Optional.empty;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Fail.fail;
+import static org.hyperledger.besu.consensus.common.bft.inttest.BftMessageAssertions.assertMessageMatches;
 
+import org.hyperledger.besu.consensus.common.bft.CommitSeal;
 import org.hyperledger.besu.consensus.common.bft.ConsensusRoundIdentifier;
 import org.hyperledger.besu.consensus.common.bft.messagewrappers.BftMessage;
 import org.hyperledger.besu.consensus.common.bft.payload.Payload;
@@ -31,7 +33,6 @@ import org.hyperledger.besu.consensus.ibft.messagewrappers.RoundChange;
 import org.hyperledger.besu.consensus.ibft.payload.PreparePayload;
 import org.hyperledger.besu.consensus.ibft.payload.RoundChangePayload;
 import org.hyperledger.besu.consensus.ibft.statemachine.PreparedRoundArtifacts;
-import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.p2p.rlpx.wire.MessageData;
 
@@ -72,8 +73,8 @@ public class RoundSpecificPeers {
     peers.forEach(ValidatorPeer::clearReceivedMessages);
   }
 
-  public List<Signature> sign(final Hash digest) {
-    return peers.stream().map(peer -> peer.getBlockSignature(digest)).collect(Collectors.toList());
+  public List<CommitSeal> sign(final Hash digest) {
+    return peers.stream().map(peer -> peer.getCommitSeal(digest)).collect(Collectors.toList());
   }
 
   public ValidatorPeer getNonProposing(final int index) {
@@ -210,6 +211,6 @@ public class RoundSpecificPeers {
         fail("Illegal IBFTV2 message type.");
         break;
     }
-    assertThat(expectedMessage).isEqualToComparingFieldByFieldRecursively(actualSignedPayload);
+    assertMessageMatches(expectedMessage, actualSignedPayload);
   }
 }

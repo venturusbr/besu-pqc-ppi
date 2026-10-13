@@ -14,6 +14,7 @@
  */
 package org.hyperledger.besu.consensus.common.bft.inttest;
 
+import org.hyperledger.besu.consensus.common.bft.CommitSeal;
 import org.hyperledger.besu.consensus.common.bft.EventMultiplexer;
 import org.hyperledger.besu.consensus.common.bft.events.BftEvents;
 import org.hyperledger.besu.crypto.signature.Signature;
@@ -26,6 +27,7 @@ import org.hyperledger.besu.ethereum.p2p.rlpx.wire.MessageData;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import com.google.common.collect.Lists;
 import org.apache.tuweni.bytes.Bytes;
@@ -65,6 +67,18 @@ public abstract class DefaultValidatorPeer {
 
   public Signature getBlockSignature(final Hash digest) {
     return nodeKey.sign(Bytes32.wrap(digest.getBytes()), "seal");
+  }
+
+  /**
+   * This peer's commit seal over a block, paired with its public key as a commit message would
+   * provide it. The key is what lets a seal be attributed under algorithms without public key
+   * recovery.
+   *
+   * @param digest the hash of the block to seal
+   * @return the commit seal
+   */
+  public CommitSeal getCommitSeal(final Hash digest) {
+    return new CommitSeal(getBlockSignature(digest), Optional.of(nodeKey.getPublicKey()));
   }
 
   public void handleReceivedMessage(final MessageData message) {

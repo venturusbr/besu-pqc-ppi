@@ -14,9 +14,15 @@
  */
 package org.hyperledger.besu.cryptoservices;
 
+import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
+import org.hyperledger.besu.crypto.providers.NodeKeyProvider;
+import org.hyperledger.besu.crypto.signature.Signature;
+
+import java.security.PublicKey;
 
 import org.apache.tuweni.bytes.Bytes32;
 
@@ -33,9 +39,50 @@ public class NodeKeyUtils {
     return new NodeKey(new SecurityModuleAdapter(new KeyPairSecurityModule(keyPair)));
   }
 
+  /**
+   * Generates a node key for the active algorithm, so tests that configure a post-quantum or hybrid
+   * algorithm get node keys of that algorithm. Without one configured this is a SECP256K1 key, as
+   * before.
+   *
+   * @return a new node key
+   */
   public static NodeKey generate() {
+    final DigitalSignatureAlgorithm dsa = DSAProviderFactory.getActiveDSA();
+    if (dsa instanceof SignatureAlgorithm) {
+      return new NodeKey(
+          new SecurityModuleAdapter(
+              new KeyPairSecurityModule(
+                  SignatureAlgorithmFactory.getInstance().generateKeyPair())));
+    }
+    return createFrom(dsa, dsa.generateNodeKeyPair());
+  }
+
+  /**
+   * Creates a node key that signs with any algorithm, including those {@link KeyPairSecurityModule}
+   * cannot handle. It cannot perform an ECDH key agreement, which consensus tests do not need.
+   *
+   * @param dsa the algorithm to sign with
+   * @param keyPair a key pair of that algorithm
+   * @return the node key
+   */
+  public static NodeKey createFrom(final DigitalSignatureAlgorithm dsa, final KeyPair keyPair) {
     return new NodeKey(
-        new SecurityModuleAdapter(
-            new KeyPairSecurityModule(SignatureAlgorithmFactory.getInstance().generateKeyPair())));
+        new NodeKeyProvider() {
+          @Override
+          public Signature sign(final Bytes32 data) {
+            return dsa.sign(data, keyPair.getPrivateKey());
+          }
+
+          @Override
+          public PublicKey getPublicKey() {
+            return keyPair.getPublicKey();
+          }
+
+          @Override
+          public Bytes32 calculateECDHKeyAgreement(final PublicKey partyKey) {
+            throw new UnsupportedOperationException(
+                "ECDH key agreement is not supported by this test node key");
+          }
+        });
   }
 }
