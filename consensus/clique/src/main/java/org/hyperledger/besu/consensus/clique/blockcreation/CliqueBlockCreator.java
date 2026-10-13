@@ -22,8 +22,8 @@ import org.hyperledger.besu.consensus.clique.CliqueContext;
 import org.hyperledger.besu.consensus.clique.CliqueExtraData;
 import org.hyperledger.besu.consensus.common.EpochManager;
 import org.hyperledger.besu.consensus.common.validator.ValidatorVote;
-import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.cryptoservices.NodeKey;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.ProtocolContext;
 import org.hyperledger.besu.ethereum.blockcreation.AbstractBlockCreator;
@@ -32,12 +32,12 @@ import org.hyperledger.besu.ethereum.core.BlockHeaderBuilder;
 import org.hyperledger.besu.ethereum.core.BlockHeaderFunctions;
 import org.hyperledger.besu.ethereum.core.MiningConfiguration;
 import org.hyperledger.besu.ethereum.core.SealableBlockHeader;
-import org.hyperledger.besu.ethereum.core.Util;
 import org.hyperledger.besu.ethereum.eth.manager.EthScheduler;
 import org.hyperledger.besu.ethereum.eth.transactions.TransactionPool;
 import org.hyperledger.besu.ethereum.mainnet.ProtocolSchedule;
 import org.hyperledger.besu.ethereum.mainnet.ScheduleBasedBlockHeaderFunctions;
 
+import java.security.PublicKey;
 import java.util.Optional;
 
 import org.apache.tuweni.bytes.Bytes32;
@@ -69,10 +69,9 @@ public class CliqueBlockCreator extends AbstractBlockCreator {
       final NodeKey nodeKey,
       final EpochManager epochManager,
       final EthScheduler ethScheduler) {
-        //TODO: remove SECP dependency
     super(
         miningConfiguration,
-        (__, ___) -> Util.publicKeyToAddress((SECPPublicKey) nodeKey.getPublicKey()),
+        (__, ___) -> Address.extract(nodeKey.getPublicKey()),
         extraDataCalculator,
         transactionPool,
         protocolContext,
@@ -122,18 +121,19 @@ public class CliqueBlockCreator extends AbstractBlockCreator {
       checkState(
           cliqueContext.getValidatorProvider().getVoteProviderAtHead().isPresent(),
           "Clique requires a vote provider");
-          // TODO: remove SECP dependency
       return cliqueContext
           .getValidatorProvider()
           .getVoteProviderAtHead()
           .get()
-          .getVoteAfterBlock(parentHeader, Util.publicKeyToAddress((SECPPublicKey) nodeKey.getPublicKey()));
+          .getVoteAfterBlock(parentHeader, Address.extract(nodeKey.getPublicKey()));
     }
   }
 
   /**
    * Produces a CliqueExtraData object with a populated proposerSeal. The signature in the block is
    * generated from the Hash of the header (minus proposer and committer seals) and the nodeKeys.
+   * Under an algorithm that cannot recover public keys, the header also carries the proposer's
+   * public key, which the seal then covers.
    *
    * @param headerToSign An almost fully populated header (proposer and committer seals are empty)
    * @return Extra data containing the same vanity data and validators as extraData, however
@@ -141,12 +141,22 @@ public class CliqueBlockCreator extends AbstractBlockCreator {
    */
   private CliqueExtraData constructSignedExtraData(final BlockHeader headerToSign) {
     final CliqueExtraData extraData = CliqueExtraData.decode(headerToSign);
+    final Optional<PublicKey> proposerPublicKey =
+        CliqueExtraData.proposerKeyToCarry(nodeKey.getPublicKey());
+    final CliqueExtraData unsealedExtraData =
+        new CliqueExtraData(
+            extraData.getVanityData(),
+            null,
+            extraData.getValidators(),
+            proposerPublicKey,
+            headerToSign);
     final Hash hashToSign =
-        CliqueBlockHashing.calculateDataHashForProposerSeal(headerToSign, extraData);
+        CliqueBlockHashing.calculateDataHashForProposerSeal(headerToSign, unsealedExtraData);
     return new CliqueExtraData(
         extraData.getVanityData(),
         nodeKey.sign(Bytes32.wrap(hashToSign.getBytes()), "clique-block-header"),
         extraData.getValidators(),
+        proposerPublicKey,
         headerToSign);
   }
 }
