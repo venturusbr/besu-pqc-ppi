@@ -16,6 +16,7 @@ package org.hyperledger.besu.consensus.qbft.core.test;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import org.hyperledger.besu.config.BftFork;
 import org.hyperledger.besu.config.JsonUtil;
@@ -35,6 +36,8 @@ import org.hyperledger.besu.consensus.qbft.core.types.QbftBlock;
 import org.hyperledger.besu.consensus.qbft.core.types.QbftBlockHeader;
 import org.hyperledger.besu.consensus.qbft.core.types.QbftNewChainHead;
 import org.hyperledger.besu.consensus.qbft.core.types.QbftValidatorProvider;
+import org.hyperledger.besu.crypto.SignatureAlgorithm;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.cryptoservices.NodeKeyUtils;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.testutil.TestClock;
@@ -71,6 +74,11 @@ public class ValidatorContractTest {
 
   @BeforeEach
   public void setup() {
+    // The validators' addresses are fixed in the genesis files' contract storage, and derive from
+    // the SECP256K1 private keys above, so these tests cannot run under another algorithm.
+    assumeTrue(
+        DSAProviderFactory.getActiveDSA() instanceof SignatureAlgorithm,
+        "validator contract fixtures are built from SECP256K1 keys");
     clock = new TestClock(Instant.EPOCH.plus(TestContextBuilder.BLOCK_TIMER_SEC, SECONDS));
   }
 

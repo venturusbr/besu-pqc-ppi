@@ -21,6 +21,7 @@ import org.hyperledger.besu.consensus.common.bft.BftHelpers;
 import org.hyperledger.besu.consensus.common.bft.ConsensusRoundIdentifier;
 import org.hyperledger.besu.consensus.common.bft.events.NewChainHead;
 import org.hyperledger.besu.consensus.ibft.IbftExtraDataCodec;
+import org.hyperledger.besu.consensus.ibft.messagedata.PrepareMessageData;
 import org.hyperledger.besu.consensus.ibft.messagedata.ProposalMessageData;
 import org.hyperledger.besu.consensus.ibft.messagewrappers.Commit;
 import org.hyperledger.besu.consensus.ibft.messagewrappers.Prepare;
@@ -110,10 +111,12 @@ public class GossipTest {
     final Prepare prepare = sender.injectPrepare(roundId, block.getHash());
     peers.verifyMessagesReceivedNonPropsing(prepare);
 
-    sender.injectPrepare(roundId, block.getHash());
+    // Resend the very same message: signing the prepare again would yield a different message
+    // under algorithms whose signatures are randomized, such as Falcon.
+    sender.injectMessage(PrepareMessageData.create(prepare));
     peers.verifyNoMessagesReceivedNonProposing();
 
-    sender.injectPrepare(roundId, block.getHash());
+    sender.injectMessage(PrepareMessageData.create(prepare));
     peers.verifyNoMessagesReceivedNonProposing();
   }
 

@@ -18,6 +18,8 @@ import static java.util.Collections.emptyList;
 import static java.util.Optional.empty;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -25,6 +27,7 @@ import static org.mockito.Mockito.when;
 import org.hyperledger.besu.consensus.common.bft.BftBlockInterface;
 import org.hyperledger.besu.consensus.common.bft.BftExtraData;
 import org.hyperledger.besu.consensus.common.bft.BftExtraDataCodec;
+import org.hyperledger.besu.consensus.common.bft.CommitSeal;
 import org.hyperledger.besu.consensus.common.bft.ConsensusRoundIdentifier;
 import org.hyperledger.besu.consensus.common.bft.RoundTimer;
 import org.hyperledger.besu.consensus.common.bft.inttest.StubValidatorMulticaster;
@@ -165,9 +168,14 @@ public class QbftRoundIntegrationTest {
     final Block sealedBesuBlock = new Block(header, new BlockBody(emptyList(), emptyList()));
     final QbftBlock sealedBlock = new QbftBlockAdaptor(sealedBesuBlock);
     when(blockCreator.createSealedBlock(
-            proposedBlock,
-            roundIdentifier.getRoundNumber(),
-            List.of(remoteCommitSeal, remoteCommitSeal)))
+            eq(proposedBlock),
+            eq(roundIdentifier.getRoundNumber()),
+            argThat(
+                seals ->
+                    seals.stream()
+                        .map(CommitSeal::getSignature)
+                        .toList()
+                        .equals(List.of(remoteCommitSeal, remoteCommitSeal)))))
         .thenReturn(sealedBlock);
 
     final int QUORUM_SIZE = 2;

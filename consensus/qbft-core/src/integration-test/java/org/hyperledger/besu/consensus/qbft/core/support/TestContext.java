@@ -18,6 +18,7 @@ import org.hyperledger.besu.consensus.common.bft.BftBlockHeaderFunctions;
 import org.hyperledger.besu.consensus.common.bft.BftExecutors;
 import org.hyperledger.besu.consensus.common.bft.BftExtraDataCodec;
 import org.hyperledger.besu.consensus.common.bft.BftHelpers;
+import org.hyperledger.besu.consensus.common.bft.CommitSeal;
 import org.hyperledger.besu.consensus.common.bft.ConsensusRoundIdentifier;
 import org.hyperledger.besu.consensus.common.bft.EventMultiplexer;
 import org.hyperledger.besu.consensus.common.bft.blockcreation.ProposerSelector;
@@ -36,7 +37,6 @@ import org.hyperledger.besu.consensus.qbft.core.types.QbftBlockchain;
 import org.hyperledger.besu.consensus.qbft.core.types.QbftEventHandler;
 import org.hyperledger.besu.consensus.qbft.core.types.QbftFinalState;
 import org.hyperledger.besu.consensus.qbft.core.types.QbftValidatorProvider;
-import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.chain.MutableBlockchain;
 import org.hyperledger.besu.ethereum.core.Block;
@@ -181,7 +181,7 @@ public class TestContext {
       final BftExtraDataCodec bftExtraDataCodec,
       final QbftBlock block,
       final int roundNumber,
-      final Collection<Signature> commitSeals) {
+      final Collection<CommitSeal> commitSeals) {
     final Block sealedBlock =
         BftHelpers.createSealedBlock(
             bftExtraDataCodec, AdaptorUtil.toBesuBlock(block), roundNumber, commitSeals);

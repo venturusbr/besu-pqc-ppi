@@ -60,10 +60,12 @@ dependencies {
   testImplementation 'org.mockito:mockito-core'
   testImplementation 'org.mockito:mockito-junit-jupiter'
 
+  testSupportImplementation project(':crypto:algorithms')
   testSupportImplementation project( path: ':crypto:services', configuration: 'testSupportArtifacts')
   testSupportImplementation project( path: ':ethereum:core', configuration: 'testSupportArtifacts')
   testSupportImplementation 'org.mockito:mockito-core'
   testSupportImplementation 'org.assertj:assertj-core'
+  testSupportImplementation 'org.junit.jupiter:junit-jupiter-api'
 }
 
 configurations { testArtifacts }
