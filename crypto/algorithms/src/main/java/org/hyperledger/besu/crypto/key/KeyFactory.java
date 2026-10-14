@@ -17,7 +17,7 @@ package org.hyperledger.besu.crypto.key;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
 import org.hyperledger.besu.crypto.SECPPublicKey;
-import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.SECPCurves;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.types.CompositePrivateKey;
 import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
@@ -112,7 +112,7 @@ public class KeyFactory {
       case SECP256K1:
       case SECP256R1:
         SECPPrivateKey secpSk = (SECPPrivateKey) privateKey;
-        pk = SignatureAlgorithmFactory.getInstance().createPublicKey(secpSk);
+        pk = SECPCurves.of(paramsSet).createPublicKey(secpSk);
         break;
       case MLDSA44:
       case MLDSA65:

@@ -18,7 +18,8 @@
  * The project registers ActiveDsaExtension in its integration-test resources; the extension reads
  * the algorithm from the system property set here and makes node keys follow it.
  *
- *   ./gradlew :consensus:qbft-core:integrationTestPqc                     every algorithm below
+ *   ./gradlew :consensus:qbft-core:integrationTestPqc                     the post-quantum ones
+ *   ./gradlew :consensus:qbft-core:integrationTestAllDsas                 every algorithm below
  *   ./gradlew :consensus:qbft-core:integrationTestFALCON512               a single one
  *   ./gradlew :consensus:qbft-core:integrationTest -PconsensusTestDsa=X   any --node-dsa name
  *
@@ -26,14 +27,17 @@
  */
 
 def dsaProperty = 'besu.consensus.test.dsa'
-def algorithms = ['MLDSA44', 'SECP256K1-MLDSA44', 'FALCON512', 'SECP256K1-FALCON512']
+def pqcAlgorithms = ['MLDSA44', 'SECP256K1-MLDSA44', 'FALCON512', 'SECP256K1-FALCON512']
+def algorithms = pqcAlgorithms + ['SECP256R1']
 
 integrationTest {
   systemProperty dsaProperty, findProperty('consensusTestDsa') ?: ''
 }
 
-def algorithmTasks = algorithms.collect { dsa ->
-  tasks.register("integrationTest${dsa.replace('-', '')}", Test) {
+def taskNameFor = { dsa -> "integrationTest${dsa.replace('-', '')}" }
+
+algorithms.each { dsa ->
+  tasks.register(taskNameFor(dsa), Test) {
     group = 'verification'
     description = "Runs the integration tests under ${dsa}"
     dependsOn 'compileTestJava'
@@ -49,5 +53,11 @@ def algorithmTasks = algorithms.collect { dsa ->
 tasks.register('integrationTestPqc') {
   group = 'verification'
   description = 'Runs the integration tests under every post-quantum and hybrid signature algorithm'
-  dependsOn algorithmTasks
+  dependsOn pqcAlgorithms.collect(taskNameFor)
+}
+
+tasks.register('integrationTestAllDsas') {
+  group = 'verification'
+  description = 'Runs the integration tests under every signature algorithm other than SECP256K1'
+  dependsOn algorithms.collect(taskNameFor)
 }

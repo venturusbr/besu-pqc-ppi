@@ -206,7 +206,11 @@ public class SECP256K1 extends AbstractSECP256 {
     final Bytes32 r = Bytes32.wrap(sig, 0);
     final Bytes32 s = Bytes32.wrap(sig, 32);
     return SECPSignature.create(
-        r.toUnsignedBigInteger(), s.toUnsignedBigInteger(), (byte) recId.getValue(), curveOrder);
+        r.toUnsignedBigInteger(),
+        s.toUnsignedBigInteger(),
+        (byte) recId.getValue(),
+        curveOrder,
+        secpParameters);
   }
 
   private boolean verifyNative(

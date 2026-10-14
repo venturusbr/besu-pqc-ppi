@@ -179,7 +179,8 @@ public class SECP256R1 extends AbstractSECP256 {
     return new SECPSignature(
         new BigInteger(nativeSignature.getR()),
         new BigInteger(nativeSignature.getS()),
-        nativeSignature.getV());
+        nativeSignature.getV(),
+        secpParameters);
   }
 
   @Override

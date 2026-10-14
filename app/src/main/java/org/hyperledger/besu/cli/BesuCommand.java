@@ -99,10 +99,12 @@ import org.hyperledger.besu.consensus.merge.blockcreation.MergeCoordinator;
 import org.hyperledger.besu.controller.BesuController;
 import org.hyperledger.besu.controller.BesuControllerBuilder;
 import org.hyperledger.besu.crypto.Blake2bfMessageDigest;
+import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.HybridDigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.KeyPairUtil;
 import org.hyperledger.besu.crypto.SECP256R1;
+import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.SignatureAlgorithmType;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
@@ -2647,6 +2649,10 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
       throw new RuntimeException(e);
     }
 
+    // The curve comes from the genesis file, so it must be known before it can be compared.
+    instantiateSignatureAlgorithmFactory();
+    ensureNodeDsaMatchesEcCurve(dsaConfig.getNodeActiveDSA());
+
     KeyConfiguration keyConfig;
     if (dsaConfig.getNodeActiveDSA() instanceof HybridDigitalSignatureAlgorithm) {
       keyConfig =
@@ -2663,14 +2669,56 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
     DSAProviderFactory.setDsaProvider(dsaConfig, keyConfig);
   }
 
+  /**
+   * Refuses a {@code --node-dsa} whose elliptic curve is not the network's. The genesis file's
+   * {@code ecCurve}, SECP256K1 when absent, configures everything that predates {@code --node-dsa}:
+   * the RLPx handshake, legacy transaction signatures and node keys read by the security module. A
+   * node signing on another curve would sign with one curve and be verified with the other. A
+   * purely post-quantum algorithm has no curve, so it never conflicts.
+   *
+   * @param nodeDsa the node's active algorithm
+   */
+  private void ensureNodeDsaMatchesEcCurve(final DigitalSignatureAlgorithm nodeDsa) {
+    final DigitalSignatureAlgorithm classical =
+        nodeDsa instanceof HybridDigitalSignatureAlgorithm hybrid
+            ? hybrid.getFirstAlgorithm()
+            : nodeDsa;
+    if (!(classical instanceof SignatureAlgorithm nodeCurve)) {
+      return;
+    }
+    final SignatureAlgorithm networkCurve = SignatureAlgorithmFactory.getInstance();
+    if (nodeCurve.getDsaParametersSet() != networkCurve.getDsaParametersSet()) {
+      throw new ParameterException(
+          this.commandLine,
+          String.format(
+              "--node-dsa %s signs on the %s curve, but this network uses %s (the genesis file's"
+                  + " ecCurve, %s when it is not set). Use a --node-dsa on %s, or set \"ecCurve\":"
+                  + " \"%s\" in the genesis config.",
+              nodeDsa.getDsaParametersSet().getName(),
+              nodeCurve.getCurveName(),
+              networkCurve.getCurveName(),
+              SignatureAlgorithmType.DEFAULT_EC_CURVE_NAME,
+              networkCurve.getCurveName(),
+              nodeCurve.getCurveName()));
+    }
+  }
+
   private NodeKeyProvider nodeKeyProvider() {
-    if (!nodeDsa.equals(DEFAULT_NODE_DSA)) {
+    // A node key on an elliptic curve is the network's curve, as ensureNodeDsaMatchesEcCurve
+    // guarantees, so the security module handles it just as it always has: from the key file in
+    // the data directory by default, or from an external security module.
+    if (!isEllipticCurve(nodeDsa)) {
       KeyManagementProvider keyManagementProvider = DSAProviderFactory.getKeyManagementProvider();
       keyManagementProvider.loadNodeKeyPair();
 
       return DSAProviderFactory.getNodeKeyProvider();
     }
     return new SecurityModuleAdapter(securityModule());
+  }
+
+  private static boolean isEllipticCurve(final String dsaName) {
+    return dsaName.equals(DSAParametersSet.SECP256K1.getName())
+        || dsaName.equals(DSAParametersSet.SECP256R1.getName());
   }
 
   private SecurityModule securityModule() {

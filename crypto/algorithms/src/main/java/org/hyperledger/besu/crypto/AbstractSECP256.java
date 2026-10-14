@@ -43,7 +43,6 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.math.ec.ECAlgorithms;
 import org.bouncycastle.math.ec.ECPoint;
 import org.hyperledger.besu.crypto.signature.Signature;
-import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.KeyFactory;
 
 /** The Abstract secp256. */
@@ -132,7 +131,7 @@ public abstract class AbstractSECP256 implements SignatureAlgorithm, PublicKeyRe
           "Could not construct a recoverable key. This should never happen.");
     }
 
-    return new SECPSignature(nativeR, s, (byte) recId);
+    return new SECPSignature(nativeR, s, (byte) recId, getDsaParametersSet());
   }
 
   /**
@@ -213,12 +212,15 @@ public abstract class AbstractSECP256 implements SignatureAlgorithm, PublicKeyRe
   @Override
   public KeyPair generateNodeKeyPair(){
     KeyPair kp = generateKeyPair();
-    return KeyFactory.createKeyPair(Bytes.wrap(kp.getPrivateKey().getEncoded()), Bytes.wrap(kp.getPublicKey().getEncoded()), DSAParametersSet.SECP256K1);
+    return KeyFactory.createKeyPair(
+        Bytes.wrap(kp.getPrivateKey().getEncoded()),
+        Bytes.wrap(kp.getPublicKey().getEncoded()),
+        getDsaParametersSet());
   }
 
   @Override
   public SECPSignature createSignature(final BigInteger r, final BigInteger s, final byte recId) {
-    return SECPSignature.create(r, s, recId, curveOrder);
+    return SECPSignature.create(r, s, recId, curveOrder, getDsaParametersSet());
   }
 
   @Override
@@ -229,7 +231,7 @@ public abstract class AbstractSECP256 implements SignatureAlgorithm, PublicKeyRe
 
   @Override
   public SECPSignature decodeSignature(final Bytes bytes) {
-    return SECPSignature.decode(bytes, curveOrder);
+    return SECPSignature.decode(bytes, curveOrder, getDsaParametersSet());
   }
 
   @Override

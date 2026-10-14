@@ -17,7 +17,7 @@ package org.hyperledger.besu.consensus.common.bft.inttest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.hyperledger.besu.consensus.common.bft.messagewrappers.BftMessage;
-import org.hyperledger.besu.crypto.SignatureAlgorithm;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
@@ -53,8 +53,9 @@ public class BftMessageAssertions {
    */
   public static void assertMessageMatches(
       final BftMessage<?> expected, final BftMessage<?> actual) {
-    if (DSAProviderFactory.getActiveDSA() instanceof SignatureAlgorithm) {
-      assertThat(expected).isEqualToComparingFieldByFieldRecursively(actual);
+    if (DSAProviderFactory.getActiveDSA().getDsaParametersSet() == DSAParametersSet.SECP256K1) {
+      // Types with their own equals are compared with it, signatures included.
+      assertThat(actual).usingRecursiveComparison().usingOverriddenEquals().isEqualTo(expected);
       return;
     }
     // Value types are compared by their own equals: their fields include caches and buffer
