@@ -65,6 +65,9 @@ public class PublicKeyHandler {
    *     be recovered, or a whole composite key whose recoverable halves are ignored
    * @param recoveryHash the hash the signature was made over
    * @return the signer's public key
+   * @throws IllegalArgumentException if no key can be recovered from the signature, such as one
+   *     made on another curve, or if the algorithm cannot recover keys and none was provided:
+   *     either way the signature cannot be attributed to anyone
    */
   public static Optional<PublicKey> resolvePublicKey(
       final DigitalSignatureAlgorithm signatureAlgorithm,
@@ -127,12 +130,12 @@ public class PublicKeyHandler {
     if (dsa instanceof PublicKeyRecoverable recoverable) {
       return recoverable
           .recoverPublicKeyFromSignature(recoveryHash, signature)
-          .orElseThrow(() -> new IllegalStateException("Cannot recover public key"));
+          .orElseThrow(() -> new IllegalArgumentException("Cannot recover public key"));
     }
 
     return maybePartialPk.orElseThrow(
         () ->
-            new IllegalStateException(
+            new IllegalArgumentException(
                 "Public key must be provided when algorithm does not support PKR"));
   }
 }

@@ -570,7 +570,10 @@ public class TransactionPoolStructuredLogUtils {
         .setMessage(MSG_TX_POOL_LIFECYCLE)
         .addArgument(event)
         .addArgument(transaction::getHash)
-        .addArgument(transaction::getSender)
+        // Rejected transactions are logged too, including one whose sender cannot be determined.
+        .addArgument(
+            () ->
+                Transaction.resolvableSender(transaction).map(Address::toString).orElse("unknown"))
         .addArgument(transaction::getNonce)
         .addArgument(transaction::getType)
         .addArgument(

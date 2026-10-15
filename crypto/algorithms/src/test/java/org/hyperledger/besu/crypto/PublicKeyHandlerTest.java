@@ -26,6 +26,7 @@ import org.hyperledger.besu.crypto.key.types.MLDSAPublicKey;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.SignatureFactory;
 
+import java.math.BigInteger;
 import java.security.PublicKey;
 import java.util.Optional;
 
@@ -174,5 +175,37 @@ class PublicKeyHandlerTest {
         .isEqualTo(
             Bytes.wrap(hybridKey.getEncoded())
                 .slice(0, DSAParametersSet.SECP256K1.getPublicKeyLength()));
+  }
+
+  @Test
+  void aSignatureFromWhichNoKeyCanBeRecoveredIsRejectedAsBadInput() {
+    // As secp256r1's native library answers a signature with no signer on the curve.
+    final SECP256R1 noSigner =
+        new SECP256R1() {
+          @Override
+          protected BigInteger recoverFromSignature(
+              final int recId, final BigInteger r, final BigInteger s, final Bytes32 dataHash) {
+            return null;
+          }
+        };
+    final SECP256R1 signer = new SECP256R1();
+    final Signature signature = signer.sign(HASH, signer.generateNodeKeyPair().getPrivateKey());
+
+    assertThatThrownBy(
+            () -> PublicKeyHandler.resolvePublicKey(noSigner, signature, Optional.empty(), HASH))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Cannot recover public key");
+  }
+
+  @Test
+  void aNonRecoverableSignatureWithoutItsKeyIsRejectedAsBadInput() {
+    final DigitalSignatureAlgorithm mlDsa =
+        new SupportedAlgorithms().getDSAByName(DSAParametersSet.MLDSA44.getName()).get();
+    final Signature signature = mlDsa.sign(HASH, mlDsa.generateNodeKeyPair().getPrivateKey());
+
+    assertThatThrownBy(
+            () -> PublicKeyHandler.resolvePublicKey(mlDsa, signature, Optional.empty(), HASH))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Public key must be provided when algorithm does not support PKR");
   }
 }

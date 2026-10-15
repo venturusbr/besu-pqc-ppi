@@ -221,7 +221,17 @@ public class MainnetTransactionProcessor {
         return TransactionProcessingResult.invalid(validationResult);
       }
 
-      final Address senderAddress = transaction.getSender();
+      // A signature that cannot be attributed to anyone makes the transaction invalid, not an
+      // internal error.
+      final Optional<Address> maybeSender = Transaction.resolvableSender(transaction);
+      if (maybeSender.isEmpty()) {
+        LOG.debug("Invalid transaction: sender could not be extracted from transaction signature");
+        return TransactionProcessingResult.invalid(
+            ValidationResult.invalid(
+                TransactionInvalidReason.INVALID_SIGNATURE,
+                "sender could not be extracted from transaction signature"));
+      }
+      final Address senderAddress = maybeSender.get();
 
       // final ValidationResult<TransactionInvalidReason> signatureValidationResult = transactionValidator.validateTransactionSignature(transaction);
 

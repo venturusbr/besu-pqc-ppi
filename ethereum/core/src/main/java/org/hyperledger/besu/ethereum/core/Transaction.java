@@ -526,6 +526,26 @@ public class Transaction
     return sender;
   }
 
+  /**
+   * The sender, or empty when the signature cannot be attributed to anyone: no public key can be
+   * recovered from it, or a non-recoverable algorithm carries none. Such a transaction is invalid,
+   * which validation reports; this lets code that runs before it -- sorting, cache warming,
+   * logging -- leave the transaction to be rejected there.
+   *
+   * <p>Static, and built on {@link #getSender()}, so that a mocked transaction whose sender is
+   * stubbed still has one.
+   *
+   * @param transaction the transaction
+   * @return the sender, if it can be determined
+   */
+  public static Optional<Address> resolvableSender(final Transaction transaction) {
+    try {
+      return Optional.of(transaction.getSender());
+    } catch (final IllegalArgumentException e) {
+      return Optional.empty();
+    }
+  }
+
   private Address computeSender() {
     final Address calculatedSender =
         Address.extract(Bytes32.wrap(Hash.hash(Bytes.wrap(publicKey.getEncoded())).getBytes()));

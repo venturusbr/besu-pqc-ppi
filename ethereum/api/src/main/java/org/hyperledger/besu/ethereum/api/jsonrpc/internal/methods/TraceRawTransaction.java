@@ -16,6 +16,7 @@ package org.hyperledger.besu.ethereum.api.jsonrpc.internal.methods;
 
 import static org.hyperledger.besu.ethereum.api.jsonrpc.internal.response.RpcErrorType.INTERNAL_ERROR;
 
+import org.hyperledger.besu.ethereum.api.jsonrpc.JsonRpcErrorConverter;
 import org.hyperledger.besu.ethereum.api.jsonrpc.RpcMethod;
 import org.hyperledger.besu.ethereum.api.jsonrpc.internal.JsonRpcRequestContext;
 import org.hyperledger.besu.ethereum.api.jsonrpc.internal.exception.InvalidJsonRpcParameters;
@@ -34,6 +35,7 @@ import org.hyperledger.besu.ethereum.core.Transaction;
 import org.hyperledger.besu.ethereum.mainnet.ProtocolSchedule;
 import org.hyperledger.besu.ethereum.rlp.RLPException;
 import org.hyperledger.besu.ethereum.transaction.CallParameter;
+import org.hyperledger.besu.ethereum.transaction.TransactionInvalidReason;
 import org.hyperledger.besu.ethereum.transaction.TransactionSimulator;
 import org.hyperledger.besu.ethereum.vm.DebugOperationTracer;
 
@@ -99,6 +101,15 @@ public class TraceRawTransaction extends AbstractTraceByBlock implements JsonRpc
     } catch (final RLPException | IllegalArgumentException e) {
       return new JsonRpcErrorResponse(
           requestContext.getRequest().getId(), RpcErrorType.INVALID_TRANSACTION_PARAMS);
+    }
+
+    // Tracing simulates the call from the sender, which a signature that cannot be attributed to
+    // anyone does not have.
+    if (Transaction.resolvableSender(transaction).isEmpty()) {
+      return new JsonRpcErrorResponse(
+          requestContext.getRequest().getId(),
+          JsonRpcErrorConverter.convertTransactionInvalidReason(
+              TransactionInvalidReason.INVALID_SIGNATURE));
     }
 
     final Set<TraceTypeParameter.TraceType> traceTypes = traceTypeParameter.getTraceTypes();

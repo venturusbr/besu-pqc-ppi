@@ -29,7 +29,9 @@ public class ExtractTxSignaturesStep implements Function<List<Block>, Stream<Blo
   }
 
   private Block extractSignatures(final Block block) {
-    block.getBody().getTransactions().forEach(Transaction::getSender);
+    // Only warms the sender cache: a sender that cannot be determined is left for block
+    // validation to reject.
+    block.getBody().getTransactions().forEach(Transaction::resolvableSender);
     return block;
   }
 }

@@ -205,10 +205,12 @@ public class ParallelizedConcurrentTransactionProcessor extends ParallelBlockTra
           parallelizedTransactionContext.transactionAccumulator();
       final TransactionProcessingResult transactionProcessingResult =
           parallelizedTransactionContext.transactionProcessingResult();
-      final boolean hasCollision =
-          transactionCollisionDetector.hasCollision(
-              transaction, miningBeneficiary, parallelizedTransactionContext, blockAccumulator);
-      if (transactionProcessingResult.isSuccessful() && !hasCollision) {
+      // An unsuccessful transaction is re-executed below whatever it touched, so only a
+      // successful one is checked for collisions; the check resolves the sender, which fails for a
+      // signature that cannot be attributed to anyone.
+      if (transactionProcessingResult.isSuccessful()
+          && !transactionCollisionDetector.hasCollision(
+              transaction, miningBeneficiary, parallelizedTransactionContext, blockAccumulator)) {
         final MutableAccount miningBeneficiaryAccount =
             blockAccumulator.getOrCreate(miningBeneficiary);
         Wei reward = parallelizedTransactionContext.miningBeneficiaryReward();

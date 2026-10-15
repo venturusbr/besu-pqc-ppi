@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hyperledger.besu.ethereum.mainnet.ValidationResult.valid;
 import static org.hyperledger.besu.ethereum.transaction.TransactionInvalidReason.EXCEEDS_BLOCK_GAS_LIMIT;
 import static org.hyperledger.besu.ethereum.transaction.TransactionInvalidReason.GAS_PRICE_TOO_LOW;
+import static org.hyperledger.besu.ethereum.transaction.TransactionInvalidReason.INVALID_SIGNATURE;
 import static org.hyperledger.besu.ethereum.transaction.TransactionInvalidReason.INVALID_TRANSACTION_FORMAT;
 import static org.hyperledger.besu.ethereum.transaction.TransactionInvalidReason.NONCE_TOO_FAR_IN_FUTURE_FOR_SENDER;
 import static org.hyperledger.besu.ethereum.transaction.TransactionInvalidReason.NONCE_TOO_LOW;
@@ -32,7 +33,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -40,6 +43,7 @@ import static org.mockito.Mockito.when;
 import static org.mockito.quality.Strictness.LENIENT;
 
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.TransactionType;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.ethereum.core.Block;
@@ -59,6 +63,7 @@ import org.hyperledger.besu.util.number.Percentage;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -108,6 +113,30 @@ public abstract class AbstractTransactionPoolTest extends AbstractTransactionPoo
     assertThat(transactionPool.count()).isEqualTo(3);
     assertThat(getLocalTransactions()).contains(localTransaction2);
     assertThat(getPriorityTransactions()).hasSize(noLocalPriority ? 0 : 1);
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void remoteBatchWithASignatureThatHasNoSignerStillAddsTheOthers() {
+    // Sorting a remote batch by sender runs before validation. A transaction whose signer cannot
+    // be recovered -- as PublicKeyHandler reports it -- must be rejected by validation, not fail
+    // the whole batch.
+    final Transaction noSigner = spy(createTransaction(1));
+    doThrow(new IllegalArgumentException("Cannot recover public key")).when(noSigner).getSender();
+    givenTransactionIsValid(transaction0);
+    when(transactionValidatorFactory
+            .get()
+            .validate(eq(noSigner), any(Optional.class), any(Optional.class), any()))
+        .thenReturn(valid());
+    when(transactionValidatorFactory.get().validateTransactionSignature(eq(noSigner)))
+        .thenReturn(ValidationResult.invalid(INVALID_SIGNATURE));
+
+    final Map<Hash, ValidationResult<TransactionInvalidReason>> results =
+        transactionPool.addRemoteTransactions(List.of(noSigner, transaction0));
+
+    assertTransactionPending(transaction0);
+    assertTransactionNotPending(noSigner);
+    assertThat(results.get(noSigner.getHash()).getInvalidReason()).isEqualTo(INVALID_SIGNATURE);
   }
 
   @Test
