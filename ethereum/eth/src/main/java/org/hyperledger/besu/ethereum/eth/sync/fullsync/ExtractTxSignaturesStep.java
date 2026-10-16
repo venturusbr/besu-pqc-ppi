@@ -29,8 +29,8 @@ public class ExtractTxSignaturesStep implements Function<List<Block>, Stream<Blo
   }
 
   private Block extractSignatures(final Block block) {
-    // Only warms the sender cache: a sender that cannot be determined is left for block
-    // validation to reject.
+    // Resolves each sender ahead of block processing, which keeps it on the transaction. A sender
+    // that cannot be determined is left for block validation to reject.
     block.getBody().getTransactions().forEach(Transaction::resolvableSender);
     return block;
   }

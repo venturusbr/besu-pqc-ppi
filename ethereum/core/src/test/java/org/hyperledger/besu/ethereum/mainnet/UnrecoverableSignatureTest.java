@@ -37,6 +37,7 @@ import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
 import java.math.BigInteger;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.LongStream;
@@ -110,6 +111,26 @@ class UnrecoverableSignatureTest {
         .isEqualTo("sender could not be extracted from transaction signature");
   }
 
+  @Test
+  void aSignerThatCannotBeRecoveredIsOnlyTriedOnce() {
+    final NativeLikeSecp256r1 secp256r1 = new NativeLikeSecp256r1();
+    final Transaction received =
+        receivedOnSecp256r1Network(
+            () -> secp256r1, tx -> Transaction.resolvableSender(tx).isEmpty());
+    secp256r1.recoveries.set(0);
+
+    // What a remote batch goes through: sorting and the priority check look the sender up, then
+    // validation, then the pool's log.
+    for (int i = 0; i < 10; i++) {
+      assertThat(Transaction.resolvableSender(received)).isEmpty();
+    }
+    assertThat(validator.validateTransactionSignature(received).getInvalidReason())
+        .isEqualTo(TransactionInvalidReason.INVALID_SIGNATURE);
+    assertThat(received.toString()).contains("sender=unknown");
+
+    assertThat(secp256r1.recoveries).hasValue(0);
+  }
+
   /**
    * Documents what recovery cannot detect: when r does land on secp256r1, a key is "recovered" and
    * the signature checks out against it, so the transaction is attributed to an unrelated account.
@@ -176,6 +197,8 @@ class UnrecoverableSignatureTest {
    * Java implementation's exception. Lets this behaviour be tested where the library is missing.
    */
   static final class NativeLikeSecp256r1 extends SECP256R1 {
+    final AtomicInteger recoveries = new AtomicInteger();
+
     NativeLikeSecp256r1() {
       disableNative();
     }
@@ -183,6 +206,7 @@ class UnrecoverableSignatureTest {
     @Override
     protected BigInteger recoverFromSignature(
         final int recId, final BigInteger r, final BigInteger s, final Bytes32 dataHash) {
+      recoveries.incrementAndGet();
       try {
         return super.recoverFromSignature(recId, r, s, dataHash);
       } catch (final IllegalArgumentException e) {

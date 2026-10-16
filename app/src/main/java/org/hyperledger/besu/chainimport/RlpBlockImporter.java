@@ -189,8 +189,8 @@ public class RlpBlockImporter implements Closeable {
     final List<CompletableFuture<Void>> futures =
         new ArrayList<>(block.getBody().getTransactions().size());
     for (final Transaction tx : block.getBody().getTransactions()) {
-      // Only warms the sender cache: a sender that cannot be determined is left for block
-      // validation to reject.
+      // Resolves each sender ahead of block processing, which keeps it on the transaction. A
+      // sender that cannot be determined is left for block validation to reject.
       futures.add(
           CompletableFuture.runAsync(() -> Transaction.resolvableSender(tx), validationExecutor));
     }
