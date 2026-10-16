@@ -31,13 +31,14 @@ import org.junit.jupiter.api.Test;
 
 /**
  * A node's --node-dsa must sign on the network's elliptic curve, which the genesis file's ecCurve
- * sets. Besu refuses to start otherwise and says why.
+ * sets. Without --node-dsa the node uses that curve; an explicit --node-dsa on another curve is
+ * refused, and Besu says why.
  */
 class NodeDsaEcCurveTest extends CommandTestAbstract {
 
   // Only the curve check's error is asserted on: other startup output depends on the platform,
   // such as a missing native library on Windows.
-  private static final String CURVE_ERROR = "signs on the";
+  private static final String CURVE_ERROR = "this network uses";
 
   private static final JsonObject SECP256R1_GENESIS =
       new JsonObject().put("config", new JsonObject().put("ecCurve", "secp256r1"));
@@ -54,8 +55,8 @@ class NodeDsaEcCurveTest extends CommandTestAbstract {
   }
 
   @Test
-  void secp256r1NodeOnASecp256r1NetworkStarts() throws IOException {
-    parseCommand("--genesis-file", secp256r1Genesis().toString(), "--node-dsa", "SECP256R1");
+  void secp256r1NetworkNeedsNoNodeDsa() throws IOException {
+    parseCommand("--genesis-file", secp256r1Genesis().toString());
 
     assertThat(commandErrorOutput.toString(UTF_8)).doesNotContain(CURVE_ERROR);
     assertThat(DSAProviderFactory.getActiveDsaParametersSet())
@@ -65,8 +66,26 @@ class NodeDsaEcCurveTest extends CommandTestAbstract {
   }
 
   @Test
-  void defaultNodeDsaOnASecp256r1NetworkIsRefused() throws IOException {
-    parseCommand("--genesis-file", secp256r1Genesis().toString());
+  void withoutEcCurveTheNodeStaysOnSecp256k1() {
+    parseCommand();
+
+    assertThat(commandErrorOutput.toString(UTF_8)).doesNotContain(CURVE_ERROR);
+    assertThat(DSAProviderFactory.getActiveDsaParametersSet())
+        .isEqualTo(DSAParametersSet.SECP256K1);
+  }
+
+  @Test
+  void secp256r1NodeOnASecp256r1NetworkStarts() throws IOException {
+    parseCommand("--genesis-file", secp256r1Genesis().toString(), "--node-dsa", "SECP256R1");
+
+    assertThat(commandErrorOutput.toString(UTF_8)).doesNotContain(CURVE_ERROR);
+    assertThat(DSAProviderFactory.getActiveDsaParametersSet())
+        .isEqualTo(DSAParametersSet.SECP256R1);
+  }
+
+  @Test
+  void secp256k1NodeOnASecp256r1NetworkIsRefused() throws IOException {
+    parseCommand("--genesis-file", secp256r1Genesis().toString(), "--node-dsa", "SECP256K1");
 
     assertThat(commandErrorOutput.toString(UTF_8))
         .contains(
@@ -85,14 +104,24 @@ class NodeDsaEcCurveTest extends CommandTestAbstract {
   }
 
   @Test
-  void hybridWhoseCurveIsNotTheNetworksIsRefused() throws IOException {
+  void hybridOnASecp256r1NetworkIsRefusedAsNotYetAvailable() throws IOException {
     parseCommand(
         "--genesis-file", secp256r1Genesis().toString(), "--node-dsa", "SECP256K1-MLDSA44");
 
     assertThat(commandErrorOutput.toString(UTF_8))
         .contains(
-            "--node-dsa SECP256K1-MLDSA44 signs on the secp256k1 curve, but this network uses"
-                + " secp256r1");
+            "--node-dsa SECP256K1-MLDSA44 pairs its post-quantum half with secp256k1, but this"
+                + " network uses secp256r1 (the genesis file's ecCurve, secp256k1 when it is not"
+                + " set). Hybrid algorithms are only available with secp256k1 for now: use a"
+                + " non-hybrid --node-dsa, such as SECP256R1 or a purely post-quantum one.");
+  }
+
+  @Test
+  void postQuantumNodeOnASecp256r1NetworkIsAccepted() throws IOException {
+    parseCommand("--genesis-file", secp256r1Genesis().toString(), "--node-dsa", "MLDSA44");
+
+    assertThat(commandErrorOutput.toString(UTF_8)).doesNotContain(CURVE_ERROR);
+    assertThat(DSAProviderFactory.getActiveDsaParametersSet()).isEqualTo(DSAParametersSet.MLDSA44);
   }
 
   @Test

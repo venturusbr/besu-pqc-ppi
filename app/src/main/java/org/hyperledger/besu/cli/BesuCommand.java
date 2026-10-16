@@ -424,13 +424,17 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
           "Use genesis state hash from data on startup if specified (default: ${DEFAULT-VALUE})")
   private final Boolean genesisStateHashCacheEnabled = false;
 
+  // Unset unless given on the command line, in the config file or by environment variable, in
+  // which case the node uses the network's curve: see nodeDsaName().
   @SuppressWarnings({"FieldCanBeFinal", "FieldMayBeFinal"}) // PicoCLI requires non-final Strings.
   @Option(
       names = "--node-dsa",
       paramLabel = "<String>",
-      description = "Name of the DSA algorithm. (default: ${DEFAULT-VALUE})",
+      description =
+          "Name of the DSA algorithm. (default: the genesis file's ecCurve, SECP256K1 when it"
+              + " is not set)",
       arity = "1..1")
-  private String nodeDsa = DEFAULT_NODE_DSA;
+  private String nodeDsa = null;
 
   @SuppressWarnings({"FieldCanBeFinal", "FieldMayBeFinal"}) // PicoCLI requires non-final Strings.
   @Option(
@@ -2644,13 +2648,11 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
 
     try {
       dsaConfig.buildAccountSupportedAlgorithms(accountsSupportedDSAs);
-      dsaConfig.setNodeActiveDSA(nodeDsa);
+      dsaConfig.setNodeActiveDSA(nodeDsaName());
     } catch (final InvalidAlgorithmParameterException e) {
       throw new RuntimeException(e);
     }
 
-    // The curve comes from the genesis file, so it must be known before it can be compared.
-    instantiateSignatureAlgorithmFactory();
     ensureNodeDsaMatchesEcCurve(dsaConfig.getNodeActiveDSA());
 
     KeyConfiguration keyConfig;
@@ -2670,11 +2672,28 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
   }
 
   /**
+   * The node's algorithm: {@code --node-dsa} when given, and otherwise the network's curve, which
+   * the genesis file's {@code ecCurve} sets. A network on secp256r1 thus needs no {@code
+   * --node-dsa}, as before it was introduced, while a node can still choose another algorithm.
+   *
+   * @return the name of the node's algorithm
+   */
+  private String nodeDsaName() {
+    if (nodeDsa != null) {
+      return nodeDsa;
+    }
+    // The curve comes from the genesis file.
+    instantiateSignatureAlgorithmFactory();
+    return SignatureAlgorithmFactory.getInstance().getDsaParametersSet().getName();
+  }
+
+  /**
    * Refuses a {@code --node-dsa} whose elliptic curve is not the network's. The genesis file's
    * {@code ecCurve}, SECP256K1 when absent, configures everything that predates {@code --node-dsa}:
    * the RLPx handshake, legacy transaction signatures and node keys read by the security module. A
    * node signing on another curve would sign with one curve and be verified with the other. A
-   * purely post-quantum algorithm has no curve, so it never conflicts.
+   * purely post-quantum algorithm has no curve, so it never conflicts. The default always matches,
+   * so only an explicit {@code --node-dsa} can be refused.
    *
    * @param nodeDsa the node's active algorithm
    */
@@ -2686,28 +2705,46 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
     if (!(classical instanceof SignatureAlgorithm nodeCurve)) {
       return;
     }
+    instantiateSignatureAlgorithmFactory();
     final SignatureAlgorithm networkCurve = SignatureAlgorithmFactory.getInstance();
-    if (nodeCurve.getDsaParametersSet() != networkCurve.getDsaParametersSet()) {
+    if (nodeCurve.getDsaParametersSet() == networkCurve.getDsaParametersSet()) {
+      return;
+    }
+    final String networkDescription =
+        String.format(
+            "this network uses %s (the genesis file's ecCurve, %s when it is not set)",
+            networkCurve.getCurveName(), SignatureAlgorithmType.DEFAULT_EC_CURVE_NAME);
+    if (nodeDsa instanceof HybridDigitalSignatureAlgorithm) {
+      // Hybrids pair their post-quantum half with secp256k1 only, for now.
       throw new ParameterException(
           this.commandLine,
           String.format(
-              "--node-dsa %s signs on the %s curve, but this network uses %s (the genesis file's"
-                  + " ecCurve, %s when it is not set). Use a --node-dsa on %s, or set \"ecCurve\":"
-                  + " \"%s\" in the genesis config.",
+              "--node-dsa %s pairs its post-quantum half with %s, but %s. Hybrid algorithms are"
+                  + " only available with %s for now: use a non-hybrid --node-dsa, such as %s or a"
+                  + " purely post-quantum one.",
               nodeDsa.getDsaParametersSet().getName(),
               nodeCurve.getCurveName(),
-              networkCurve.getCurveName(),
-              SignatureAlgorithmType.DEFAULT_EC_CURVE_NAME,
-              networkCurve.getCurveName(),
-              nodeCurve.getCurveName()));
+              networkDescription,
+              nodeCurve.getCurveName(),
+              networkCurve.getDsaParametersSet().getName()));
     }
+    throw new ParameterException(
+        this.commandLine,
+        String.format(
+            "--node-dsa %s signs on the %s curve, but %s. Use a --node-dsa on %s, or set"
+                + " \"ecCurve\": \"%s\" in the genesis config.",
+            nodeDsa.getDsaParametersSet().getName(),
+            nodeCurve.getCurveName(),
+            networkDescription,
+            networkCurve.getCurveName(),
+            nodeCurve.getCurveName()));
   }
 
   private NodeKeyProvider nodeKeyProvider() {
     // A node key on an elliptic curve is the network's curve, as ensureNodeDsaMatchesEcCurve
     // guarantees, so the security module handles it just as it always has: from the key file in
     // the data directory by default, or from an external security module.
-    if (!isEllipticCurve(nodeDsa)) {
+    if (!isEllipticCurve(nodeDsaName())) {
       KeyManagementProvider keyManagementProvider = DSAProviderFactory.getKeyManagementProvider();
       keyManagementProvider.loadNodeKeyPair();
 

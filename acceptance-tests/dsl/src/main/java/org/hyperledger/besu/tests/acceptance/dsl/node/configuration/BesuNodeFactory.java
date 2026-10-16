@@ -819,10 +819,7 @@ public class BesuNodeFactory {
             .webSocketConfiguration(node.createWebSocketEnabledConfig())
             .devMode(false)
             .jsonRpcTxPool()
-            .genesisConfigProvider(GenesisConfigurationFactory::createQbft256r1GenesisConfig)
-            // The genesis sets ecCurve to secp256r1, and Besu refuses a --node-dsa on another
-            // curve.
-            .extraCLIOptions(List.of("--node-dsa", "SECP256R1"));
+            .genesisConfigProvider(GenesisConfigurationFactory::createQbft256r1GenesisConfig);
 
     return builder.keyPair(keyPair);
   }
