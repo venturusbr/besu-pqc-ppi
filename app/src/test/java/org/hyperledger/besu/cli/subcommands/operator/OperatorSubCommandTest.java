@@ -254,6 +254,18 @@ public class OperatorSubCommandTest extends CommandTestAbstract {
   }
 
   @Test
+  public void shouldRefuseSecp256k1KeysForASecp256r1Network() {
+    // A node of this network could not use them: Besu refuses --node-dsa SECP256K1 there.
+    runCmdAndAssertErrorMsg(
+        "/operator/config_generate_keys_secp256r1.json",
+        tmpOutputDirectoryPath.toString(),
+        new String[] {"--node-dsa", "SECP256K1"},
+        "--node-dsa SECP256K1 signs on the secp256k1 curve, but this network uses secp256r1 (the"
+            + " genesis file's ecCurve, secp256k1 when it is not set). Use a --node-dsa on"
+            + " secp256r1, or set \"ecCurve\": \"secp256k1\" in the genesis config.");
+  }
+
+  @Test
   public void shouldFailIfImportedKeysAreFromDifferentEllipticCurve() {
     runCmdAndAssertErrorMsg(
         "/operator/config_import_keys_secp256r1_invalid_keys.json",

@@ -112,12 +112,17 @@ class NodeDsaEcCurveTest extends CommandTestAbstract {
         .contains(
             "--node-dsa SECP256K1-MLDSA44 pairs its post-quantum half with secp256k1, but this"
                 + " network uses secp256r1 (the genesis file's ecCurve, secp256k1 when it is not"
-                + " set). Hybrid algorithms are only available with secp256k1 for now: use a"
-                + " non-hybrid --node-dsa, such as SECP256R1 or a purely post-quantum one.");
+                + " set). Hybrid algorithms are only available with secp256k1 for now: use"
+                + " --node-dsa SECP256R1, or leave it unset.");
   }
 
+  /**
+   * The curve check only concerns algorithms with a curve. This does not mean such a node works on
+   * a network: the RLPx handshake needs an elliptic-curve node key, or a hybrid with one, so a
+   * purely post-quantum node cannot connect to peers on any network.
+   */
   @Test
-  void postQuantumNodeOnASecp256r1NetworkIsAccepted() throws IOException {
+  void curveCheckDoesNotApplyToAPurelyPostQuantumAlgorithm() throws IOException {
     parseCommand("--genesis-file", secp256r1Genesis().toString(), "--node-dsa", "MLDSA44");
 
     assertThat(commandErrorOutput.toString(UTF_8)).doesNotContain(CURVE_ERROR);

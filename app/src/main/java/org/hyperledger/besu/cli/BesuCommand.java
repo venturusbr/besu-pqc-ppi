@@ -87,6 +87,7 @@ import org.hyperledger.besu.cli.util.BootnodeResolver;
 import org.hyperledger.besu.cli.util.BootnodeResolver.BootnodeResolutionException;
 import org.hyperledger.besu.cli.util.CommandLineUtils;
 import org.hyperledger.besu.cli.util.ConfigDefaultValueProviderStrategy;
+import org.hyperledger.besu.cli.util.NodeDsaCurve;
 import org.hyperledger.besu.cli.util.VersionProvider;
 import org.hyperledger.besu.components.BesuComponent;
 import org.hyperledger.besu.config.CheckpointConfigOptions;
@@ -104,7 +105,6 @@ import org.hyperledger.besu.crypto.HybridDigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.KeyPairUtil;
 import org.hyperledger.besu.crypto.SECP256R1;
-import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.SignatureAlgorithmType;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
@@ -2679,12 +2679,9 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
    * @return the name of the node's algorithm
    */
   private String nodeDsaName() {
-    if (nodeDsa != null) {
-      return nodeDsa;
-    }
-    // The curve comes from the genesis file.
+    // The network's curve comes from the genesis file.
     instantiateSignatureAlgorithmFactory();
-    return SignatureAlgorithmFactory.getInstance().getDsaParametersSet().getName();
+    return NodeDsaCurve.nodeDsaOrNetworkCurve(nodeDsa);
   }
 
   /**
@@ -2698,46 +2695,12 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
    * @param nodeDsa the node's active algorithm
    */
   private void ensureNodeDsaMatchesEcCurve(final DigitalSignatureAlgorithm nodeDsa) {
-    final DigitalSignatureAlgorithm classical =
-        nodeDsa instanceof HybridDigitalSignatureAlgorithm hybrid
-            ? hybrid.getFirstAlgorithm()
-            : nodeDsa;
-    if (!(classical instanceof SignatureAlgorithm nodeCurve)) {
-      return;
-    }
     instantiateSignatureAlgorithmFactory();
-    final SignatureAlgorithm networkCurve = SignatureAlgorithmFactory.getInstance();
-    if (nodeCurve.getDsaParametersSet() == networkCurve.getDsaParametersSet()) {
-      return;
-    }
-    final String networkDescription =
-        String.format(
-            "this network uses %s (the genesis file's ecCurve, %s when it is not set)",
-            networkCurve.getCurveName(), SignatureAlgorithmType.DEFAULT_EC_CURVE_NAME);
-    if (nodeDsa instanceof HybridDigitalSignatureAlgorithm) {
-      // Hybrids pair their post-quantum half with secp256k1 only, for now.
-      throw new ParameterException(
-          this.commandLine,
-          String.format(
-              "--node-dsa %s pairs its post-quantum half with %s, but %s. Hybrid algorithms are"
-                  + " only available with %s for now: use a non-hybrid --node-dsa, such as %s or a"
-                  + " purely post-quantum one.",
-              nodeDsa.getDsaParametersSet().getName(),
-              nodeCurve.getCurveName(),
-              networkDescription,
-              nodeCurve.getCurveName(),
-              networkCurve.getDsaParametersSet().getName()));
-    }
-    throw new ParameterException(
-        this.commandLine,
-        String.format(
-            "--node-dsa %s signs on the %s curve, but %s. Use a --node-dsa on %s, or set"
-                + " \"ecCurve\": \"%s\" in the genesis config.",
-            nodeDsa.getDsaParametersSet().getName(),
-            nodeCurve.getCurveName(),
-            networkDescription,
-            networkCurve.getCurveName(),
-            nodeCurve.getCurveName()));
+    NodeDsaCurve.conflictWithNetworkCurve(nodeDsa)
+        .ifPresent(
+            reason -> {
+              throw new ParameterException(this.commandLine, reason);
+            });
   }
 
   private NodeKeyProvider nodeKeyProvider() {

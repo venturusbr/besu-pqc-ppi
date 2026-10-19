@@ -35,6 +35,7 @@ import java.util.stream.IntStream;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 
+import org.hyperledger.besu.cli.util.NodeDsaCurve;
 import org.hyperledger.besu.cli.DefaultCommandValues;
 import org.hyperledger.besu.cli.util.VersionProvider;
 import org.hyperledger.besu.config.GenesisConfig;
@@ -128,9 +129,20 @@ class GenerateBlockchainConfig implements Runnable {
       arity = "1..1")
   private String publicKeyFileName = "key.pub";
 
+  // Unset unless given, in which case the keys are generated on the network's curve, as the main
+  // command then uses them: see NodeDsaCurve.
   @SuppressWarnings({ "FieldCanBeFinal", "FieldMayBeFinal" }) // PicoCLI requires non-final Strings.
-  @Option(names = "--node-dsa", paramLabel = "<String>", description = "Name of the DSA algorithm. (default: ${DEFAULT-VALUE})", arity = "1..1")
-  private String nodeDsa = DefaultCommandValues.DEFAULT_NODE_DSA;
+  @Option(
+      names = "--node-dsa",
+      paramLabel = "<String>",
+      description =
+          "Name of the DSA algorithm. (default: the genesis config's ecCurve, SECP256K1 when it"
+              + " is not set)",
+      arity = "1..1")
+  private String nodeDsa = null;
+
+  // The algorithm the keys are generated for, once known from --node-dsa or the genesis config.
+  private String activeNodeDsa;
 
   @ParentCommand
   private OperatorSubCommand parentCommand; // Picocli injects reference to parent command
@@ -148,10 +160,7 @@ class GenerateBlockchainConfig implements Runnable {
   @Override
   public void run() {
     checkPreconditions();
-    configureNodeKeyProvider();
-    this.keyManagementProvider = DSAProviderFactory.getKeyManagementProvider();
     generateBlockchainConfig();
-
   }
 
   private void checkPreconditions() {
@@ -168,6 +177,8 @@ class GenerateBlockchainConfig implements Runnable {
       handleOutputDirectory();
       parseConfig();
       processEcCurve();
+      // After the curve is known: without --node-dsa, the keys are generated on it.
+      configureNodeKeyProvider();
       if (generateNodesKeys) {
         generateNodesKeys();
       } else {
@@ -233,9 +244,9 @@ class GenerateBlockchainConfig implements Runnable {
    */
   private void generateNodeKeypair(final int node) {
     try {
-      LOG.info("Generating {} keypair for node {}.", nodeDsa, node);
+      LOG.info("Generating {} keypair for node {}.", activeNodeDsa, node);
 
-      DSAParametersSet dsaParams = DSAParametersSet.fromName(nodeDsa);
+      DSAParametersSet dsaParams = DSAParametersSet.fromName(activeNodeDsa);
       final KeyPair keyPair = keyManagementProvider.generateKeyPair(dsaParams);
       PrivateKey privateKey = keyPair.getPrivateKey();
       PublicKey publicKey = keyPair.getPublicKey();
@@ -247,14 +258,22 @@ class GenerateBlockchainConfig implements Runnable {
   }
 
   private void configureNodeKeyProvider(){
+    activeNodeDsa = NodeDsaCurve.nodeDsaOrNetworkCurve(nodeDsa);
     DigitalSignatureAlgorithmConfiguration dsaConfig = new DigitalSignatureAlgorithmConfiguration();
 
     try {
-      dsaConfig.setNodeActiveDSA(nodeDsa);
+      dsaConfig.setNodeActiveDSA(activeNodeDsa);
     } catch (final InvalidAlgorithmParameterException e) {
       throw new RuntimeException(e);
     }
+    // Keys a node of this network could not use are refused, as the node itself would be.
+    NodeDsaCurve.conflictWithNetworkCurve(dsaConfig.getNodeActiveDSA())
+        .ifPresent(
+            reason -> {
+              throw new IllegalArgumentException(reason);
+            });
     DSAProviderFactory.setDsaProvider(dsaConfig,null);
+    this.keyManagementProvider = DSAProviderFactory.getKeyManagementProvider();
   }
   /**
    * Writes public and private keys in separate files. Both are written in the same directory named
