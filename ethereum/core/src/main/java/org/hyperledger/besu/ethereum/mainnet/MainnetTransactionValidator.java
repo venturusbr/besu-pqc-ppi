@@ -77,8 +77,6 @@ public class MainnetTransactionValidator implements TransactionValidator {
 
   private final CSVWriter verifyWriter;
 
-  private final StringBuilder stringBuilder;
-
   public MainnetTransactionValidator(
       final GasCalculator gasCalculator,
       final GasLimitCalculator gasLimitCalculator,
@@ -99,7 +97,6 @@ public class MainnetTransactionValidator implements TransactionValidator {
         new MainnetBlobsValidator(acceptedBlobVersions, gasLimitCalculator, gasCalculator);
     this.dsaProvider = DSAProviderFactory.getVerifierProvider();
     this.verifyWriter = MetricWriters.getVerifyInstance();
-    this.stringBuilder = new StringBuilder();
   }
 
   @Override
@@ -463,6 +460,20 @@ public class MainnetTransactionValidator implements TransactionValidator {
       DigitalSignatureAlgorithm dsa =
           dsaProvider.getAccountEnabledDSAById(transaction.getDsaType().get());
 
+      if (dsa == null) {
+        return ValidationResult.invalid(
+            TransactionInvalidReason.INVALID_SIGNATURE,
+            "Transaction DSA type " + transaction.getDsaType().get() + " is not enabled");
+      }
+
+      // A key that is recovered whole from the signature is authenticated by that recovery, which
+      // resolving the sender above already did, so there is nothing to verify. Every other key is
+      // at least partly taken from the transaction itself, and only verification ties it to the
+      // signature.
+      if (dsa instanceof PublicKeyRecoverable) {
+        return ValidationResult.valid();
+      }
+
       PublicKey pk = transaction.getMountedPublicKey();
 
       long verifyStart = System.nanoTime();
@@ -486,21 +497,17 @@ public class MainnetTransactionValidator implements TransactionValidator {
       final String object,
       final Boolean isValid,
       final DSAParametersSet dsaParams) {
+    // The validator is shared by every thread that processes transactions, the parallel block
+    // processor's included, so the line is built locally: a builder kept on the instance was
+    // appended to and reset by several threads at once.
     long verifyTime = verifyEnd - verifyStart;
-
-    String data =
-        stringBuilder
-            .append(
-                verifyTime
-                    + ","
-                    + object
-                    + ","
-                    + (isValid ? "yes," : "no,")
-                    + dsaParams.getName()
-                    + ",\n")
-            .toString();
-    verifyWriter.write(data);
-
-    stringBuilder.setLength(0);
+    verifyWriter.write(
+        verifyTime
+            + ","
+            + object
+            + ","
+            + (isValid ? "yes," : "no,")
+            + dsaParams.getName()
+            + ",\n");
   }
 }

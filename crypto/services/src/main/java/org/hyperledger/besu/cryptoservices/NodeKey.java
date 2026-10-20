@@ -26,7 +26,6 @@ import org.apache.tuweni.bytes.Bytes32;
 public class NodeKey {
   private final NodeKeyProvider nodeKeyProvider;
   private final CSVWriter signWriter;
-  private final StringBuilder stringBuilder;
 
   /**
    * Instantiates a new Node key.
@@ -36,7 +35,6 @@ public class NodeKey {
   public NodeKey(final NodeKeyProvider nodeKeyProvider) {
     this.nodeKeyProvider = nodeKeyProvider;
     this.signWriter = MetricWriters.getSignInstance();
-    this.stringBuilder = new StringBuilder();
   }
 
   /**
@@ -77,10 +75,9 @@ public class NodeKey {
   }
 
   private void writeSignMetrics(final long startTime, final long endTime, final String finality, final Integer signatureLength){
+    // The node key signs from several threads at once, so the line is built locally rather than
+    // in a builder shared by all of them.
     long totalTime = endTime - startTime;
-
-    String data = stringBuilder.append(totalTime + "," + signatureLength + "," + finality + "\n").toString();
-    signWriter.write(data);
-    stringBuilder.setLength(0);
+    signWriter.write(totalTime + "," + signatureLength + "," + finality + "\n");
   }
 }
