@@ -17,6 +17,27 @@ package org.hyperledger.besu.cli.subcommands.operator;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+import org.hyperledger.besu.cli.DefaultCommandValues;
+import org.hyperledger.besu.cli.util.NodeDsaCurve;
+import org.hyperledger.besu.cli.util.VersionProvider;
+import org.hyperledger.besu.config.GenesisConfig;
+import org.hyperledger.besu.config.GenesisConfigOptions;
+import org.hyperledger.besu.config.JsonGenesisConfigOptions;
+import org.hyperledger.besu.config.JsonUtil;
+import org.hyperledger.besu.consensus.ibft.IbftExtraDataCodec;
+import org.hyperledger.besu.consensus.qbft.QbftExtraDataCodec;
+import org.hyperledger.besu.crypto.KeyPair;
+import org.hyperledger.besu.crypto.SECPPublicKey;
+import org.hyperledger.besu.crypto.SignatureAlgorithm;
+import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.SignatureAlgorithmType;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.config.DigitalSignatureAlgorithmConfiguration;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
+import org.hyperledger.besu.crypto.providers.KeyManagementProvider;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.ethereum.core.Util;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -32,35 +53,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.IntStream;
 
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-
-import org.hyperledger.besu.cli.util.NodeDsaCurve;
-import org.hyperledger.besu.cli.DefaultCommandValues;
-import org.hyperledger.besu.cli.util.VersionProvider;
-import org.hyperledger.besu.config.GenesisConfig;
-import org.hyperledger.besu.config.GenesisConfigOptions;
-import org.hyperledger.besu.config.JsonGenesisConfigOptions;
-import org.hyperledger.besu.config.JsonUtil;
-import org.hyperledger.besu.consensus.ibft.IbftExtraDataCodec;
-import org.hyperledger.besu.consensus.qbft.QbftExtraDataCodec;
-import org.hyperledger.besu.crypto.HybridDigitalSignatureAlgorithm;
-import org.hyperledger.besu.crypto.KeyPair;
-import org.hyperledger.besu.crypto.SECPPrivateKey;
-import org.hyperledger.besu.crypto.SECPPublicKey;
-import org.hyperledger.besu.crypto.SignatureAlgorithm;
-import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
-import org.hyperledger.besu.crypto.SignatureAlgorithmType;
-import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
-import org.hyperledger.besu.crypto.config.DigitalSignatureAlgorithmConfiguration;
-import org.hyperledger.besu.crypto.config.KeyConfiguration;
-import org.hyperledger.besu.crypto.pqc.metrics.CSVWriter;
-import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
-import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
-import org.hyperledger.besu.crypto.providers.KeyManagementProvider;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.ethereum.core.Util;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -71,7 +63,6 @@ import jakarta.validation.constraints.NotBlank;
 import org.apache.tuweni.bytes.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
@@ -84,7 +75,7 @@ import picocli.CommandLine.ParentCommand;
 class GenerateBlockchainConfig implements Runnable {
   private static final Logger LOG = LoggerFactory.getLogger(GenerateBlockchainConfig.class);
 
-  private final Supplier<SignatureAlgorithm> SIGNATURE_ALGORITHM =
+  private final Supplier<SignatureAlgorithm> signatureAlgorithm =
       Suppliers.memoize(SignatureAlgorithmFactory::getInstance);
 
   @NotBlank
@@ -130,8 +121,8 @@ class GenerateBlockchainConfig implements Runnable {
   private String publicKeyFileName = "key.pub";
 
   // Unset unless given, in which case the keys are generated on the network's curve, as the main
-  // command then uses them: see NodeDsaCurve.
-  @SuppressWarnings({ "FieldCanBeFinal", "FieldMayBeFinal" }) // PicoCLI requires non-final Strings.
+  // command then uses them: see NodeDsaCurve. Only used when the keys are generated.
+  @SuppressWarnings({"FieldCanBeFinal", "FieldMayBeFinal"}) // PicoCLI requires non-final Strings.
   @Option(
       names = "--node-dsa",
       paramLabel = "<String>",
@@ -155,7 +146,6 @@ class GenerateBlockchainConfig implements Runnable {
   private final List<Address> addressesForGenesisExtraData = new ArrayList<>();
   private Path keysDirectory;
   private KeyManagementProvider keyManagementProvider;
-  // final Logger logger = LoggerFactory.getLogger(Generate.class);
 
   @Override
   public void run() {
@@ -174,11 +164,16 @@ class GenerateBlockchainConfig implements Runnable {
   /** Generates output directory with all required configuration files. */
   private void generateBlockchainConfig() {
     try {
-      handleOutputDirectory();
+      // Everything that can refuse the configuration runs before anything is written, so a refusal
+      // leaves no output directory behind to delete before the next attempt.
       parseConfig();
       processEcCurve();
-      // After the curve is known: without --node-dsa, the keys are generated on it.
-      configureNodeKeyProvider();
+      if (generateNodesKeys) {
+        // After the curve is known: without --node-dsa, the keys are generated on it. Imported
+        // keys are checked against the curve instead, and --node-dsa plays no part.
+        configureNodeKeyProvider();
+      }
+      handleOutputDirectory();
       if (generateNodesKeys) {
         generateNodesKeys();
       } else {
@@ -212,13 +207,13 @@ class GenerateBlockchainConfig implements Runnable {
 
     try {
       final SECPPublicKey publicKey =
-          SIGNATURE_ALGORITHM.get().createPublicKey(Bytes.fromHexString(publicKeyText));
+          signatureAlgorithm.get().createPublicKey(Bytes.fromHexString(publicKeyText));
 
-      if (!SIGNATURE_ALGORITHM.get().isValidPublicKey(publicKey)) {
+      if (!signatureAlgorithm.get().isValidPublicKey(publicKey)) {
         throw new IllegalArgumentException(
             publicKeyText
                 + " is not a valid public key for elliptic curve "
-                + SIGNATURE_ALGORITHM.get().getCurveName());
+                + signatureAlgorithm.get().getCurveName());
       }
 
       final Bytes secpPublicKeyBytes = publicKey.getEncodedBytes();
@@ -251,13 +246,14 @@ class GenerateBlockchainConfig implements Runnable {
       PrivateKey privateKey = keyPair.getPrivateKey();
       PublicKey publicKey = keyPair.getPublicKey();
       final Address nodeAddress = Address.extract(publicKey);
-      writeKeypair(Bytes.wrap(publicKey.getEncoded()), Bytes.wrap(privateKey.getEncoded()), nodeAddress);
+      writeKeypair(
+          Bytes.wrap(publicKey.getEncoded()), Bytes.wrap(privateKey.getEncoded()), nodeAddress);
     } catch (final IOException e) {
       LOG.error("An error occurred while trying to generate node keypair.", e);
     }
   }
 
-  private void configureNodeKeyProvider(){
+  private void configureNodeKeyProvider() {
     activeNodeDsa = NodeDsaCurve.nodeDsaOrNetworkCurve(nodeDsa);
     DigitalSignatureAlgorithmConfiguration dsaConfig = new DigitalSignatureAlgorithmConfiguration();
 
@@ -272,9 +268,10 @@ class GenerateBlockchainConfig implements Runnable {
             reason -> {
               throw new IllegalArgumentException(reason);
             });
-    DSAProviderFactory.setDsaProvider(dsaConfig,null);
+    DSAProviderFactory.setDsaProvider(dsaConfig, null);
     this.keyManagementProvider = DSAProviderFactory.getKeyManagementProvider();
   }
+
   /**
    * Writes public and private keys in separate files. Both are written in the same directory named
    * with the address derived from the public key.
@@ -283,8 +280,8 @@ class GenerateBlockchainConfig implements Runnable {
    * @param privateKey The private key. No file is created if privateKey is NULL.
    * @throws IOException If the file cannot be written or accessed.
    */
-  private void writeKeypair(final Bytes publicKey, final Bytes privateKey, final Address nodeAddress)
-      throws IOException {
+  private void writeKeypair(
+      final Bytes publicKey, final Bytes privateKey, final Address nodeAddress) throws IOException {
     addressesForGenesisExtraData.add(nodeAddress);
     final Path nodeDirectoryPath = keysDirectory.resolve(nodeAddress.toString());
     Files.createDirectory(nodeDirectoryPath);

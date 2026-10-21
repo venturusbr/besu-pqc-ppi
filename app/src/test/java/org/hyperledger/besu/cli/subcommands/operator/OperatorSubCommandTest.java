@@ -266,6 +266,41 @@ public class OperatorSubCommandTest extends CommandTestAbstract {
   }
 
   @Test
+  public void refusingTheNodeDsaLeavesNothingBehindToDeleteBeforeRetrying() throws IOException {
+    runCmdAndAssertErrorMsg(
+        "/operator/config_generate_keys_secp256r1.json",
+        tmpOutputDirectoryPath.toString(),
+        new String[] {"--node-dsa", "SECP256K1"},
+        "Use a --node-dsa on secp256r1, or set \"ecCurve\": \"secp256k1\" in the genesis config.");
+    assertThat(tmpOutputDirectoryPath).isEmptyDirectory();
+
+    // Retrying with the flag corrected uses the same output directory.
+    SignatureAlgorithmFactory.resetInstance();
+    commandErrorOutput.reset();
+    runCmdAndCheckOutput(
+        cmd(),
+        "/operator/config_generate_keys_secp256r1.json",
+        tmpOutputDirectoryPath,
+        "genesis.json",
+        true,
+        asList("key.pub", "key.priv"),
+        Optional.of(new SECP256R1()));
+  }
+
+  @Test
+  public void importingKeysIgnoresTheNodeDsa() throws IOException {
+    // --node-dsa only chooses the algorithm of generated keys; imported ones are checked against
+    // the genesis curve instead.
+    runCmdAndCheckOutput(
+        cmd("--node-dsa", "SECP256K1"),
+        "/operator/config_import_keys_secp256r1.json",
+        tmpOutputDirectoryPath,
+        "genesis.json",
+        false,
+        singletonList("key.pub"));
+  }
+
+  @Test
   public void shouldFailIfImportedKeysAreFromDifferentEllipticCurve() {
     runCmdAndAssertErrorMsg(
         "/operator/config_import_keys_secp256r1_invalid_keys.json",
