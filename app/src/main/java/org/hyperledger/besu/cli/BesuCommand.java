@@ -87,6 +87,7 @@ import org.hyperledger.besu.cli.util.BootnodeResolver;
 import org.hyperledger.besu.cli.util.BootnodeResolver.BootnodeResolutionException;
 import org.hyperledger.besu.cli.util.CommandLineUtils;
 import org.hyperledger.besu.cli.util.ConfigDefaultValueProviderStrategy;
+import org.hyperledger.besu.cli.util.NodeDsaCurve;
 import org.hyperledger.besu.cli.util.VersionProvider;
 import org.hyperledger.besu.components.BesuComponent;
 import org.hyperledger.besu.config.CheckpointConfigOptions;
@@ -99,6 +100,7 @@ import org.hyperledger.besu.consensus.merge.blockcreation.MergeCoordinator;
 import org.hyperledger.besu.controller.BesuController;
 import org.hyperledger.besu.controller.BesuControllerBuilder;
 import org.hyperledger.besu.crypto.Blake2bfMessageDigest;
+import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.HybridDigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.KeyPairUtil;
@@ -422,13 +424,17 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
           "Use genesis state hash from data on startup if specified (default: ${DEFAULT-VALUE})")
   private final Boolean genesisStateHashCacheEnabled = false;
 
+  // Unset unless given on the command line, in the config file or by environment variable, in
+  // which case the node uses the network's curve: see nodeDsaName().
   @SuppressWarnings({"FieldCanBeFinal", "FieldMayBeFinal"}) // PicoCLI requires non-final Strings.
   @Option(
       names = "--node-dsa",
       paramLabel = "<String>",
-      description = "Name of the DSA algorithm. (default: ${DEFAULT-VALUE})",
+      description =
+          "Name of the DSA algorithm. (default: the genesis file's ecCurve, SECP256K1 when it"
+              + " is not set)",
       arity = "1..1")
-  private String nodeDsa = DEFAULT_NODE_DSA;
+  private String nodeDsa = null;
 
   @SuppressWarnings({"FieldCanBeFinal", "FieldMayBeFinal"}) // PicoCLI requires non-final Strings.
   @Option(
@@ -2642,10 +2648,12 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
 
     try {
       dsaConfig.buildAccountSupportedAlgorithms(accountsSupportedDSAs);
-      dsaConfig.setNodeActiveDSA(nodeDsa);
+      dsaConfig.setNodeActiveDSA(nodeDsaName());
     } catch (final InvalidAlgorithmParameterException e) {
       throw new RuntimeException(e);
     }
+
+    ensureNodeDsaMatchesEcCurve(dsaConfig.getNodeActiveDSA());
 
     KeyConfiguration keyConfig;
     if (dsaConfig.getNodeActiveDSA() instanceof HybridDigitalSignatureAlgorithm) {
@@ -2663,14 +2671,54 @@ public class BesuCommand implements DefaultCommandValues, Runnable {
     DSAProviderFactory.setDsaProvider(dsaConfig, keyConfig);
   }
 
+  /**
+   * The node's algorithm: {@code --node-dsa} when given, and otherwise the network's curve, which
+   * the genesis file's {@code ecCurve} sets. A network on secp256r1 thus needs no {@code
+   * --node-dsa}, as before it was introduced, while a node can still choose another algorithm.
+   *
+   * @return the name of the node's algorithm
+   */
+  private String nodeDsaName() {
+    // The network's curve comes from the genesis file.
+    instantiateSignatureAlgorithmFactory();
+    return NodeDsaCurve.nodeDsaOrNetworkCurve(nodeDsa);
+  }
+
+  /**
+   * Refuses a {@code --node-dsa} whose elliptic curve is not the network's. The genesis file's
+   * {@code ecCurve}, SECP256K1 when absent, configures everything that predates {@code --node-dsa}:
+   * the RLPx handshake, legacy transaction signatures and node keys read by the security module. A
+   * node signing on another curve would sign with one curve and be verified with the other. A
+   * purely post-quantum algorithm has no curve, so it never conflicts. The default always matches,
+   * so only an explicit {@code --node-dsa} can be refused.
+   *
+   * @param nodeDsa the node's active algorithm
+   */
+  private void ensureNodeDsaMatchesEcCurve(final DigitalSignatureAlgorithm nodeDsa) {
+    instantiateSignatureAlgorithmFactory();
+    NodeDsaCurve.conflictWithNetworkCurve(nodeDsa)
+        .ifPresent(
+            reason -> {
+              throw new ParameterException(this.commandLine, reason);
+            });
+  }
+
   private NodeKeyProvider nodeKeyProvider() {
-    if (!nodeDsa.equals(DEFAULT_NODE_DSA)) {
+    // A node key on an elliptic curve is the network's curve, as ensureNodeDsaMatchesEcCurve
+    // guarantees, so the security module handles it just as it always has: from the key file in
+    // the data directory by default, or from an external security module.
+    if (!isEllipticCurve(nodeDsaName())) {
       KeyManagementProvider keyManagementProvider = DSAProviderFactory.getKeyManagementProvider();
       keyManagementProvider.loadNodeKeyPair();
 
       return DSAProviderFactory.getNodeKeyProvider();
     }
     return new SecurityModuleAdapter(securityModule());
+  }
+
+  private static boolean isEllipticCurve(final String dsaName) {
+    return dsaName.equals(DSAParametersSet.SECP256K1.getName())
+        || dsaName.equals(DSAParametersSet.SECP256R1.getName());
   }
 
   private SecurityModule securityModule() {

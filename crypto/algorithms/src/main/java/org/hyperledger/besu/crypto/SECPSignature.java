@@ -34,7 +34,12 @@ public class SECPSignature implements Signature{
   /** The constant BYTES_REQUIRED. */
   public static final int BYTES_REQUIRED = 65;
 
-  private final String algorithmName;
+  /*
+   * The curve the signature was made on, or null when whoever built it did not say: such a
+   * signature is labelled SECP256K1 and checked against the configured curve, as before signatures
+   * recorded their curve.
+   */
+  private final DSAParametersSet curve;
   /**
    * The recovery id to reconstruct the public key used to create the signature.
    *
@@ -58,10 +63,23 @@ public class SECPSignature implements Signature{
    * @param recId the rec id
    */
   public SECPSignature(final BigInteger r, final BigInteger s, final byte recId) {
+    this(r, s, recId, null);
+  }
+
+  /**
+   * Instantiates a new SECPSignature made on a known curve.
+   *
+   * @param r the r
+   * @param s the s
+   * @param recId the rec id
+   * @param curve the curve the signature was made on, SECP256K1 or SECP256R1
+   */
+  public SECPSignature(
+      final BigInteger r, final BigInteger s, final byte recId, final DSAParametersSet curve) {
     this.r = r;
     this.s = s;
     this.recId = recId;
-    this.algorithmName = DSAParametersSet.SECP256K1.getName();
+    this.curve = curve;
   }
 
   /**
@@ -78,6 +96,25 @@ public class SECPSignature implements Signature{
    */
   public static SECPSignature create(
       final BigInteger r, final BigInteger s, final byte recId, final BigInteger curveOrder) {
+    return create(r, s, recId, curveOrder, null);
+  }
+
+  /**
+   * Creates a new signature object made on a known curve.
+   *
+   * @param r the 'r' part of the signature.
+   * @param s the 's' part of the signature.
+   * @param recId the recovery id part of the signature.
+   * @param curveOrder The order (n) of the used curve
+   * @param curve the curve the signature was made on, SECP256K1 or SECP256R1
+   * @return the created {@link SECPSignature} object.
+   */
+  public static SECPSignature create(
+      final BigInteger r,
+      final BigInteger s,
+      final byte recId,
+      final BigInteger curveOrder,
+      final DSAParametersSet curve) {
     checkNotNull(r);
     checkNotNull(s);
     checkInBounds("r", r, curveOrder);
@@ -86,7 +123,7 @@ public class SECPSignature implements Signature{
       throw new IllegalArgumentException(
           "Invalid 'recId' value, should be 0 or 1 but got " + recId);
     }
-    return new SECPSignature(r, s, recId);
+    return new SECPSignature(r, s, recId, curve);
   }
 
   private static void checkInBounds(
@@ -104,7 +141,12 @@ public class SECPSignature implements Signature{
 
   @Override
   public Boolean isValid(final SignatureValidationContext context){
-    final BigInteger halfCurveOrder = SignatureAlgorithmFactory.getInstance().getHalfCurveOrder();
+    // The limit is half the order of the signature's own curve: SECP256R1's is lower than
+    // SECP256K1's, so judging an R1 signature by K1's limit would let malleated ones through.
+    final BigInteger halfCurveOrder =
+        curve == null
+            ? SignatureAlgorithmFactory.getInstance().getHalfCurveOrder()
+            : SECPCurves.of(curve).getHalfCurveOrder();
     if (context.isDisallowMalleability() && getS().compareTo(halfCurveOrder) > 0) {
       return false;
     }
@@ -119,13 +161,26 @@ public class SECPSignature implements Signature{
    * @return the secp signature
    */
   public static SECPSignature decode(final Bytes bytes, final BigInteger curveOrder) {
+    return decode(bytes, curveOrder, null);
+  }
+
+  /**
+   * Decode a secp signature made on a known curve.
+   *
+   * @param bytes the bytes
+   * @param curveOrder the curve order
+   * @param curve the curve the signature was made on, SECP256K1 or SECP256R1
+   * @return the secp signature
+   */
+  public static SECPSignature decode(
+      final Bytes bytes, final BigInteger curveOrder, final DSAParametersSet curve) {
     checkArgument(
         bytes.size() == BYTES_REQUIRED, "encoded SECP256K1 signature must be 65 bytes long");
 
     final BigInteger r = bytes.slice(0, 32).toUnsignedBigInteger();
     final BigInteger s = bytes.slice(32, 32).toUnsignedBigInteger();
     final byte recId = bytes.get(64);
-    return SECPSignature.create(r, s, recId, curveOrder);
+    return SECPSignature.create(r, s, recId, curveOrder, curve);
   }
 
   /**
@@ -140,7 +195,7 @@ public class SECPSignature implements Signature{
 
   @Override
   public String getAlgorithm(){
-    return algorithmName;
+    return (curve == null ? DSAParametersSet.SECP256K1 : curve).getName();
   }
 
   private Bytes _encodedBytes() {

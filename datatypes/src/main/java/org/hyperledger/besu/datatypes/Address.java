@@ -174,8 +174,8 @@ public class Address extends BytesHolder {
   /**
    * Converts a signature to the {@link Address} of its signer, by resolving the public key --
    * recovering it when {@code signatureAlgorithm} supports public key recovery, or otherwise
-   * trusting {@code maybePartialPk} -- and extracting the address from it. This does not verify
-   * the signature; callers that need that guarantee must verify it themselves (e.g. via {@link
+   * trusting {@code maybePartialPk} -- and extracting the address from it. This does not verify the
+   * signature; callers that need that guarantee must verify it themselves (e.g. via {@link
    * org.hyperledger.besu.crypto.providers.VerifierProvider}) before trusting the returned address.
    *
    * @param signatureAlgorithm the algorithm that produced the signature
@@ -184,7 +184,7 @@ public class Address extends BytesHolder {
    *     signature
    * @param dataHash the hash of the data which was signed
    * @return the address of the signer
-   * @throws IllegalStateException if the public key could not be resolved (e.g. recovery failed,
+   * @throws IllegalArgumentException if the public key could not be resolved (e.g. recovery failed,
    *     or no partial public key was provided for a non-recoverable algorithm)
    */
   public static Address signatureToAddress(

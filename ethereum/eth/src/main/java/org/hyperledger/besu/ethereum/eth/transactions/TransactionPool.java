@@ -290,9 +290,13 @@ public class TransactionPool implements BlockAddedObserver {
   }
 
   private Stream<Transaction> sortedBySenderAndNonce(final Collection<Transaction> transactions) {
+    // Runs before validation: a transaction whose sender cannot be determined sorts first and is
+    // rejected when validated, rather than failing the whole batch.
     return transactions.stream()
         .sorted(
-            Comparator.comparing((Transaction tx) -> tx.getSender().getBytes())
+            Comparator.comparing(
+                    (Transaction tx) ->
+                        Transaction.resolvableSender(tx).map(Address::getBytes).orElse(Bytes.EMPTY))
                 .thenComparing(Transaction::getNonce));
   }
 
@@ -302,7 +306,9 @@ public class TransactionPool implements BlockAddedObserver {
       return true;
     }
     // otherwise check if the sender belongs to the priority list
-    return configuration.getPrioritySenders().contains(transaction.getSender());
+    return Transaction.resolvableSender(transaction)
+        .map(configuration.getPrioritySenders()::contains)
+        .orElse(false);
   }
 
   public long subscribePendingTransactions(final PendingTransactionAddedListener listener) {

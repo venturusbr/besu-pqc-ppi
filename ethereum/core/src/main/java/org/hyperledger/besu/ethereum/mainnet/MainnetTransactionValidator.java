@@ -450,6 +450,15 @@ public class MainnetTransactionValidator implements TransactionValidator {
           TransactionInvalidReason.INVALID_SIGNATURE, String.format("Invalid signature structure"));
     }
 
+    // Resolving the signer fails when no key can be recovered from the signature -- one made on
+    // another curve, or a point org.bouncycastle.math.ec.ECCurve.AbstractFp.decompressPoint rejects
+    // with "Invalid point compression" -- or when a non-recoverable algorithm carries no key.
+    if (Transaction.resolvableSender(transaction).isEmpty()) {
+      return ValidationResult.invalid(
+          TransactionInvalidReason.INVALID_SIGNATURE,
+          "sender could not be extracted from transaction signature");
+    }
+
     if (transaction.getDsaType().isPresent()) { // is a flexible transaction
       DigitalSignatureAlgorithm dsa =
           dsaProvider.getAccountEnabledDSAById(transaction.getDsaType().get());
@@ -467,15 +476,6 @@ public class MainnetTransactionValidator implements TransactionValidator {
             TransactionInvalidReason.INVALID_SIGNATURE,
             String.format("Invalid %s transaction signature", txSignature.getAlgorithm()));
       }
-    }
-    // org.bouncycastle.math.ec.ECCurve.AbstractFp.decompressPoint throws an
-    // IllegalArgumentException for "Invalid point compression" for bad signatures.
-    try {
-      transaction.getSender();
-    } catch (final IllegalArgumentException e) {
-      return ValidationResult.invalid(
-          TransactionInvalidReason.INVALID_SIGNATURE,
-          "sender could not be extracted from transaction signature");
     }
     return ValidationResult.valid();
   }

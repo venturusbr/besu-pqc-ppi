@@ -131,6 +131,11 @@ public class Transaction
 
   private final Optional<PublicKey> providedPublicKey;
   private volatile PublicKey publicKey;
+  // Why the signer could not be resolved, once that has been tried. The outcome depends only on
+  // the signature, the hash and the algorithm, all fixed here, so it is not tried again: a peer
+  // sending such transactions would otherwise make every lookup of their sender -- sorting a
+  // batch, checking priority, validating, logging -- repeat the recovery.
+  private volatile IllegalArgumentException unresolvableSigner;
 
   private final DigitalSignatureAlgorithm signatureAlgorithm;
   private final Optional<List<VersionedHash>> versionedHashes;
@@ -311,13 +316,21 @@ public class Transaction
   @Override
   public PublicKey getMountedPublicKey(){
     if(publicKey == null){
+      if (unresolvableSigner != null) {
+        throw unresolvableSigner;
+      }
       long startPkr = System.nanoTime();
-      publicKey = PublicKeyHandler.resolvePublicKey(
-        signatureAlgorithm,
-        signature,
-        providedPublicKey,
-        getOrComputeSenderRecoveryHash()
-      ).get();
+      try {
+        publicKey = PublicKeyHandler.resolvePublicKey(
+          signatureAlgorithm,
+          signature,
+          providedPublicKey,
+          getOrComputeSenderRecoveryHash()
+        ).get();
+      } catch (final IllegalArgumentException e) {
+        unresolvableSigner = e;
+        throw e;
+      }
       long endPkr = System.nanoTime();
 
       saveMetrics(startPkr, endPkr, "tx");
@@ -524,6 +537,30 @@ public class Transaction
     }
     
     return sender;
+  }
+
+  /**
+   * The sender, or empty when the signature cannot be attributed to anyone: no public key can be
+   * recovered from it, or a non-recoverable algorithm carries none. Such a transaction is invalid,
+   * which validation reports; this lets code that runs before it -- sorting, pre-computing senders,
+   * logging -- leave the transaction to be rejected there. The recovery is attempted only once.
+   *
+   * <p>Static, and built on {@link #getSender()}, so that a mocked transaction whose sender is
+   * stubbed still has one.
+   *
+   * @param transaction the transaction
+   * @return the sender, if it can be determined
+   */
+  public static Optional<Address> resolvableSender(final Transaction transaction) {
+    try {
+      return Optional.of(transaction.getSender());
+    } catch (final IllegalArgumentException e) {
+      return Optional.empty();
+    }
+  }
+
+  private String senderForLogs() {
+    return resolvableSender(this).map(Address::toString).orElse("unknown");
   }
 
   private Address computeSender() {
@@ -1398,7 +1435,8 @@ public class Transaction
                 : isContractCreation() ? "ContractCreation" : "MessageCall")
         .append("{");
     sb.append("type=").append(getType()).append(", ");
-    sb.append("sender=").append(getSender().toString()).append(", ");
+    // Invalid transactions are logged too, including one whose sender cannot be determined.
+    sb.append("sender=").append(senderForLogs()).append(", ");
     sb.append("nonce=").append(getNonce()).append(", ");
     getGasPrice()
         .ifPresent(gp -> sb.append("gasPrice=").append(gp.toHumanReadableString()).append(", "));
@@ -1460,7 +1498,7 @@ public class Transaction
                 : isContractCreation() ? "ContractCreation" : "MessageCall")
         .append(", ");
     sb.append(getNonce()).append(", ");
-    sb.append(getSender()).append(", ");
+    sb.append(senderForLogs()).append(", ");
     sb.append(getType()).append(", ");
     getGasPrice()
         .ifPresent(gp -> sb.append("gp: ").append(gp.toHumanReadableString()).append(", "));

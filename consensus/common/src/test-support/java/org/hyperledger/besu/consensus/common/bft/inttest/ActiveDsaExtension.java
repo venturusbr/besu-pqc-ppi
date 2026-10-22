@@ -14,6 +14,9 @@
  */
 package org.hyperledger.besu.consensus.common.bft.inttest;
 
+import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.SignatureAlgorithmType;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.config.DigitalSignatureAlgorithmConfiguration;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 
@@ -26,8 +29,8 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 
 /**
  * Runs consensus integration tests under the signature algorithm named by the {@value
- * #DSA_PROPERTY} system property, such as {@code MLDSA44} or {@code SECP256K1-MLDSA44}. Without the
- * property the tests run under the default algorithm, SECP256K1, as before.
+ * #DSA_PROPERTY} system property, such as {@code MLDSA44}, {@code SECP256K1-MLDSA44} or {@code
+ * SECP256R1}. Without the property the tests run under the default algorithm, SECP256K1, as before.
  *
  * <p>Registered through JUnit's extension auto-detection, so every test class in a suite runs under
  * the chosen algorithm without being changed. Node keys follow it through {@code
@@ -55,6 +58,13 @@ public class ActiveDsaExtension implements BeforeAllCallback, AfterAllCallback {
           new DigitalSignatureAlgorithmConfiguration();
       config.setNodeActiveDSA(dsa.get());
       DSAProviderFactory.setDsaProvider(config, null);
+      // A node on SECP256R1 runs on a network whose genesis sets that curve, as Besu refuses to
+      // start otherwise; code that predates --node-dsa reads the curve from here.
+      if (dsa.get().equals(DSAParametersSet.SECP256R1.getName())) {
+        SignatureAlgorithmFactory.resetInstance();
+        SignatureAlgorithmFactory.setInstance(
+            SignatureAlgorithmType.create(SignatureAlgorithmType.SECP_256_R1_CURVE_NAME));
+      }
     }
   }
 
@@ -62,6 +72,7 @@ public class ActiveDsaExtension implements BeforeAllCallback, AfterAllCallback {
   public void afterAll(final ExtensionContext context) {
     if (requestedDsa().isPresent()) {
       DSAProviderFactory.resetDsaProvider();
+      SignatureAlgorithmFactory.resetInstance();
     }
   }
 }

@@ -17,6 +17,7 @@ package org.hyperledger.besu.ethereum.mainnet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import org.hyperledger.besu.datatypes.Address;
@@ -27,6 +28,7 @@ import org.hyperledger.besu.ethereum.core.ProcessableBlockHeader;
 import org.hyperledger.besu.ethereum.core.Transaction;
 import org.hyperledger.besu.ethereum.core.feemarket.CoinbaseFeePriceCalculator;
 import org.hyperledger.besu.ethereum.mainnet.feemarket.FeeMarket;
+import org.hyperledger.besu.ethereum.processing.TransactionProcessingResult;
 import org.hyperledger.besu.ethereum.transaction.TransactionInvalidReason;
 import org.hyperledger.besu.ethereum.trie.MerkleTrieException;
 import org.hyperledger.besu.evm.account.MutableAccount;
@@ -95,6 +97,31 @@ class MainnetTransactionProcessorTest {
             new CodeDelegationProcessor(
                 Optional.of(BigInteger.ONE), BigInteger.TEN, new CodeDelegationService()))
         .build();
+  }
+
+  @Test
+  void signatureWithNoSignerIsAnInvalidSignatureRatherThanAnInternalError() {
+    // As PublicKeyHandler reports a signature from which no key can be recovered.
+    when(transaction.getSender())
+        .thenThrow(new IllegalArgumentException("Cannot recover public key"));
+    when(transactionValidatorFactory.get().validate(any(), any(), any(), any()))
+        .thenReturn(ValidationResult.valid());
+
+    final TransactionProcessingResult result =
+        createTransactionProcessor(false)
+            .processTransaction(
+                worldState,
+                blockHeader,
+                transaction,
+                Address.fromHexString("0x4242424242424242424242424242424242424242"),
+                blockHashLookup,
+                ImmutableTransactionValidationParams.builder().build(),
+                Wei.ZERO);
+
+    assertThat(result.isInvalid()).isTrue();
+    assertThat(result.getValidationResult().getInvalidReason())
+        .isEqualTo(TransactionInvalidReason.INVALID_SIGNATURE);
+    verifyNoInteractions(messageCallProcessor, contractCreationProcessor);
   }
 
   @Test
@@ -233,6 +260,8 @@ class MainnetTransactionProcessorTest {
 
     final TransactionValidationParams expectedValidationParams =
         ImmutableTransactionValidationParams.builder().build();
+    when(transaction.getSender())
+        .thenReturn(Address.fromHexString("0x5555555555555555555555555555555555555555"));
 
     var transactionProcessor = createTransactionProcessor(false);
 

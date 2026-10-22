@@ -18,6 +18,7 @@ import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.providers.NodeKeyProvider;
 import org.hyperledger.besu.crypto.signature.Signature;
@@ -40,15 +41,14 @@ public class NodeKeyUtils {
   }
 
   /**
-   * Generates a node key for the active algorithm, so tests that configure a post-quantum or hybrid
-   * algorithm get node keys of that algorithm. Without one configured this is a SECP256K1 key, as
-   * before.
+   * Generates a node key for the active algorithm, so tests that configure another algorithm get
+   * node keys of that algorithm. Without one configured this is a SECP256K1 key, as before.
    *
    * @return a new node key
    */
   public static NodeKey generate() {
     final DigitalSignatureAlgorithm dsa = DSAProviderFactory.getActiveDSA();
-    if (dsa instanceof SignatureAlgorithm) {
+    if (dsa.getDsaParametersSet() == DSAParametersSet.SECP256K1) {
       return new NodeKey(
           new SecurityModuleAdapter(
               new KeyPairSecurityModule(
