@@ -44,6 +44,8 @@ import java.security.PublicKey;
 import java.util.Optional;
 import java.util.Set;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.slf4j.Logger;
@@ -76,6 +78,17 @@ public class MainnetTransactionValidator implements TransactionValidator {
   private final VerifierProvider dsaProvider;
 
   private final CSVWriter verifyWriter;
+
+  /**
+   * Hashes of flexible transactions whose signature verified. A transaction is checked on
+   * admission to the pool, on every attempt to select it into a block, when a proposal carrying it
+   * is validated and when that block is imported, each time from a different decoded copy. The
+   * hash covers every byte verification reads -- the algorithm, the signed fields, the carried key
+   * and the signature -- so a transaction with a cached hash is the one that verified. Only
+   * successes are kept: a failure is never served from here.
+   */
+  private final Cache<Hash, Boolean> verifiedSignatures =
+      CacheBuilder.newBuilder().maximumSize(100_000L).build();
 
   public MainnetTransactionValidator(
       final GasCalculator gasCalculator,
@@ -474,19 +487,26 @@ public class MainnetTransactionValidator implements TransactionValidator {
         return ValidationResult.valid();
       }
 
+      final Hash transactionHash = transaction.getHash();
+      if (verifiedSignatures.getIfPresent(transactionHash) != null) {
+        return ValidationResult.valid();
+      }
+
       PublicKey pk = transaction.getMountedPublicKey();
 
       long verifyStart = System.nanoTime();
       Boolean isValid = dsa.verify(Bytes.wrap(transaction.getSigningHash()), txSignature, pk);
       long verifyEnd = System.nanoTime();
 
-      saveMetrics(verifyStart, verifyEnd, "tx", isValid, dsa.getDsaParametersSet());
+      saveMetrics(
+          verifyStart, verifyEnd, "tx", Boolean.TRUE.equals(isValid), dsa.getDsaParametersSet());
 
-      if (!isValid) {
+      if (!Boolean.TRUE.equals(isValid)) {
         return ValidationResult.invalid(
             TransactionInvalidReason.INVALID_SIGNATURE,
             String.format("Invalid %s transaction signature", txSignature.getAlgorithm()));
       }
+      verifiedSignatures.put(transactionHash, Boolean.TRUE);
     }
     return ValidationResult.valid();
   }

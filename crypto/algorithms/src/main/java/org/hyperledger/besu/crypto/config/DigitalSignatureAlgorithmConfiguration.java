@@ -2,7 +2,6 @@ package org.hyperledger.besu.crypto.config;
 
 import java.security.InvalidAlgorithmParameterException;
 import java.util.List;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
@@ -16,7 +15,12 @@ public class DigitalSignatureAlgorithmConfiguration {
     private static final Logger LOG = LoggerFactory.getLogger(DigitalSignatureAlgorithmConfiguration.class);
     private static final SupportedAlgorithms supportedAlgorithms = new SupportedAlgorithms();
     private DigitalSignatureAlgorithm nodeActiveDSA;
-    private ImmutableMap<Short, Supplier<DigitalSignatureAlgorithm>> accountsEnabledDSAs;
+    // One instance per enabled algorithm, built with the configuration. Every transaction decode
+    // and signature check looks its algorithm up here, and constructing one is expensive: each
+    // secp256k1 half creates and registers a BouncyCastleProvider, each ML-DSA half a
+    // BouncyCastlePQCProvider. The algorithms keep no per-operation state, so one instance serves
+    // every thread.
+    private ImmutableMap<Short, DigitalSignatureAlgorithm> accountsEnabledDSAs;
 
     public DigitalSignatureAlgorithmConfiguration() {
         this.nodeActiveDSA = null;
@@ -41,14 +45,14 @@ public class DigitalSignatureAlgorithmConfiguration {
             final List<DSAParametersSet> selectedAccountDSAs)
             throws InvalidAlgorithmParameterException {
 
-        final ImmutableMap.Builder<Short, Supplier<DigitalSignatureAlgorithm>>
+        final ImmutableMap.Builder<Short, DigitalSignatureAlgorithm>
             builder = ImmutableMap.builder();
 
         for (final DSAParametersSet param : selectedAccountDSAs) {
             if (supportedAlgorithms.supports(param.getName())) {
                 builder.put(
                     param.getId(),
-                    supportedAlgorithms.getDSAByName(param.getName()));
+                    supportedAlgorithms.getDSAByName(param.getName()).get());
                 continue;
             }
 
@@ -69,7 +73,13 @@ public class DigitalSignatureAlgorithmConfiguration {
 
     public DigitalSignatureAlgorithm getEnabledDSA(
             final Short dsaId) {
-        return accountsEnabledDSAs.get(dsaId).get();
+        final DigitalSignatureAlgorithm enabledDSA = accountsEnabledDSAs.get(dsaId);
+        // An id that is not enabled fails as it always has, rather than yielding null to callers
+        // that never expected it.
+        if (enabledDSA == null) {
+            throw new NullPointerException("DSA " + dsaId + " is not enabled for accounts");
+        }
+        return enabledDSA;
     }
 
     public DigitalSignatureAlgorithm getSupportedDSA(final String dsaName){

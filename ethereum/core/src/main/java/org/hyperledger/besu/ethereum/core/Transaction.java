@@ -531,9 +531,17 @@ public class Transaction
   @Override
   public Address getSender() {
     if (sender == null) {
-      publicKey = getMountedPublicKey();
-      Optional<Address> cachedSender = Optional.ofNullable(senderCache.getIfPresent(getHash()));
-      sender = cachedSender.orElseGet(this::computeSender);
+      // The cache is consulted before the key is resolved: the hash covers every byte the key is
+      // resolved from, so a transaction whose sender is cached resolves to that same sender, and
+      // each decoded copy of it -- from gossip, a proposal, a block -- would otherwise repeat the
+      // recovery. The key is still resolved on demand wherever it is needed itself.
+      final Address cachedSender = senderCache.getIfPresent(getHash());
+      if (cachedSender != null) {
+        sender = cachedSender;
+      } else {
+        publicKey = getMountedPublicKey();
+        sender = computeSender();
+      }
     }
     
     return sender;
