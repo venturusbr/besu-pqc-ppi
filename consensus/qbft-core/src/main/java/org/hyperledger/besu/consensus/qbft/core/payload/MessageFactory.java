@@ -74,7 +74,7 @@ public class MessageFactory {
     final ProposalPayload payload =
         new ProposalPayload(roundIdentifier, block, blockEncoder, blockAccessList);
 
-    return new Proposal(createSignedMessage(payload, "proposal"), roundChanges, prepares);
+    return new Proposal(createSignedMessage(payload), roundChanges, prepares);
   }
 
   /**
@@ -103,7 +103,7 @@ public class MessageFactory {
    */
   public Prepare createPrepare(final ConsensusRoundIdentifier roundIdentifier, final Hash digest) {
     final PreparePayload payload = new PreparePayload(roundIdentifier, digest);
-    return new Prepare(createSignedMessage(payload, "prepare"));
+    return new Prepare(createSignedMessage(payload));
   }
 
   /**
@@ -119,7 +119,7 @@ public class MessageFactory {
       final Hash digest,
       final Signature commitSeal) {
     final CommitPayload payload = new CommitPayload(roundIdentifier, digest, commitSeal);
-    return new Commit(createSignedMessage(payload, "commit"));
+    return new Commit(createSignedMessage(payload));
   }
 
   /**
@@ -144,8 +144,8 @@ public class MessageFactory {
                   new PreparedRoundMetadata(
                       preparedBlock.getHash(), preparedRoundData.get().getRound())));
       return new RoundChange(
-          createSignedMessage(payload, "round-change-prepared-block"),
-              Optional.of(preparedBlock),
+          createSignedMessage(payload),
+          Optional.of(preparedBlock),
           preparedRoundData.get().getBlockAccessList(),
           blockEncoder,
           preparedRoundData.get().getPrepares());
@@ -153,17 +153,18 @@ public class MessageFactory {
     } else {
       payload = new RoundChangePayload(roundIdentifier, Optional.empty());
       return new RoundChange(
-          createSignedMessage(payload, "round-change"),
-              Optional.empty(),
+          createSignedMessage(payload),
+          Optional.empty(),
           Optional.empty(),
           blockEncoder,
           Collections.emptyList());
     }
   }
 
-  private <M extends Payload> SignedData<M> createSignedMessage(final M payload, final String finality) {
+  private <M extends Payload> SignedData<M> createSignedMessage(final M payload) {
     final Signature signature =
-        nodeKey.sign(Bytes32.wrap(payload.hashForSignature().getBytes()), finality);
+        nodeKey.sign(
+            Bytes32.wrap(payload.hashForSignature().getBytes()), payload.getMetricsLabel());
     return SignedData.createLocallySigned(payload, signature, localPublicKey());
   }
 

@@ -1,10 +1,16 @@
 package org.hyperledger.besu.crypto.pqc.metrics;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -56,6 +62,12 @@ public class CSVWriter {
                         },
                         (runnable, pool) -> reportDroppedSample());
         try {
+            if (file.exists() && file.length() == 0) {
+                // Nothing to keep: it only needs its header.
+                Files.delete(file.toPath());
+            } else if (file.exists() && !hasHeader(file, header)) {
+                setAside(file);
+            }
             if (!file.exists()) {
                 file.createNewFile();
                 initializeTable(header);
@@ -65,6 +77,32 @@ public class CSVWriter {
         } catch (IOException e) {
             LOG.info(e.getMessage());
         }
+    }
+
+    private static boolean hasHeader(final File file, final String header) throws IOException {
+        try (BufferedReader reader =
+                Files.newBufferedReader(file.toPath(), StandardCharsets.ISO_8859_1)) {
+            final String firstLine = reader.readLine();
+            return header.strip().equals(firstLine == null ? null : firstLine.strip());
+        }
+    }
+
+    /**
+     * Moves a file written with other columns out of the way, so samples are never appended under
+     * a header that does not describe them. Its samples are kept, next to the new file.
+     */
+    private static void setAside(final File file) throws IOException {
+        final String name = file.getName();
+        final int dot = name.lastIndexOf('.');
+        final String stamp =
+                LocalDateTime.now(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
+        final String asideName =
+                dot < 0
+                        ? name + "-" + stamp
+                        : name.substring(0, dot) + "-" + stamp + name.substring(dot);
+        final Path aside = file.toPath().resolveSibling(asideName);
+        Files.move(file.toPath(), aside);
+        LOG.info("{} has the columns of an earlier version; moved it to {}", file, aside);
     }
 
     private void initializeWriters() throws IOException {

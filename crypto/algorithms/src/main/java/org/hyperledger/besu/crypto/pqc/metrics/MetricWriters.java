@@ -1,5 +1,9 @@
 package org.hyperledger.besu.crypto.pqc.metrics;
 
+import java.util.function.BooleanSupplier;
+
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+
 public class MetricWriters {
     private static CSVWriter signInstance = null;
     private static CSVWriter verifyInstance = null;
@@ -23,7 +27,7 @@ public class MetricWriters {
     }
 
     public static String buildSignHeader(){
-        String header = "DSASigningTime(ns)," + "SignatureBytes," + "Object," + "Algorithm,"+ "FINALITY\n";
+        String header = "DSASigningTime(ns)," + "SignatureBytes," + "Algorithm,"+ "FINALITY\n";
         return header;
     }
 
@@ -56,5 +60,58 @@ public class MetricWriters {
             pkrInstance = new CSVWriter(buildPkrHeader(), "pkr");
         }
         return pkrInstance;
+    }
+
+    /**
+     * Runs a signature check and records it in the verify metrics.
+     *
+     * @param object what the signature is over, e.g. {@code tx}, {@code qbft-commit} or
+     *     {@code discv4-packet}
+     * @param algorithm the algorithm that verifies it
+     * @param verification the check itself
+     * @return whether the signature verified
+     */
+    public static boolean timeVerification(
+            final String object,
+            final DSAParametersSet algorithm,
+            final BooleanSupplier verification) {
+        final long start = System.nanoTime();
+        final boolean isValid = verification.getAsBoolean();
+        final long end = System.nanoTime();
+        recordVerification(end - start, object, isValid, algorithm);
+        return isValid;
+    }
+
+    /**
+     * Writes a row of the verify metrics, in the columns {@link #buildVerifyHeader()} names.
+     *
+     * @param verificationTimeNanos how long the check took
+     * @param object what the signature is over
+     * @param isValid whether it verified
+     * @param algorithm the algorithm that verified it
+     */
+    public static void recordVerification(
+            final long verificationTimeNanos,
+            final String object,
+            final boolean isValid,
+            final DSAParametersSet algorithm) {
+        // Signatures are verified from many threads at once, so each line is built locally.
+        getVerifyInstance().write(
+            verifyMetricsLine(verificationTimeNanos, object, isValid, algorithm));
+    }
+
+    static String verifyMetricsLine(
+            final long verificationTimeNanos,
+            final String object,
+            final boolean isValid,
+            final DSAParametersSet algorithm) {
+        return verificationTimeNanos
+            + ","
+            + object
+            + ","
+            + (isValid ? "yes" : "no")
+            + ","
+            + algorithm.getName()
+            + "\n";
     }
 }

@@ -22,6 +22,7 @@ import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.KeyFactory;
 import org.hyperledger.besu.crypto.key.PublicKeyHandler;
 import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
+import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.SignatureFactory;
@@ -42,19 +43,21 @@ import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.pong.P
 import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.pong.PongPacketDataRlpWriter;
 import org.hyperledger.besu.ethereum.rlp.RLP;
 
-import java.math.BigInteger;
 import java.security.PublicKey;
-import java.util.Optional;
 import java.util.Arrays;
+import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import com.google.common.base.Preconditions;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 
 @Singleton
 public class PacketFactory {
+
+  /** What a discv4 packet signature is called in the sign and verify metrics. */
+  private static final String DISCV4_PACKET = "discv4-packet";
+
   private final PingPacketDataRlpWriter pingPacketDataRlpWriter;
   private final PongPacketDataRlpWriter pongPacketDataRlpWriter;
   private final FindNeighborsPacketDataRlpWriter findNeighborsPacketDataRlpWriter;
@@ -100,7 +103,8 @@ public class PacketFactory {
               }
             });
 
-    Signature signature = nodeKey.sign(Hash.keccak256(Bytes.wrap(typeBytes, dataBytes)), "packet");
+    Signature signature =
+        nodeKey.sign(Hash.keccak256(Bytes.wrap(typeBytes, dataBytes)), DISCV4_PACKET);
     PublicKey publicKey = nodeKey.getPublicKey();
 
     // The hash covers everything after itself, so the key bytes on the wire are bound to the
@@ -156,7 +160,10 @@ public class PacketFactory {
     // whole, and a recovered key always verifies against its own signature, so there is nothing
     // left to check.
     if (!(activeDsa instanceof PublicKeyRecoverable)
-        && !activeDsa.verify(recoveryHash, signature, publicKey)) {
+        && !MetricWriters.timeVerification(
+            DISCV4_PACKET,
+            activeDsa.getDsaParametersSet(),
+            () -> Boolean.TRUE.equals(activeDsa.verify(recoveryHash, signature, publicKey)))) {
       throw new PeerDiscoveryPacketDecodingException(
           "Invalid packet signature for the sender's public key");
     }
@@ -177,7 +184,6 @@ public class PacketFactory {
     if (!(activeDsa instanceof HybridDigitalSignatureAlgorithm hybrid)) {
       return Optional.empty();
     }
-    return KeyFactory.createPublicKey(
-        encoded, hybrid.getSecondAlgorithm().getDsaParametersSet());
+    return KeyFactory.createPublicKey(encoded, hybrid.getSecondAlgorithm().getDsaParametersSet());
   }
 }

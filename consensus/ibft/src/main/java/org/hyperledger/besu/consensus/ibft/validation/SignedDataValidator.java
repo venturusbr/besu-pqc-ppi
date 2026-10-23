@@ -153,7 +153,7 @@ public class SignedDataValidator {
     // does not hold up as absent instead of throwing.
     final Optional<Address> commitSealCreator =
         new CommitSeal(msg.getPayload().getCommitSeal(), msg.getPublicKey())
-            .recoverVerifiedAuthor(proposedBlockDigest);
+            .recoverVerifiedAuthor(proposedBlockDigest, "ibft-commit-seal");
 
     if (commitSealCreator.isEmpty() || !commitSealCreator.get().equals(msg.getAuthor())) {
       LOG.info("Invalid Commit message. Seal was not created by the message transmitter.");

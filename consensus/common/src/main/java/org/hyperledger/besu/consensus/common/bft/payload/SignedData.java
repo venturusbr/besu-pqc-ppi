@@ -18,6 +18,7 @@ import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.PublicKeyRecoverable;
 import org.hyperledger.besu.crypto.SignatureValidationContext;
 import org.hyperledger.besu.crypto.key.PublicKeyHandler;
+import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.Address;
@@ -56,9 +57,8 @@ public class SignedData<M extends Payload> implements Authored {
    * claimed author is itself the proof of authenticity, so no separate verification is performed.
    * When it does not, {@link PublicKeyHandler#resolvePublicKey} takes the halves that cannot be
    * recovered from {@code maybePublicKey}, so the signature is explicitly verified against the
-   * resolved key here. This is
-   * the single point at which an inbound message signature is checked -- the derived author is
-   * cached, so every later {@link #getAuthor()} call is free.
+   * resolved key here. This is the single point at which an inbound message signature is checked --
+   * the derived author is cached, so every later {@link #getAuthor()} call is free.
    *
    * @param <T> the type parameter
    * @param payload the payload
@@ -77,14 +77,17 @@ public class SignedData<M extends Payload> implements Authored {
         PublicKeyHandler.resolvePublicKey(dsa, signature, maybePublicKey, msgHashBytes).get();
 
     if (!(dsa instanceof PublicKeyRecoverable)
-        && !Boolean.TRUE.equals(
-            DSAProviderFactory.getVerifierProvider()
-                .verifySignature(msgHashBytes, signature, resolvedPublicKey))) {
+        && !MetricWriters.timeVerification(
+            payload.getMetricsLabel(),
+            dsa.getDsaParametersSet(),
+            () ->
+                Boolean.TRUE.equals(
+                    DSAProviderFactory.getVerifierProvider()
+                        .verifySignature(msgHashBytes, signature, resolvedPublicKey)))) {
       throw new IllegalArgumentException("Signature verification failed");
     }
 
-    return new SignedData<>(
-        payload, Address.extract(resolvedPublicKey), signature, maybePublicKey);
+    return new SignedData<>(payload, Address.extract(resolvedPublicKey), signature, maybePublicKey);
   }
 
   /**

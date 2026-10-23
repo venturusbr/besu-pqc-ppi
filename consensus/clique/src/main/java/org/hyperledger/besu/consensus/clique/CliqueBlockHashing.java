@@ -16,6 +16,7 @@ package org.hyperledger.besu.consensus.clique;
 
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.key.PublicKeyHandler;
+import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.Address;
@@ -99,9 +100,13 @@ public class CliqueBlockHashing {
           "Could not resolve the proposer's public key: " + e.getMessage(), e);
     }
 
-    if (!Boolean.TRUE.equals(
-        DSAProviderFactory.getVerifierProvider()
-            .verifySignature(proposerHashBytes, seal, proposerPublicKey))) {
+    if (!MetricWriters.timeVerification(
+        "clique-block-header",
+        dsa.getDsaParametersSet(),
+        () ->
+            Boolean.TRUE.equals(
+                DSAProviderFactory.getVerifierProvider()
+                    .verifySignature(proposerHashBytes, seal, proposerPublicKey)))) {
       throw new IllegalArgumentException(
           "Proposer seal does not verify against the public key the header carries");
     }

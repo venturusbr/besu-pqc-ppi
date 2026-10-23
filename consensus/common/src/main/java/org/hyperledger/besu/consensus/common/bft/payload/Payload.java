@@ -51,6 +51,17 @@ public interface Payload extends RoundSpecific {
   int getMessageType();
 
   /**
+   * What this message is called in the sign and verify metrics: the consensus protocol and the
+   * message, e.g. {@code qbft-commit}. Signing and verifying use the same label, so the rows of
+   * both files can be matched.
+   *
+   * @return the metrics label
+   */
+  default String getMetricsLabel() {
+    return "bft-message-" + getMessageType();
+  }
+
+  /**
    * Read digest.
    *
    * @param messageData the message data

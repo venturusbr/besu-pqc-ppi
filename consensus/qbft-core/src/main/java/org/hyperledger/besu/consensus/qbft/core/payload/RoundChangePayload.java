@@ -94,6 +94,14 @@ public class RoundChangePayload extends QbftPayload {
   }
 
   @Override
+  public String getMetricsLabel() {
+    // A round change that carries a prepared block is told apart from one that does not.
+    return preparedRoundMetadata.isPresent()
+        ? "qbft-round-change-prepared-block"
+        : super.getMetricsLabel();
+  }
+
+  @Override
   public int getMessageType() {
     return TYPE;
   }

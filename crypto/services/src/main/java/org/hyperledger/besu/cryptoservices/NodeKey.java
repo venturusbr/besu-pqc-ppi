@@ -22,6 +22,7 @@ import org.hyperledger.besu.crypto.signature.Signature;
 import java.security.PublicKey;
 
 import org.apache.tuweni.bytes.Bytes32;
+
 /** The Node key. */
 public class NodeKey {
   private final NodeKeyProvider nodeKeyProvider;
@@ -38,18 +39,21 @@ public class NodeKey {
   }
 
   /**
-   * Sign hash and get secp signature.
+   * Sign hash and get the signature, recording the signing metrics.
    *
    * @param dataHash the data hash
-   * @return the secp signature
+   * @param finality what the signature is for, e.g. {@code qbft-commit} or {@code discv4-packet}
+   * @return the signature
    */
   public Signature sign(final Bytes32 dataHash, final String finality) {
 
     long startSign = System.nanoTime();
     Signature signature = nodeKeyProvider.sign(dataHash);
     long endSign = System.nanoTime();
-    
-    writeSignMetrics(startSign, endSign, finality, signature.encodedBytes().size());
+
+    // The node key signs from several threads at once, so the line is built locally rather than
+    // in a builder shared by all of them.
+    signWriter.write(signMetricsLine(endSign - startSign, signature, finality));
 
     return signature;
   }
@@ -63,7 +67,6 @@ public class NodeKey {
     return nodeKeyProvider.getPublicKey();
   }
 
-
   /**
    * Calculate ecdh key agreement.
    *
@@ -74,10 +77,24 @@ public class NodeKey {
     return nodeKeyProvider.calculateECDHKeyAgreement(partyKey);
   }
 
-  private void writeSignMetrics(final long startTime, final long endTime, final String finality, final Integer signatureLength){
-    // The node key signs from several threads at once, so the line is built locally rather than
-    // in a builder shared by all of them.
-    long totalTime = endTime - startTime;
-    signWriter.write(totalTime + "," + signatureLength + "," + finality + "\n");
+  /**
+   * A row of the sign metrics, in the columns {@link MetricWriters#buildSignHeader()} names:
+   * signing time, signature size, algorithm and purpose.
+   *
+   * @param signingTimeNanos how long signing took
+   * @param signature the signature produced
+   * @param finality the purpose of the signature
+   * @return the CSV line, newline terminated
+   */
+  static String signMetricsLine(
+      final long signingTimeNanos, final Signature signature, final String finality) {
+    return signingTimeNanos
+        + ","
+        + signature.encodedBytes().size()
+        + ","
+        + signature.getAlgorithm()
+        + ","
+        + finality
+        + "\n";
   }
 }

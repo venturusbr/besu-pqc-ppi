@@ -19,6 +19,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.PublicKeyRecoverable;
 import org.hyperledger.besu.crypto.key.PublicKeyHandler;
+import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.Address;
@@ -45,6 +46,9 @@ import org.slf4j.LoggerFactory;
 public class CommitSeal {
 
   private static final Logger LOG = LoggerFactory.getLogger(CommitSeal.class);
+
+  /** What a seal is called in the verify metrics when the caller does not name its protocol. */
+  public static final String BFT_COMMIT_SEAL = "bft-commit-seal";
 
   private final Signature signature;
   private final Optional<PublicKey> publicKey;
@@ -106,6 +110,18 @@ public class CommitSeal {
    * @return the signer's address, or empty if the seal does not verify
    */
   public Optional<Address> recoverVerifiedAuthor(final Hash dataHash) {
+    return recoverVerifiedAuthor(dataHash, BFT_COMMIT_SEAL);
+  }
+
+  /**
+   * As {@link #recoverVerifiedAuthor(Hash)}, naming the seal in the verify metrics.
+   *
+   * @param dataHash the hash the seal was produced over
+   * @param metricsLabel what the seal is called in the verify metrics, e.g. {@code
+   *     qbft-commit-seal}
+   * @return the signer's address, or empty if the seal does not verify
+   */
+  public Optional<Address> recoverVerifiedAuthor(final Hash dataHash, final String metricsLabel) {
     final Bytes32 dataHashBytes = Bytes32.wrap(dataHash.getBytes());
     final DigitalSignatureAlgorithm dsa = DSAProviderFactory.getActiveDSA();
 
@@ -119,9 +135,13 @@ public class CommitSeal {
     }
 
     if (!(dsa instanceof PublicKeyRecoverable)
-        && !Boolean.TRUE.equals(
-            DSAProviderFactory.getVerifierProvider()
-                .verifySignature(dataHashBytes, signature, resolvedPublicKey))) {
+        && !MetricWriters.timeVerification(
+            metricsLabel,
+            dsa.getDsaParametersSet(),
+            () ->
+                Boolean.TRUE.equals(
+                    DSAProviderFactory.getVerifierProvider()
+                        .verifySignature(dataHashBytes, signature, resolvedPublicKey)))) {
       LOG.info("Discarding commit seal that failed verification against its supplied public key.");
       return Optional.empty();
     }

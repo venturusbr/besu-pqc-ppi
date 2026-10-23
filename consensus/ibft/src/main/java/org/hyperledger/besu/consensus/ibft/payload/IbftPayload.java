@@ -15,6 +15,7 @@
 package org.hyperledger.besu.consensus.ibft.payload;
 
 import org.hyperledger.besu.consensus.common.bft.payload.Payload;
+import org.hyperledger.besu.consensus.ibft.messagedata.IbftV2;
 import org.hyperledger.besu.datatypes.Hash;
 
 import org.apache.tuweni.bytes.Bytes;
@@ -23,6 +24,17 @@ import org.apache.tuweni.bytes.Bytes;
 public abstract class IbftPayload implements Payload {
   /** Default constructor. */
   protected IbftPayload() {}
+
+  @Override
+  public String getMetricsLabel() {
+    return switch (getMessageType()) {
+      case IbftV2.PROPOSAL -> "ibft-proposal";
+      case IbftV2.PREPARE -> "ibft-prepare";
+      case IbftV2.COMMIT -> "ibft-commit";
+      case IbftV2.ROUND_CHANGE -> "ibft-round-change";
+      default -> "ibft-message-" + getMessageType();
+    };
+  }
 
   @Override
   public Hash hashForSignature() {

@@ -22,7 +22,6 @@ import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.PublicKeyRecoverable;
 import org.hyperledger.besu.crypto.SignatureValidationContext;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
-import org.hyperledger.besu.crypto.pqc.metrics.CSVWriter;
 import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.providers.VerifierProvider;
@@ -77,15 +76,13 @@ public class MainnetTransactionValidator implements TransactionValidator {
 
   private final VerifierProvider dsaProvider;
 
-  private final CSVWriter verifyWriter;
-
   /**
-   * Hashes of flexible transactions whose signature verified. A transaction is checked on
-   * admission to the pool, on every attempt to select it into a block, when a proposal carrying it
-   * is validated and when that block is imported, each time from a different decoded copy. The
-   * hash covers every byte verification reads -- the algorithm, the signed fields, the carried key
-   * and the signature -- so a transaction with a cached hash is the one that verified. Only
-   * successes are kept: a failure is never served from here.
+   * Hashes of flexible transactions whose signature verified. A transaction is checked on admission
+   * to the pool, on every attempt to select it into a block, when a proposal carrying it is
+   * validated and when that block is imported, each time from a different decoded copy. The hash
+   * covers every byte verification reads -- the algorithm, the signed fields, the carried key and
+   * the signature -- so a transaction with a cached hash is the one that verified. Only successes
+   * are kept: a failure is never served from here.
    */
   private final Cache<Hash, Boolean> verifiedSignatures =
       CacheBuilder.newBuilder().maximumSize(100_000L).build();
@@ -109,7 +106,6 @@ public class MainnetTransactionValidator implements TransactionValidator {
     this.blobsValidator =
         new MainnetBlobsValidator(acceptedBlobVersions, gasLimitCalculator, gasCalculator);
     this.dsaProvider = DSAProviderFactory.getVerifierProvider();
-    this.verifyWriter = MetricWriters.getVerifyInstance();
   }
 
   @Override
@@ -517,17 +513,7 @@ public class MainnetTransactionValidator implements TransactionValidator {
       final String object,
       final Boolean isValid,
       final DSAParametersSet dsaParams) {
-    // The validator is shared by every thread that processes transactions, the parallel block
-    // processor's included, so the line is built locally: a builder kept on the instance was
-    // appended to and reset by several threads at once.
-    long verifyTime = verifyEnd - verifyStart;
-    verifyWriter.write(
-        verifyTime
-            + ","
-            + object
-            + ","
-            + (isValid ? "yes," : "no,")
-            + dsaParams.getName()
-            + ",\n");
+    MetricWriters.recordVerification(
+        verifyEnd - verifyStart, object, Boolean.TRUE.equals(isValid), dsaParams);
   }
 }

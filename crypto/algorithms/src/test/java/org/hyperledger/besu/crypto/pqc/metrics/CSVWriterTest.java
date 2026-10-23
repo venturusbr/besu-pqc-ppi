@@ -30,6 +30,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -97,6 +99,46 @@ class CSVWriterTest {
     second.clean();
 
     assertThat(read(file)).containsExactly("time,object", "1,a", "2,b");
+  }
+
+  @Test
+  void setsAsideAFileWrittenWithOtherColumnsAndStartsANewOne() throws IOException {
+    final File file = dir.resolve("sign-metrics.csv").toFile();
+    Files.write(
+        file.toPath(),
+        List.of("time,size,object,algorithm,finality", "1,2,block,SECP256K1,seal"),
+        StandardCharsets.ISO_8859_1);
+
+    final CSVWriter writer = new CSVWriter(HEADER, file);
+    writer.write("3,a\n");
+    writer.clean();
+
+    assertThat(read(file)).containsExactly("time,object", "3,a");
+    try (Stream<Path> files = Files.list(dir)) {
+      final List<Path> setAside =
+          files.filter(p -> !p.equals(file.toPath())).collect(Collectors.toList());
+      assertThat(setAside).singleElement().satisfies(
+          p -> {
+            assertThat(p.getFileName().toString()).startsWith("sign-metrics-").endsWith(".csv");
+            assertThat(read(p.toFile()))
+                .containsExactly("time,size,object,algorithm,finality", "1,2,block,SECP256K1,seal");
+          });
+    }
+  }
+
+  @Test
+  void writesTheHeaderIntoAnEmptyExistingFile() throws IOException {
+    final File file = dir.resolve("verify-metrics.csv").toFile();
+    Files.createFile(file.toPath());
+
+    final CSVWriter writer = new CSVWriter(HEADER, file);
+    writer.write("1,a\n");
+    writer.clean();
+
+    assertThat(read(file)).containsExactly("time,object", "1,a");
+    try (Stream<Path> files = Files.list(dir)) {
+      assertThat(files).containsExactly(file.toPath());
+    }
   }
 
   @Test

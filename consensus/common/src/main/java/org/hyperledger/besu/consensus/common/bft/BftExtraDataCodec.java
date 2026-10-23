@@ -173,4 +173,13 @@ public abstract class BftExtraDataCodec {
    * @return the bft extra data
    */
   public abstract BftExtraData decodeRaw(Bytes bytes);
+
+  /**
+   * What the commit seals this codec carries are called in the verify metrics.
+   *
+   * @return the metrics label, e.g. {@code qbft-commit-seal}
+   */
+  public String getCommitSealMetricsLabel() {
+    return CommitSeal.BFT_COMMIT_SEAL;
+  }
 }
