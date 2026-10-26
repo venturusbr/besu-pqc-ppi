@@ -14,6 +14,7 @@
  */
 package org.hyperledger.besu.ethereum.api.jsonrpc.internal.methods;
 
+import org.hyperledger.besu.crypto.config.DsaNotEnabledException;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.api.jsonrpc.JsonRpcErrorConverter;
@@ -97,6 +98,13 @@ public class EthSendRawTransaction implements JsonRpcMethod {
           requestContext.getRequest().getId(), RpcErrorType.INVALID_BLOCK_PARAMS);
     } catch (final InvalidJsonRpcRequestException i) {
       LOG.debug("InvalidJsonRpcRequestException: {} caused by {}", i.getMessage(), i.getCause());
+      if (i.getCause() instanceof DsaNotEnabledException) {
+        // Say which algorithm was refused, so the sender can sign with another.
+        return new JsonRpcErrorResponse(
+            requestContext.getRequest().getId(),
+            new JsonRpcError(
+                RpcErrorType.INVALID_TRANSACTION_PARAMS.getCode(), i.getMessage(), null));
+      }
       return new JsonRpcErrorResponse(
           requestContext.getRequest().getId(), RpcErrorType.INVALID_PARAMS);
     } catch (final IllegalArgumentException ill) {

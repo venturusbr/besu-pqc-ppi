@@ -466,14 +466,10 @@ public class MainnetTransactionValidator implements TransactionValidator {
     }
 
     if (transaction.getDsaType().isPresent()) { // is a flexible transaction
+      // A DSA type that is not enabled never gets here: the lookup throws, and decoding the
+      // transaction already did the same lookup.
       DigitalSignatureAlgorithm dsa =
           dsaProvider.getAccountEnabledDSAById(transaction.getDsaType().get());
-
-      if (dsa == null) {
-        return ValidationResult.invalid(
-            TransactionInvalidReason.INVALID_SIGNATURE,
-            "Transaction DSA type " + transaction.getDsaType().get() + " is not enabled");
-      }
 
       // A key that is recovered whole from the signature is authenticated by that recovery, which
       // resolving the sender above already did, so there is nothing to verify. Every other key is

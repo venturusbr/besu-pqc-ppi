@@ -74,10 +74,10 @@ public class DigitalSignatureAlgorithmConfiguration {
     public DigitalSignatureAlgorithm getEnabledDSA(
             final Short dsaId) {
         final DigitalSignatureAlgorithm enabledDSA = accountsEnabledDSAs.get(dsaId);
-        // An id that is not enabled fails as it always has, rather than yielding null to callers
-        // that never expected it.
+        // An id that is not enabled fails the lookup rather than yielding null to callers that
+        // never expected it, naming the type asked for so the error can reach the user.
         if (enabledDSA == null) {
-            throw new NullPointerException("DSA " + dsaId + " is not enabled for accounts");
+            throw new DsaNotEnabledException(dsaId);
         }
         return enabledDSA;
     }

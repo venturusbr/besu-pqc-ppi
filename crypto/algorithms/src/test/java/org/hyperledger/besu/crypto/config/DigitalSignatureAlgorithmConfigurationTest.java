@@ -72,9 +72,21 @@ class DigitalSignatureAlgorithmConfigurationTest {
   }
 
   @Test
-  void anAlgorithmThatIsNotEnabledStillFailsTheLookup() {
+  void anAlgorithmThatIsNotEnabledFailsTheLookupNamingIt() {
     assertThatThrownBy(() -> config.getEnabledDSA(DSAParametersSet.MLDSA87.getId()))
-        .isInstanceOf(NullPointerException.class);
+        .isInstanceOf(DsaNotEnabledException.class)
+        .isNotInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "DSA type MLDSA87 (0x"
+                + String.format("%04x", DSAParametersSet.MLDSA87.getId())
+                + ") is not enabled for accounts on this node");
+  }
+
+  @Test
+  void anIdThatIsNoAlgorithmAtAllFailsTheLookupByItsNumber() {
+    assertThatThrownBy(() -> config.getEnabledDSA((short) 0x7777))
+        .isInstanceOf(DsaNotEnabledException.class)
+        .hasMessage("DSA type 0x7777 is not enabled for accounts on this node");
   }
 
   @Test
