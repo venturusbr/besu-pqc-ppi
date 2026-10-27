@@ -81,7 +81,7 @@ public class SignedData<M extends Payload> implements Authored {
     if (!(dsa instanceof PublicKeyRecoverable)
         && !MetricWriters.timeVerification(
             payload.getMetricsLabel(),
-            dsa.getDsaParametersSet(),
+            MetricWriters.verifiedAlgorithm(dsa),
             () ->
                 Boolean.TRUE.equals(
                     DSAProviderFactory.getVerifierProvider()

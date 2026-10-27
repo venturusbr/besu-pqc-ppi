@@ -138,7 +138,7 @@ public class CommitSeal {
     if (!(dsa instanceof PublicKeyRecoverable)
         && !MetricWriters.timeVerification(
             metricsLabel,
-            dsa.getDsaParametersSet(),
+            MetricWriters.verifiedAlgorithm(dsa),
             () ->
                 Boolean.TRUE.equals(
                     DSAProviderFactory.getVerifierProvider()

@@ -166,7 +166,7 @@ public class PacketFactory {
     if (!(activeDsa instanceof PublicKeyRecoverable)
         && !MetricWriters.timeVerification(
             DISCV4_PACKET,
-            activeDsa.getDsaParametersSet(),
+            MetricWriters.verifiedAlgorithm(activeDsa),
             () -> Boolean.TRUE.equals(activeDsa.verify(recoveryHash, signature, publicKey)))) {
       throw new PeerDiscoveryPacketDecodingException(
           "Invalid packet signature for the sender's public key");

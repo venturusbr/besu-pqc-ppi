@@ -1,9 +1,18 @@
 package org.hyperledger.besu.crypto.pqc.metrics;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
+import org.hyperledger.besu.crypto.HybridDigitalSignatureAlgorithm;
+import org.hyperledger.besu.crypto.PublicKeyRecoverable;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+
+import com.google.common.base.Splitter;
 
 public class MetricWriters {
     private static CSVWriter signInstance = null;
@@ -38,7 +47,7 @@ public class MetricWriters {
     }
 
     public static String buildPkrHeader(){
-        String header = "PKRTime(ns)," + "Algorithm," + "Context\n";
+        String header = "PKRTime(ns)," + "isRecovered," + "Algorithm," + "Context\n";
         return header;
     }
 
@@ -64,22 +73,28 @@ public class MetricWriters {
     }
 
     /**
-     * Runs a signature check and records it in the verify metrics.
+     * Runs a signature check and records it in the verify metrics. A check that throws is
+     * recorded as not valid, and the exception is passed on.
      *
      * @param context what the signature is over, e.g. {@code tx}, {@code qbft-commit} or
      *     {@code discv4-packet}
-     * @param algorithm the algorithm that verifies it
+     * @param algorithm the algorithm as the metrics name it, see {@link #verifiedAlgorithm}
      * @param verification the check itself
      * @return whether the signature verified
      */
     public static boolean timeVerification(
             final String context,
-            final DSAParametersSet algorithm,
+            final String algorithm,
             final BooleanSupplier verification) {
         final long start = System.nanoTime();
-        final boolean isValid = verification.getAsBoolean();
-        final long end = System.nanoTime();
-        recordVerification(end - start, context, isValid, algorithm);
+        final boolean isValid;
+        try {
+            isValid = verification.getAsBoolean();
+        } catch (final RuntimeException e) {
+            recordVerification(System.nanoTime() - start, context, false, algorithm);
+            throw e;
+        }
+        recordVerification(System.nanoTime() - start, context, isValid, algorithm);
         return isValid;
     }
 
@@ -89,37 +104,42 @@ public class MetricWriters {
      * @param verificationTimeNanos how long the check took
      * @param context what the signature is over
      * @param isValid whether it verified
-     * @param algorithm the algorithm that verified it
+     * @param algorithm the algorithm as the metrics name it, see {@link #verifiedAlgorithm}
      */
     public static void recordVerification(
             final long verificationTimeNanos,
             final String context,
             final boolean isValid,
-            final DSAParametersSet algorithm) {
+            final String algorithm) {
         // Signatures are verified from many threads at once, so each line is built locally.
         getVerifyInstance().write(
             verifyMetricsLine(verificationTimeNanos, context, isValid, algorithm));
     }
 
     /**
-     * Runs a public key recovery and records it in the PKR metrics.
+     * Runs a public key recovery and records it in the PKR metrics. A recovery that comes back
+     * empty or throws is recorded as not recovered, and the exception is passed on.
      *
      * @param context what the signature is over, e.g. {@code tx}, {@code qbft-commit} or
      *     {@code discv4-packet}
-     * @param algorithm the algorithm that recovers the key, e.g. {@code SECP256K1} for the
-     *     classical half of a hybrid signature
+     * @param algorithm the algorithm as the metrics name it, see {@link #recoveredAlgorithm}
      * @param recovery the recovery itself
-     * @param <T> what the recovery yields
-     * @return what the recovery yielded
+     * @param <T> the key it yields
+     * @return the recovered key, or empty when none could be recovered
      */
-    public static <T> T timeRecovery(
+    public static <T> Optional<T> timeRecovery(
             final String context,
-            final DSAParametersSet algorithm,
-            final Supplier<T> recovery) {
+            final String algorithm,
+            final Supplier<Optional<T>> recovery) {
         final long start = System.nanoTime();
-        final T recovered = recovery.get();
-        final long end = System.nanoTime();
-        recordRecovery(end - start, context, algorithm);
+        final Optional<T> recovered;
+        try {
+            recovered = recovery.get();
+        } catch (final RuntimeException e) {
+            recordRecovery(System.nanoTime() - start, context, false, algorithm);
+            throw e;
+        }
+        recordRecovery(System.nanoTime() - start, context, recovered.isPresent(), algorithm);
         return recovered;
     }
 
@@ -128,28 +148,94 @@ public class MetricWriters {
      *
      * @param recoveryTimeNanos how long the recovery took
      * @param context what the signature is over
-     * @param algorithm the algorithm that recovered the key
+     * @param isRecovered whether a key was recovered
+     * @param algorithm the algorithm as the metrics name it, see {@link #recoveredAlgorithm}
      */
     public static void recordRecovery(
-            final long recoveryTimeNanos, final String context, final DSAParametersSet algorithm) {
-        getPkrInstance().write(pkrMetricsLine(recoveryTimeNanos, context, algorithm));
+            final long recoveryTimeNanos,
+            final String context,
+            final boolean isRecovered,
+            final String algorithm) {
+        getPkrInstance().write(pkrMetricsLine(recoveryTimeNanos, context, isRecovered, algorithm));
+    }
+
+    /**
+     * The algorithm of a signature check as the verify metrics name it. A hybrid is named in full,
+     * with the half that was verified in parentheses, e.g. {@code SECP256K1-(MLDSA44)}: verifying
+     * a hybrid leaves any half that supports key recovery to the recovery, which the PKR metrics
+     * record.
+     *
+     * @param dsa the algorithm whose verify was called
+     * @return its name for the verify metrics
+     */
+    public static String verifiedAlgorithm(final DigitalSignatureAlgorithm dsa) {
+        if (!(dsa instanceof HybridDigitalSignatureAlgorithm hybrid)) {
+            return dsa.getDsaParametersSet().getName();
+        }
+        final List<DSAParametersSet> verified =
+            Stream.of(hybrid.getFirstAlgorithm(), hybrid.getSecondAlgorithm())
+                .filter(half -> !(half instanceof PublicKeyRecoverable))
+                .map(DigitalSignatureAlgorithm::getDsaParametersSet)
+                .collect(Collectors.toList());
+        return verified.size() == 1
+            ? highlight(dsa.getDsaParametersSet(), verified.get(0))
+            : dsa.getDsaParametersSet().getName();
+    }
+
+    /**
+     * The algorithm of a key recovery as the PKR metrics name it. A hybrid is named in full, with
+     * the half whose key was recovered in parentheses, e.g. {@code (SECP256K1)-MLDSA44}.
+     *
+     * @param signed the algorithm the signature was made with, hybrid or not
+     * @param recovering the algorithm that recovered the key: {@code signed} itself or one of its
+     *     halves
+     * @return its name for the PKR metrics
+     */
+    public static String recoveredAlgorithm(
+            final DSAParametersSet signed, final DSAParametersSet recovering) {
+        return highlight(signed, recovering);
+    }
+
+    /** The name of {@code whole} with the {@code part} that did the work in parentheses. */
+    static String highlight(final DSAParametersSet whole, final DSAParametersSet part) {
+        if (whole == part) {
+            return whole.getName();
+        }
+        // A hybrid is named after its halves, joined by a hyphen.
+        final List<String> halves = Splitter.on('-').splitToList(whole.getName());
+        if (!halves.contains(part.getName())) {
+            return whole.getName();
+        }
+        return halves.stream()
+            .map(half -> half.equals(part.getName()) ? "(" + half + ")" : half)
+            .collect(Collectors.joining("-"));
     }
 
     static String pkrMetricsLine(
-            final long recoveryTimeNanos, final String context, final DSAParametersSet algorithm) {
-        return recoveryTimeNanos + "," + algorithm.getName() + "," + context + "\n";
+            final long recoveryTimeNanos,
+            final String context,
+            final boolean isRecovered,
+            final String algorithm) {
+        return recoveryTimeNanos
+            + ","
+            + (isRecovered ? "yes" : "no")
+            + ","
+            + algorithm
+            + ","
+            + context
+            + "\n";
     }
 
     static String verifyMetricsLine(
             final long verificationTimeNanos,
             final String context,
             final boolean isValid,
-            final DSAParametersSet algorithm) {
+            final String algorithm) {
         return verificationTimeNanos
             + ","
             + (isValid ? "yes" : "no")
             + ","
-            + algorithm.getName()
+            + algorithm
             + ","
             + context
             + "\n";

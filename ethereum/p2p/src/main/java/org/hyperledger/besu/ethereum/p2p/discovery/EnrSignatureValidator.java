@@ -69,7 +69,7 @@ public class EnrSignatureValidator {
     // Every other scheme carries its own verification in the library: v4 checks the secp256k1
     // field and the ECDSA signature over the same preimage.
     if (!MetricWriters.timeVerification(
-        NODE_RECORD, DSAParametersSet.SECP256K1, nodeRecord::isValid)) {
+        NODE_RECORD, DSAParametersSet.SECP256K1.getName(), nodeRecord::isValid)) {
       LOG.trace("Node record rejected: failed the identity scheme's own checks. {}", nodeRecord);
       return false;
     }
@@ -182,7 +182,7 @@ public class EnrSignatureValidator {
       final Bytes32 data, final CompositeSignature signature, final CompositePublicKey key) {
     return MetricWriters.timeVerification(
         NODE_RECORD,
-        DSAParametersSet.SECP256K1MLDSA44,
+        MetricWriters.verifiedAlgorithm(DSAProviderFactory.getActiveDSA()),
         () -> Boolean.TRUE.equals(DSAProviderFactory.getActiveDSA().verify(data, signature, key)));
   }
 
@@ -203,7 +203,8 @@ public class EnrSignatureValidator {
     final Optional<SECPPublicKey> recovered =
         MetricWriters.timeRecovery(
             NODE_RECORD,
-            DSAParametersSet.SECP256K1,
+            MetricWriters.recoveredAlgorithm(
+                DSAParametersSet.SECP256K1MLDSA44, DSAParametersSet.SECP256K1),
             () ->
                 SignatureAlgorithmFactory.getInstance()
                     .recoverPublicKeyFromSignature(data, ecdsaSignature));

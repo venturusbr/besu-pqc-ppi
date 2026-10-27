@@ -21,7 +21,6 @@ import static org.hyperledger.besu.evm.worldstate.CodeDelegationHelper.hasCodeDe
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.PublicKeyRecoverable;
 import org.hyperledger.besu.crypto.SignatureValidationContext;
-import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.providers.VerifierProvider;
@@ -237,20 +236,17 @@ public class MainnetTransactionValidator implements TransactionValidator {
                         Bytes32 authorizationHashNoSignature =
                             codeDelegation.getOrComputeSenderRecoveryHash();
 
-                        long verifyStart = System.nanoTime();
-                        Boolean isValid =
-                            dsa.verify(
-                                authorizationHashNoSignature, signature, signerPublicKey.get());
-                        long verifyEnd = System.nanoTime();
+                        final PublicKey signerKey = signerPublicKey.get();
+                        final boolean isValid =
+                            MetricWriters.timeVerification(
+                                "delegation",
+                                MetricWriters.verifiedAlgorithm(dsa),
+                                () ->
+                                    Boolean.TRUE.equals(
+                                        dsa.verify(
+                                            authorizationHashNoSignature, signature, signerKey)));
 
-                        saveMetrics(
-                            verifyStart,
-                            verifyEnd,
-                            "delegation",
-                            isValid,
-                            dsa.getDsaParametersSet());
-
-                        if (!Boolean.TRUE.equals(isValid)) {
+                        if (!isValid) {
                           return ValidationResult.invalid(
                               TransactionInvalidReason.INVALID_SIGNATURE,
                               "Invalid code delegation signature");
@@ -486,14 +482,15 @@ public class MainnetTransactionValidator implements TransactionValidator {
 
       PublicKey pk = transaction.getMountedPublicKey();
 
-      long verifyStart = System.nanoTime();
-      Boolean isValid = dsa.verify(Bytes.wrap(transaction.getSigningHash()), txSignature, pk);
-      long verifyEnd = System.nanoTime();
+      final boolean isValid =
+          MetricWriters.timeVerification(
+              "tx",
+              MetricWriters.verifiedAlgorithm(dsa),
+              () ->
+                  Boolean.TRUE.equals(
+                      dsa.verify(Bytes.wrap(transaction.getSigningHash()), txSignature, pk)));
 
-      saveMetrics(
-          verifyStart, verifyEnd, "tx", Boolean.TRUE.equals(isValid), dsa.getDsaParametersSet());
-
-      if (!Boolean.TRUE.equals(isValid)) {
+      if (!isValid) {
         return ValidationResult.invalid(
             TransactionInvalidReason.INVALID_SIGNATURE,
             String.format("Invalid %s transaction signature", txSignature.getAlgorithm()));
@@ -501,15 +498,5 @@ public class MainnetTransactionValidator implements TransactionValidator {
       verifiedSignatures.put(transactionHash, Boolean.TRUE);
     }
     return ValidationResult.valid();
-  }
-
-  private void saveMetrics(
-      final long verifyStart,
-      final long verifyEnd,
-      final String context,
-      final Boolean isValid,
-      final DSAParametersSet dsaParams) {
-    MetricWriters.recordVerification(
-        verifyEnd - verifyStart, context, Boolean.TRUE.equals(isValid), dsaParams);
   }
 }

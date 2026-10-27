@@ -113,7 +113,7 @@ public class CliqueBlockHashing {
 
     if (!MetricWriters.timeVerification(
         CLIQUE_BLOCK_HEADER,
-        dsa.getDsaParametersSet(),
+        MetricWriters.verifiedAlgorithm(dsa),
         () ->
             Boolean.TRUE.equals(
                 DSAProviderFactory.getVerifierProvider()

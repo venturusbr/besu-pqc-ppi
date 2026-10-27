@@ -18,6 +18,7 @@ import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.HybridDigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.PublicKeyRecoverable;
 import org.hyperledger.besu.crypto.SECPPublicKey;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
 import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
 import org.hyperledger.besu.crypto.signature.Signature;
@@ -86,7 +87,12 @@ public class PublicKeyHandler {
 
     return Optional.of(
         resolveSingleAlgorithmPublicKey(
-            signatureAlgorithm, signature, maybePartialPk, recoveryHash, context));
+            signatureAlgorithm,
+            signature,
+            maybePartialPk,
+            recoveryHash,
+            context,
+            signatureAlgorithm.getDsaParametersSet()));
   }
 
   private static PublicKey extractHybridPublicKey(
@@ -106,7 +112,8 @@ public class PublicKeyHandler {
             hybridSignature.getFirstSignature(),
             halfOf(maybePartialPk, CompositePublicKey::getFirstKey),
             recoveryHash,
-            context);
+            context,
+            hybrid.getDsaParametersSet());
 
     PublicKey secondPk =
         resolveSingleAlgorithmPublicKey(
@@ -114,7 +121,8 @@ public class PublicKeyHandler {
             hybridSignature.getSecondSignature(),
             halfOf(maybePartialPk, CompositePublicKey::getSecondKey),
             recoveryHash,
-            context);
+            context,
+            hybrid.getDsaParametersSet());
 
     return CompositePublicKey.create(firstPk, secondPk);
   }
@@ -135,12 +143,13 @@ public class PublicKeyHandler {
       final Signature signature,
       final Optional<PublicKey> maybePartialPk,
       final Bytes32 recoveryHash,
-      final String context) {
+      final String context,
+      final DSAParametersSet signed) {
 
     if (dsa instanceof PublicKeyRecoverable recoverable) {
       return MetricWriters.timeRecovery(
               context,
-              dsa.getDsaParametersSet(),
+              MetricWriters.recoveredAlgorithm(signed, dsa.getDsaParametersSet()),
               () -> recoverable.recoverPublicKeyFromSignature(recoveryHash, signature))
           .orElseThrow(() -> new IllegalArgumentException("Cannot recover public key"));
     }
