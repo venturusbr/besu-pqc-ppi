@@ -506,10 +506,10 @@ public class MainnetTransactionValidator implements TransactionValidator {
   private void saveMetrics(
       final long verifyStart,
       final long verifyEnd,
-      final String object,
+      final String context,
       final Boolean isValid,
       final DSAParametersSet dsaParams) {
     MetricWriters.recordVerification(
-        verifyEnd - verifyStart, object, Boolean.TRUE.equals(isValid), dsaParams);
+        verifyEnd - verifyStart, context, Boolean.TRUE.equals(isValid), dsaParams);
   }
 }

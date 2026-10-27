@@ -65,7 +65,7 @@ public class PublicKeyHandler {
    * @param maybePartialPk the key that travelled with the payload, if any: the halves that cannot
    *     be recovered, or a whole composite key whose recoverable halves are ignored
    * @param recoveryHash the hash the signature was made over
-   * @param object what the signature is over, e.g. {@code tx} or {@code qbft-commit}: each key
+   * @param context what the signature is over, e.g. {@code tx} or {@code qbft-commit}: each key
    *     actually recovered is recorded under it in the PKR metrics, and a key that is only taken
    *     from {@code maybePartialPk} is not
    * @return the signer's public key
@@ -78,15 +78,15 @@ public class PublicKeyHandler {
       final Signature signature,
       final Optional<PublicKey> maybePartialPk,
       final Bytes32 recoveryHash,
-      final String object) {
+      final String context) {
     if (signatureAlgorithm instanceof HybridDigitalSignatureAlgorithm hybrid) {
       return Optional.of(
-          extractHybridPublicKey(hybrid, signature, maybePartialPk, recoveryHash, object));
+          extractHybridPublicKey(hybrid, signature, maybePartialPk, recoveryHash, context));
     }
 
     return Optional.of(
         resolveSingleAlgorithmPublicKey(
-            signatureAlgorithm, signature, maybePartialPk, recoveryHash, object));
+            signatureAlgorithm, signature, maybePartialPk, recoveryHash, context));
   }
 
   private static PublicKey extractHybridPublicKey(
@@ -94,7 +94,7 @@ public class PublicKeyHandler {
       final Signature signature,
       final Optional<PublicKey> maybePartialPk,
       final Bytes32 recoveryHash,
-      final String object) {
+      final String context) {
 
     final DigitalSignatureAlgorithm first = hybrid.getFirstAlgorithm();
     final DigitalSignatureAlgorithm second = hybrid.getSecondAlgorithm();
@@ -106,7 +106,7 @@ public class PublicKeyHandler {
             hybridSignature.getFirstSignature(),
             halfOf(maybePartialPk, CompositePublicKey::getFirstKey),
             recoveryHash,
-            object);
+            context);
 
     PublicKey secondPk =
         resolveSingleAlgorithmPublicKey(
@@ -114,7 +114,7 @@ public class PublicKeyHandler {
             hybridSignature.getSecondSignature(),
             halfOf(maybePartialPk, CompositePublicKey::getSecondKey),
             recoveryHash,
-            object);
+            context);
 
     return CompositePublicKey.create(firstPk, secondPk);
   }
@@ -135,11 +135,11 @@ public class PublicKeyHandler {
       final Signature signature,
       final Optional<PublicKey> maybePartialPk,
       final Bytes32 recoveryHash,
-      final String object) {
+      final String context) {
 
     if (dsa instanceof PublicKeyRecoverable recoverable) {
       return MetricWriters.timeRecovery(
-              object, () -> recoverable.recoverPublicKeyFromSignature(recoveryHash, signature))
+              context, () -> recoverable.recoverPublicKeyFromSignature(recoveryHash, signature))
           .orElseThrow(() -> new IllegalArgumentException("Cannot recover public key"));
     }
 

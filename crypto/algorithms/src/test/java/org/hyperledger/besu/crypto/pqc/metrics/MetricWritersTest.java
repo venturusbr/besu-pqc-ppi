@@ -68,8 +68,11 @@ class MetricWritersTest {
   }
 
   @Test
-  void theSignHeaderHasNoObjectColumn() {
+  void everyFileNamesTheLabelColumnContext() {
     assertThat(MetricWriters.buildSignHeader())
-        .isEqualTo("DSASigningTime(ns),SignatureBytes,Algorithm,FINALITY\n");
+        .isEqualTo("DSASigningTime(ns),SignatureBytes,Algorithm,Context\n");
+    assertThat(MetricWriters.buildVerifyHeader())
+        .isEqualTo("DSAVerificationTime(ns),Context,isSignatureValid,Algorithm\n");
+    assertThat(MetricWriters.buildPkrHeader()).isEqualTo("PKRTime(ns),Context\n");
   }
 }

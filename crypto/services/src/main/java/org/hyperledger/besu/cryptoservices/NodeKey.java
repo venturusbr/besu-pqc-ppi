@@ -42,10 +42,10 @@ public class NodeKey {
    * Sign hash and get the signature, recording the signing metrics.
    *
    * @param dataHash the data hash
-   * @param finality what the signature is for, e.g. {@code qbft-commit} or {@code discv4-packet}
+   * @param context what the signature is for, e.g. {@code qbft-commit} or {@code discv4-packet}
    * @return the signature
    */
-  public Signature sign(final Bytes32 dataHash, final String finality) {
+  public Signature sign(final Bytes32 dataHash, final String context) {
 
     long startSign = System.nanoTime();
     Signature signature = nodeKeyProvider.sign(dataHash);
@@ -53,7 +53,7 @@ public class NodeKey {
 
     // The node key signs from several threads at once, so the line is built locally rather than
     // in a builder shared by all of them.
-    signWriter.write(signMetricsLine(endSign - startSign, signature, finality));
+    signWriter.write(signMetricsLine(endSign - startSign, signature, context));
 
     return signature;
   }
@@ -83,18 +83,18 @@ public class NodeKey {
    *
    * @param signingTimeNanos how long signing took
    * @param signature the signature produced
-   * @param finality the purpose of the signature
+   * @param context the purpose of the signature
    * @return the CSV line, newline terminated
    */
   static String signMetricsLine(
-      final long signingTimeNanos, final Signature signature, final String finality) {
+      final long signingTimeNanos, final Signature signature, final String context) {
     return signingTimeNanos
         + ","
         + signature.encodedBytes().size()
         + ","
         + signature.getAlgorithm()
         + ","
-        + finality
+        + context
         + "\n";
   }
 }
