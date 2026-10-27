@@ -138,6 +138,7 @@ public final class InitiatorHandshakeMessageV1 implements InitiatorHandshakeMess
     final SECPPublicKey ephPubKey =
         MetricWriters.timeRecovery(
                 "rlpx-handshake",
+                SIGNATURE_ALGORITHM.get().getDsaParametersSet(),
                 () ->
                     SIGNATURE_ALGORITHM
                         .get()

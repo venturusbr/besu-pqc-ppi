@@ -29,10 +29,10 @@ class MetricWritersTest {
             1_234L, "qbft-commit", true, DSAParametersSet.SECP256K1MLDSA44);
 
     final String[] header = MetricWriters.buildVerifyHeader().trim().split(",", -1);
-    assertThat(line).endsWith(DSAParametersSet.SECP256K1MLDSA44.getName() + "\n");
+    assertThat(line).endsWith("qbft-commit\n");
     assertThat(line.trim().split(",", -1))
         .hasSameSizeAs(header)
-        .containsExactly("1234", "qbft-commit", "yes", DSAParametersSet.SECP256K1MLDSA44.getName());
+        .containsExactly("1234", "yes", DSAParametersSet.SECP256K1MLDSA44.getName(), "qbft-commit");
   }
 
   @Test
@@ -40,7 +40,7 @@ class MetricWritersTest {
     final String line =
         MetricWriters.verifyMetricsLine(1L, "discv4-packet", false, DSAParametersSet.MLDSA44);
 
-    assertThat(line.trim().split(",", -1)[2]).isEqualTo("no");
+    assertThat(line.trim().split(",", -1)[1]).isEqualTo("no");
   }
 
   @Test
@@ -53,26 +53,29 @@ class MetricWritersTest {
 
   @Test
   void aPkrLineHasTheColumnsOfTheHeader() {
-    final String line = MetricWriters.pkrMetricsLine(1_234L, "qbft-commit-seal");
+    final String line =
+        MetricWriters.pkrMetricsLine(1_234L, "qbft-commit-seal", DSAParametersSet.SECP256K1);
 
     final String[] header = MetricWriters.buildPkrHeader().trim().split(",", -1);
     assertThat(line).endsWith("\n");
     assertThat(line.trim().split(",", -1))
         .hasSameSizeAs(header)
-        .containsExactly("1234", "qbft-commit-seal");
+        .containsExactly("1234", DSAParametersSet.SECP256K1.getName(), "qbft-commit-seal");
   }
 
   @Test
   void aTimedRecoveryReturnsWhatWasRecovered() {
-    assertThat(MetricWriters.timeRecovery("discv4-packet", () -> "key")).isEqualTo("key");
+    assertThat(
+            MetricWriters.timeRecovery("discv4-packet", DSAParametersSet.SECP256K1, () -> "key"))
+        .isEqualTo("key");
   }
 
   @Test
-  void everyFileNamesTheLabelColumnContext() {
+  void everyFileEndsWithTheAlgorithmAndTheContext() {
     assertThat(MetricWriters.buildSignHeader())
-        .isEqualTo("DSASigningTime(ns),SignatureBytes,Algorithm,Context\n");
+        .isEqualTo("DSASigningTime(ns),Algorithm,Context\n");
     assertThat(MetricWriters.buildVerifyHeader())
-        .isEqualTo("DSAVerificationTime(ns),Context,isSignatureValid,Algorithm\n");
-    assertThat(MetricWriters.buildPkrHeader()).isEqualTo("PKRTime(ns),Context\n");
+        .isEqualTo("DSAVerificationTime(ns),isSignatureValid,Algorithm,Context\n");
+    assertThat(MetricWriters.buildPkrHeader()).isEqualTo("PKRTime(ns),Algorithm,Context\n");
   }
 }

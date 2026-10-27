@@ -203,6 +203,7 @@ public class EnrSignatureValidator {
     final Optional<SECPPublicKey> recovered =
         MetricWriters.timeRecovery(
             NODE_RECORD,
+            DSAParametersSet.SECP256K1,
             () ->
                 SignatureAlgorithmFactory.getInstance()
                     .recoverPublicKeyFromSignature(data, ecdsaSignature));

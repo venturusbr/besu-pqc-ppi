@@ -119,6 +119,7 @@ public class ECRECPrecompiledContract extends AbstractPrecompiledContract {
     final Bytes resultBytes =
         MetricWriters.timeRecovery(
             "ecrecover",
+            signatureAlgorithm.getDsaParametersSet(),
             () ->
                 signatureAlgorithm.isNative() && isK1PrecompileSpecificNativeAvailable()
                     ? computeK1Native(safeInput)

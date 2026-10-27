@@ -71,11 +71,7 @@ public class NodeKeyTest {
     assertThat(line).endsWith("\n");
     assertThat(line.trim().split(",", -1))
         .hasSameSizeAs(header)
-        .containsExactly(
-            "1234",
-            String.valueOf(signature.encodedBytes().size()),
-            DSAParametersSet.SECP256K1.getName(),
-            "qbft-commit");
+        .containsExactly("1234", DSAParametersSet.SECP256K1.getName(), "qbft-commit");
   }
 
   @Test
@@ -87,7 +83,7 @@ public class NodeKeyTest {
 
     final String line = NodeKey.signMetricsLine(1L, signature, "qbft-commit-seal");
 
-    assertThat(line.trim().split(",", -1)[2])
+    assertThat(line.trim().split(",", -1)[1])
         .isEqualTo(DSAParametersSet.SECP256K1MLDSA44.getName());
   }
 

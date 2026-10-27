@@ -28,17 +28,17 @@ public class MetricWriters {
     }
 
     public static String buildSignHeader(){
-        String header = "DSASigningTime(ns)," + "SignatureBytes," + "Algorithm,"+ "Context\n";
+        String header = "DSASigningTime(ns)," + "Algorithm,"+ "Context\n";
         return header;
     }
 
     public static String buildVerifyHeader(){
-        String header = "DSAVerificationTime(ns)," + "Context," + "isSignatureValid," + "Algorithm\n";
+        String header = "DSAVerificationTime(ns)," + "isSignatureValid," + "Algorithm," + "Context\n";
         return header;
     }
 
     public static String buildPkrHeader(){
-        String header = "PKRTime(ns)," + "Context\n";
+        String header = "PKRTime(ns)," + "Algorithm," + "Context\n";
         return header;
     }
 
@@ -106,15 +106,20 @@ public class MetricWriters {
      *
      * @param context what the signature is over, e.g. {@code tx}, {@code qbft-commit} or
      *     {@code discv4-packet}
+     * @param algorithm the algorithm that recovers the key, e.g. {@code SECP256K1} for the
+     *     classical half of a hybrid signature
      * @param recovery the recovery itself
      * @param <T> what the recovery yields
      * @return what the recovery yielded
      */
-    public static <T> T timeRecovery(final String context, final Supplier<T> recovery) {
+    public static <T> T timeRecovery(
+            final String context,
+            final DSAParametersSet algorithm,
+            final Supplier<T> recovery) {
         final long start = System.nanoTime();
         final T recovered = recovery.get();
         final long end = System.nanoTime();
-        recordRecovery(end - start, context);
+        recordRecovery(end - start, context, algorithm);
         return recovered;
     }
 
@@ -123,13 +128,16 @@ public class MetricWriters {
      *
      * @param recoveryTimeNanos how long the recovery took
      * @param context what the signature is over
+     * @param algorithm the algorithm that recovered the key
      */
-    public static void recordRecovery(final long recoveryTimeNanos, final String context) {
-        getPkrInstance().write(pkrMetricsLine(recoveryTimeNanos, context));
+    public static void recordRecovery(
+            final long recoveryTimeNanos, final String context, final DSAParametersSet algorithm) {
+        getPkrInstance().write(pkrMetricsLine(recoveryTimeNanos, context, algorithm));
     }
 
-    static String pkrMetricsLine(final long recoveryTimeNanos, final String context) {
-        return recoveryTimeNanos + "," + context + "\n";
+    static String pkrMetricsLine(
+            final long recoveryTimeNanos, final String context, final DSAParametersSet algorithm) {
+        return recoveryTimeNanos + "," + algorithm.getName() + "," + context + "\n";
     }
 
     static String verifyMetricsLine(
@@ -139,11 +147,11 @@ public class MetricWriters {
             final DSAParametersSet algorithm) {
         return verificationTimeNanos
             + ","
-            + context
-            + ","
             + (isValid ? "yes" : "no")
             + ","
             + algorithm.getName()
+            + ","
+            + context
             + "\n";
     }
 }

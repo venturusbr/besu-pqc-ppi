@@ -139,7 +139,9 @@ public class PublicKeyHandler {
 
     if (dsa instanceof PublicKeyRecoverable recoverable) {
       return MetricWriters.timeRecovery(
-              context, () -> recoverable.recoverPublicKeyFromSignature(recoveryHash, signature))
+              context,
+              dsa.getDsaParametersSet(),
+              () -> recoverable.recoverPublicKeyFromSignature(recoveryHash, signature))
           .orElseThrow(() -> new IllegalArgumentException("Cannot recover public key"));
     }
 

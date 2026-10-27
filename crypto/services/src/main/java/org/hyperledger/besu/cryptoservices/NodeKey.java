@@ -79,7 +79,7 @@ public class NodeKey {
 
   /**
    * A row of the sign metrics, in the columns {@link MetricWriters#buildSignHeader()} names:
-   * signing time, signature size, algorithm and purpose.
+   * signing time, algorithm and purpose.
    *
    * @param signingTimeNanos how long signing took
    * @param signature the signature produced
@@ -89,8 +89,6 @@ public class NodeKey {
   static String signMetricsLine(
       final long signingTimeNanos, final Signature signature, final String context) {
     return signingTimeNanos
-        + ","
-        + signature.encodedBytes().size()
         + ","
         + signature.getAlgorithm()
         + ","
