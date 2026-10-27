@@ -33,6 +33,9 @@ import org.apache.tuweni.bytes.Bytes32;
 
 /** The Clique block hashing. */
 public class CliqueBlockHashing {
+
+  /** What the proposer seal is called in the sign, verify and PKR metrics. */
+  private static final String CLIQUE_BLOCK_HEADER = "clique-block-header";
   /** Default constructor. */
   private CliqueBlockHashing() {}
 
@@ -77,7 +80,11 @@ public class CliqueBlockHashing {
     final DigitalSignatureAlgorithm dsa = DSAProviderFactory.getActiveDSA();
     if (!CliqueExtraData.carriesProposerKey(dsa)) {
       return Address.signatureToAddress(
-          dsa, cliqueExtraData.getProposerSeal().get(), Optional.empty(), proposerHash);
+          dsa,
+          cliqueExtraData.getProposerSeal().get(),
+          Optional.empty(),
+          proposerHash,
+          CLIQUE_BLOCK_HEADER);
     }
     return recoverVerifiedProposerAddress(dsa, cliqueExtraData, proposerHash);
   }
@@ -93,7 +100,11 @@ public class CliqueBlockHashing {
     try {
       proposerPublicKey =
           PublicKeyHandler.resolvePublicKey(
-                  dsa, seal, cliqueExtraData.getProposerPublicKey(), proposerHashBytes)
+                  dsa,
+                  seal,
+                  cliqueExtraData.getProposerPublicKey(),
+                  proposerHashBytes,
+                  CLIQUE_BLOCK_HEADER)
               .get();
     } catch (final RuntimeException e) {
       throw new IllegalArgumentException(
@@ -101,7 +112,7 @@ public class CliqueBlockHashing {
     }
 
     if (!MetricWriters.timeVerification(
-        "clique-block-header",
+        CLIQUE_BLOCK_HEADER,
         dsa.getDsaParametersSet(),
         () ->
             Boolean.TRUE.equals(

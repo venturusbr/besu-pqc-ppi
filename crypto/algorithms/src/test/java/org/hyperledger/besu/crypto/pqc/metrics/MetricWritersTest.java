@@ -52,6 +52,22 @@ class MetricWritersTest {
   }
 
   @Test
+  void aPkrLineHasTheColumnsOfTheHeader() {
+    final String line = MetricWriters.pkrMetricsLine(1_234L, "qbft-commit-seal");
+
+    final String[] header = MetricWriters.buildPkrHeader().trim().split(",", -1);
+    assertThat(line).endsWith("\n");
+    assertThat(line.trim().split(",", -1))
+        .hasSameSizeAs(header)
+        .containsExactly("1234", "qbft-commit-seal");
+  }
+
+  @Test
+  void aTimedRecoveryReturnsWhatWasRecovered() {
+    assertThat(MetricWriters.timeRecovery("discv4-packet", () -> "key")).isEqualTo("key");
+  }
+
+  @Test
   void theSignHeaderHasNoObjectColumn() {
     assertThat(MetricWriters.buildSignHeader())
         .isEqualTo("DSASigningTime(ns),SignatureBytes,Algorithm,FINALITY\n");

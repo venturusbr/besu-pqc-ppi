@@ -74,7 +74,9 @@ public class SignedData<M extends Payload> implements Authored {
     final DigitalSignatureAlgorithm dsa = DSAProviderFactory.getActiveDSA();
 
     final PublicKey resolvedPublicKey =
-        PublicKeyHandler.resolvePublicKey(dsa, signature, maybePublicKey, msgHashBytes).get();
+        PublicKeyHandler.resolvePublicKey(
+                dsa, signature, maybePublicKey, msgHashBytes, payload.getMetricsLabel())
+            .get();
 
     if (!(dsa instanceof PublicKeyRecoverable)
         && !MetricWriters.timeVerification(
@@ -128,7 +130,11 @@ public class SignedData<M extends Payload> implements Authored {
             .orElseGet(
                 () ->
                     Address.signatureToAddress(
-                        DSAProviderFactory.getActiveDSA(), signature, maybePublicKey, msgHash));
+                        DSAProviderFactory.getActiveDSA(),
+                        signature,
+                        maybePublicKey,
+                        msgHash,
+                        payload.getMetricsLabel()));
     return new SignedData<>(payload, sender, signature, maybePublicKey);
   }
 

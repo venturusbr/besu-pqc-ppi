@@ -20,6 +20,7 @@ import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.cryptoservices.NodeKey;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPInput;
@@ -74,9 +75,12 @@ public final class InitiatorHandshakeMessageV4 implements InitiatorHandshakeMess
     final Bytes32 nonce = input.readBytes32();
     final Bytes32 staticSharedSecret = nodeKey.calculateECDHKeyAgreement(pubKey);
     final SECPPublicKey ephPubKey =
-        SIGNATURE_ALGORITHM
-            .get()
-            .recoverPublicKeyFromSignature(staticSharedSecret.xor(nonce), signature)
+        MetricWriters.timeRecovery(
+                "rlpx-handshake",
+                () ->
+                    SIGNATURE_ALGORITHM
+                        .get()
+                        .recoverPublicKeyFromSignature(staticSharedSecret.xor(nonce), signature))
             .orElseThrow(() -> new RuntimeException("Could not recover public key from signature"));
 
     return new InitiatorHandshakeMessageV4(pubKey, signature, ephPubKey, nonce);

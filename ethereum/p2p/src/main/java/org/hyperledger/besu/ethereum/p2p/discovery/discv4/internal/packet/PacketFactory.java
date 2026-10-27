@@ -150,7 +150,11 @@ public class PacketFactory {
     // rather than an impersonation, which is what authenticates it.
     final PublicKey publicKey =
         PublicKeyHandler.resolvePublicKey(
-                activeDsa, signature, partialPublicKey(encodedPublicKey, activeDsa), recoveryHash)
+                activeDsa,
+                signature,
+                partialPublicKey(encodedPublicKey, activeDsa),
+                recoveryHash,
+                DISCV4_PACKET)
             .orElseThrow(
                 () ->
                     new PeerDiscoveryPacketDecodingException(

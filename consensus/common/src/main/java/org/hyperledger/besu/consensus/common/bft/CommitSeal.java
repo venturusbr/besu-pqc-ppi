@@ -128,7 +128,8 @@ public class CommitSeal {
     final PublicKey resolvedPublicKey;
     try {
       resolvedPublicKey =
-          PublicKeyHandler.resolvePublicKey(dsa, signature, publicKey, dataHashBytes).get();
+          PublicKeyHandler.resolvePublicKey(dsa, signature, publicKey, dataHashBytes, metricsLabel)
+              .get();
     } catch (final RuntimeException e) {
       LOG.info("Discarding commit seal whose public key could not be resolved: {}", e.getMessage());
       return Optional.empty();

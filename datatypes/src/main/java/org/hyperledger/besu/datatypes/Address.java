@@ -183,6 +183,7 @@ public class Address extends BytesHolder {
    * @param maybePartialPk the public key to use when the algorithm cannot recover one from the
    *     signature
    * @param dataHash the hash of the data which was signed
+   * @param object what the signature is over, recorded in the PKR metrics when a key is recovered
    * @return the address of the signer
    * @throws IllegalArgumentException if the public key could not be resolved (e.g. recovery failed,
    *     or no partial public key was provided for a non-recoverable algorithm)
@@ -191,12 +192,13 @@ public class Address extends BytesHolder {
       final DigitalSignatureAlgorithm signatureAlgorithm,
       final Signature signature,
       final Optional<PublicKey> maybePartialPk,
-      final Hash dataHash) {
+      final Hash dataHash,
+      final String object) {
     final Bytes32 dataHashBytes = Bytes32.wrap(dataHash.getBytes());
 
     final PublicKey publicKey =
         PublicKeyHandler.resolvePublicKey(
-                signatureAlgorithm, signature, maybePartialPk, dataHashBytes)
+                signatureAlgorithm, signature, maybePartialPk, dataHashBytes, object)
             .get();
 
     return Address.extract(publicKey);

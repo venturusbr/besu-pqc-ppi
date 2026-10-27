@@ -53,7 +53,7 @@ class PublicKeyHandlerTest {
     final PublicKey mlDsaHalf = ((CompositePublicKey) signer.getPublicKey()).getSecondKey();
 
     final PublicKey resolved =
-        PublicKeyHandler.resolvePublicKey(hybrid, signature, Optional.of(mlDsaHalf), HASH)
+        PublicKeyHandler.resolvePublicKey(hybrid, signature, Optional.of(mlDsaHalf), HASH, "test")
             .orElseThrow();
 
     assertThat(resolved.getEncoded()).isEqualTo(signer.getPublicKey().getEncoded());
@@ -66,7 +66,7 @@ class PublicKeyHandlerTest {
 
     final PublicKey resolved =
         PublicKeyHandler.resolvePublicKey(
-                hybrid, signature, Optional.of(signer.getPublicKey()), HASH)
+                hybrid, signature, Optional.of(signer.getPublicKey()), HASH, "test")
             .orElseThrow();
 
     assertThat(resolved.getEncoded()).isEqualTo(signer.getPublicKey().getEncoded());
@@ -101,7 +101,7 @@ class PublicKeyHandlerTest {
     final CompositePublicKey resolved =
         (CompositePublicKey)
             PublicKeyHandler.resolvePublicKey(
-                    hybrid, forged, Optional.of(victim.getPublicKey()), HASH)
+                    hybrid, forged, Optional.of(victim.getPublicKey()), HASH, "test")
                 .orElseThrow();
 
     assertThat(resolved.getEncoded()).isNotEqualTo(victim.getPublicKey().getEncoded());
@@ -192,7 +192,7 @@ class PublicKeyHandlerTest {
     final Signature signature = signer.sign(HASH, signer.generateNodeKeyPair().getPrivateKey());
 
     assertThatThrownBy(
-            () -> PublicKeyHandler.resolvePublicKey(noSigner, signature, Optional.empty(), HASH))
+            () -> PublicKeyHandler.resolvePublicKey(noSigner, signature, Optional.empty(), HASH, "test"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Cannot recover public key");
   }
@@ -204,7 +204,7 @@ class PublicKeyHandlerTest {
     final Signature signature = mlDsa.sign(HASH, mlDsa.generateNodeKeyPair().getPrivateKey());
 
     assertThatThrownBy(
-            () -> PublicKeyHandler.resolvePublicKey(mlDsa, signature, Optional.empty(), HASH))
+            () -> PublicKeyHandler.resolvePublicKey(mlDsa, signature, Optional.empty(), HASH, "test"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Public key must be provided when algorithm does not support PKR");
   }

@@ -53,7 +53,7 @@ public class EnrSignatureValidator {
 
   private static final Logger LOG = LoggerFactory.getLogger(EnrSignatureValidator.class);
 
-  /** What a node record signature is called in the sign and verify metrics. */
+  /** What a node record signature is called in the sign, verify and PKR metrics. */
   private static final String NODE_RECORD = "node-record";
 
   /**
@@ -201,7 +201,11 @@ public class EnrSignatureValidator {
       return false;
     }
     final Optional<SECPPublicKey> recovered =
-        SignatureAlgorithmFactory.getInstance().recoverPublicKeyFromSignature(data, ecdsaSignature);
+        MetricWriters.timeRecovery(
+            NODE_RECORD,
+            () ->
+                SignatureAlgorithmFactory.getInstance()
+                    .recoverPublicKeyFromSignature(data, ecdsaSignature));
     // Compared on the key material alone: SECPPublicKey.equals also compares the algorithm label
     // it was built with, which differs between a recovered key and one that was decoded.
     return recovered.isPresent()

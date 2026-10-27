@@ -1,6 +1,7 @@
 package org.hyperledger.besu.crypto.pqc.metrics;
 
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 
@@ -98,6 +99,37 @@ public class MetricWriters {
         // Signatures are verified from many threads at once, so each line is built locally.
         getVerifyInstance().write(
             verifyMetricsLine(verificationTimeNanos, object, isValid, algorithm));
+    }
+
+    /**
+     * Runs a public key recovery and records it in the PKR metrics.
+     *
+     * @param object what the signature is over, e.g. {@code tx}, {@code qbft-commit} or
+     *     {@code discv4-packet}
+     * @param recovery the recovery itself
+     * @param <T> what the recovery yields
+     * @return what the recovery yielded
+     */
+    public static <T> T timeRecovery(final String object, final Supplier<T> recovery) {
+        final long start = System.nanoTime();
+        final T recovered = recovery.get();
+        final long end = System.nanoTime();
+        recordRecovery(end - start, object);
+        return recovered;
+    }
+
+    /**
+     * Writes a row of the PKR metrics, in the columns {@link #buildPkrHeader()} names.
+     *
+     * @param recoveryTimeNanos how long the recovery took
+     * @param object what the signature is over
+     */
+    public static void recordRecovery(final long recoveryTimeNanos, final String object) {
+        getPkrInstance().write(pkrMetricsLine(recoveryTimeNanos, object));
+    }
+
+    static String pkrMetricsLine(final long recoveryTimeNanos, final String object) {
+        return recoveryTimeNanos + "," + object + "\n";
     }
 
     static String verifyMetricsLine(

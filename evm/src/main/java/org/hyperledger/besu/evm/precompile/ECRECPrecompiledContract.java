@@ -20,6 +20,7 @@ import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1;
@@ -114,12 +115,14 @@ public class ECRECPrecompiledContract extends AbstractPrecompiledContract {
       }
     }
 
-    Bytes resultBytes;
-    if (signatureAlgorithm.isNative() && isK1PrecompileSpecificNativeAvailable()) {
-      resultBytes = computeK1Native(safeInput);
-    } else {
-      resultBytes = computeDefault(safeInput);
-    }
+    // Recorded in the PKR metrics, natively recovered or not; a cached result recovers nothing.
+    final Bytes resultBytes =
+        MetricWriters.timeRecovery(
+            "ecrecover",
+            () ->
+                signatureAlgorithm.isNative() && isK1PrecompileSpecificNativeAvailable()
+                    ? computeK1Native(safeInput)
+                    : computeDefault(safeInput));
     res =
         new PrecompileInputResultTuple(
             enableResultCaching ? input.copy() : input,
