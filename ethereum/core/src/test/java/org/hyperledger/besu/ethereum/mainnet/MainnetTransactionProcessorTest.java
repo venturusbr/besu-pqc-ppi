@@ -17,6 +17,8 @@ package org.hyperledger.besu.ethereum.mainnet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -138,6 +140,8 @@ class MainnetTransactionProcessorTest {
     when(transaction.getValue()).thenReturn(Wei.ZERO);
     when(transactionValidatorFactory.get().validate(any(), any(), any(), any()))
         .thenReturn(ValidationResult.valid());
+    when(transactionValidatorFactory.get().validateTransactionSignature(any()))
+        .thenReturn(ValidationResult.valid());
     when(transactionValidatorFactory.get().validateForSender(any(), any(), any()))
         .thenReturn(ValidationResult.valid());
     when(worldState.getOrCreateSenderAccount(any())).thenReturn(senderAccount);
@@ -198,6 +202,8 @@ class MainnetTransactionProcessorTest {
     when(transaction.getValue()).thenReturn(Wei.ZERO);
     when(transactionValidatorFactory.get().validate(any(), any(), any(), any()))
         .thenReturn(ValidationResult.valid());
+    when(transactionValidatorFactory.get().validateTransactionSignature(any()))
+        .thenReturn(ValidationResult.valid());
     when(transactionValidatorFactory.get().validateForSender(any(), any(), any()))
         .thenReturn(ValidationResult.valid());
     when(worldState.getOrCreateSenderAccount(senderAddress)).thenReturn(senderAccount);
@@ -254,6 +260,33 @@ class MainnetTransactionProcessorTest {
   }
 
   @Test
+  void shouldRejectTransactionWhoseSignatureDoesNotVerify() {
+    final ValidationResult<TransactionInvalidReason> invalidSignature =
+        ValidationResult.invalid(TransactionInvalidReason.INVALID_SIGNATURE);
+    when(transaction.getSender())
+        .thenReturn(Address.fromHexString("0x5555555555555555555555555555555555555555"));
+    when(transactionValidatorFactory.get().validate(any(), any(), any(), any()))
+        .thenReturn(ValidationResult.valid());
+    when(transactionValidatorFactory.get().validateTransactionSignature(transaction))
+        .thenReturn(invalidSignature);
+
+    final TransactionProcessingResult result =
+        createTransactionProcessor(false)
+            .processTransaction(
+                worldState,
+                blockHeader,
+                transaction,
+                Address.fromHexString("1"),
+                blockHashLookup,
+                TransactionValidationParams.processingBlock(),
+                Wei.ZERO);
+
+    assertThat(result.isInvalid()).isTrue();
+    assertThat(result.getValidationResult()).isEqualTo(invalidSignature);
+    verify(worldState, never()).getOrCreateSenderAccount(any());
+  }
+
+  @Test
   void shouldCallTransactionValidatorWithExpectedTransactionValidationParams() {
     final ArgumentCaptor<TransactionValidationParams> txValidationParamCaptor =
         transactionValidationParamCaptor();
@@ -283,6 +316,8 @@ class MainnetTransactionProcessorTest {
     final ArgumentCaptor<TransactionValidationParams> txValidationParamCaptor =
         ArgumentCaptor.forClass(TransactionValidationParams.class);
     when(transactionValidatorFactory.get().validate(any(), any(), any(), any()))
+        .thenReturn(ValidationResult.valid());
+    when(transactionValidatorFactory.get().validateTransactionSignature(any()))
         .thenReturn(ValidationResult.valid());
     // returning invalid transaction to halt method execution
     when(transactionValidatorFactory

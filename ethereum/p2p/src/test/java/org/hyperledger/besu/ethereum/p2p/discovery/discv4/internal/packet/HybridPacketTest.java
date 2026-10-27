@@ -35,7 +35,6 @@ import org.hyperledger.besu.ethereum.p2p.discovery.discv4.PeerDiscoveryAgentV4;
 import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.DiscoveryPeerV4;
 import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.PacketType;
 import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.findneighbors.FindNeighborsPacketData;
-import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.ping.PingPacketData;
 
 import java.security.InvalidAlgorithmParameterException;
 import java.util.ArrayList;
@@ -104,7 +103,8 @@ class HybridPacketTest {
     assertThat(received.getNodeId().size()).isEqualTo(HYBRID.getPublicKeyLength());
     assertThat(received.getPublicKey()).isInstanceOf(CompositePublicKey.class);
     assertThat(received.getType()).isEqualTo(PacketType.PING);
-    assertThat(received.getSignature().encodedBytes()).isEqualTo(sent.getSignature().encodedBytes());
+    assertThat(received.getSignature().encodedBytes())
+        .isEqualTo(sent.getSignature().encodedBytes());
   }
 
   @Test
@@ -113,7 +113,8 @@ class HybridPacketTest {
     final KeyPair keyPair = hybridKeyPair();
     final CompositePublicKey publicKey = (CompositePublicKey) keyPair.getPublicKey();
 
-    final Bytes wire = Bytes.wrapBuffer(packetPackage.packetSerializer().encode(pingSignedBy(keyPair)));
+    final Bytes wire =
+        Bytes.wrapBuffer(packetPackage.packetSerializer().encode(pingSignedBy(keyPair)));
 
     assertThat(wire.slice(Packet.publicKeyIndex(), Packet.publicKeyLength()))
         .isEqualTo(Bytes.wrap(publicKey.getSecondKey().getEncoded()));
@@ -142,8 +143,7 @@ class HybridPacketTest {
     final byte[] tampered = wire.toArray();
     tampered[Packet.publicKeyIndex()] ^= 0x01;
 
-    assertThatThrownBy(
-            () -> packetPackage.packetDeserializer().decode(Buffer.buffer(tampered)))
+    assertThatThrownBy(() -> packetPackage.packetDeserializer().decode(Buffer.buffer(tampered)))
         .isInstanceOf(PeerDiscoveryPacketDecodingException.class);
   }
 
@@ -156,8 +156,7 @@ class HybridPacketTest {
     // deep inside the ML-DSA-44 half, past the classical signature
     tampered[Packet.publicKeyIndex() - 1] ^= 0x01;
 
-    assertThatThrownBy(
-            () -> packetPackage.packetDeserializer().decode(Buffer.buffer(tampered)))
+    assertThatThrownBy(() -> packetPackage.packetDeserializer().decode(Buffer.buffer(tampered)))
         .isInstanceOf(PeerDiscoveryPacketDecodingException.class);
   }
 
@@ -177,7 +176,8 @@ class HybridPacketTest {
                 (PeerDiscoveryAgentV4.MAX_PACKET_SIZE_BYTES - Packet.packetDataIndex() - 64)
                     / perPeer));
 
-    final Bytes wire = Bytes.wrapBuffer(packetPackage.packetSerializer().encode(neighbors(fitting)));
+    final Bytes wire =
+        Bytes.wrapBuffer(packetPackage.packetSerializer().encode(neighbors(fitting)));
 
     assertThat(wire.size()).isLessThanOrEqualTo(PeerDiscoveryAgentV4.MAX_PACKET_SIZE_BYTES);
     // and one more would not fit, so the cap is where it belongs rather than merely safe
@@ -234,7 +234,8 @@ class HybridPacketTest {
             () ->
                 packetPackage
                     .findNeighborsPacketDataFactory()
-                    .create(Bytes.repeat((byte) 0x01, DSAParametersSet.SECP256K1.getPublicKeyLength())))
+                    .create(
+                        Bytes.repeat((byte) 0x01, DSAParametersSet.SECP256K1.getPublicKeyLength())))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("target must be a valid node id");
   }

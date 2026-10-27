@@ -50,6 +50,11 @@ public class QbftExtraDataCodec extends BftExtraDataCodec {
   /** Default constructor */
   public QbftExtraDataCodec() {}
 
+  @Override
+  public String getCommitSealMetricsLabel() {
+    return "qbft-commit-seal";
+  }
+
   /**
    * Encode from addresses.
    *

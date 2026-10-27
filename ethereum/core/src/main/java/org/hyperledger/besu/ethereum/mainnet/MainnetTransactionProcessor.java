@@ -233,12 +233,18 @@ public class MainnetTransactionProcessor {
       }
       final Address senderAddress = maybeSender.get();
 
-      // final ValidationResult<TransactionInvalidReason> signatureValidationResult = transactionValidator.validateTransactionSignature(transaction);
+      // Blocks reach this point without passing through the transaction pool, so the signature is
+      // checked here too. A non-recoverable algorithm takes the sender from the public key the
+      // transaction carries, and only verification stops that key from being anyone's.
+      final ValidationResult<TransactionInvalidReason> signatureValidationResult =
+          transactionValidator.validateTransactionSignature(transaction);
+      if (!signatureValidationResult.isValid()) {
+        LOG.debug(
+            "Transaction signature verification failed: {}",
+            signatureValidationResult.getErrorMessage());
+        return TransactionProcessingResult.invalid(signatureValidationResult);
+      }
 
-      // if (!signatureValidationResult.isValid()) {
-      //   LOG.debug("Transaction signature verification failed: {}", signatureValidationResult.getErrorMessage());
-      //   return TransactionProcessingResult.invalid(signatureValidationResult);
-      // }
       final MutableAccount sender = worldState.getOrCreateSenderAccount(senderAddress);
       accessLocationTracker.ifPresent(t -> t.addTouchedAccount(senderAddress));
 

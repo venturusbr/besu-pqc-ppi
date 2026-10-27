@@ -332,7 +332,8 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
         SIGNATURE_ALGORITHM.get(),
         signature,
         maybePublicKey,
-        hash
+        hash,
+        "delegation"
       );
   }
 
@@ -345,7 +346,8 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
         DSAProviderFactory.getVerifierProvider().getAccountEnabledDSAById(dsaType.get()),
         signature,
         maybePublicKey,
-        hash
+        hash,
+        "delegation"
     );
   }
 

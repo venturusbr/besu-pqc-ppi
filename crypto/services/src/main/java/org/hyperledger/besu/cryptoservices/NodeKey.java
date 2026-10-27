@@ -22,11 +22,11 @@ import org.hyperledger.besu.crypto.signature.Signature;
 import java.security.PublicKey;
 
 import org.apache.tuweni.bytes.Bytes32;
+
 /** The Node key. */
 public class NodeKey {
   private final NodeKeyProvider nodeKeyProvider;
   private final CSVWriter signWriter;
-  private final StringBuilder stringBuilder;
 
   /**
    * Instantiates a new Node key.
@@ -36,22 +36,24 @@ public class NodeKey {
   public NodeKey(final NodeKeyProvider nodeKeyProvider) {
     this.nodeKeyProvider = nodeKeyProvider;
     this.signWriter = MetricWriters.getSignInstance();
-    this.stringBuilder = new StringBuilder();
   }
 
   /**
-   * Sign hash and get secp signature.
+   * Sign hash and get the signature, recording the signing metrics.
    *
    * @param dataHash the data hash
-   * @return the secp signature
+   * @param context what the signature is for, e.g. {@code qbft-commit} or {@code discv4-packet}
+   * @return the signature
    */
-  public Signature sign(final Bytes32 dataHash, final String finality) {
+  public Signature sign(final Bytes32 dataHash, final String context) {
 
     long startSign = System.nanoTime();
     Signature signature = nodeKeyProvider.sign(dataHash);
     long endSign = System.nanoTime();
-    
-    writeSignMetrics(startSign, endSign, finality, signature.encodedBytes().size());
+
+    // The node key signs from several threads at once, so the line is built locally rather than
+    // in a builder shared by all of them.
+    signWriter.write(signMetricsLine(endSign - startSign, signature, context));
 
     return signature;
   }
@@ -65,7 +67,6 @@ public class NodeKey {
     return nodeKeyProvider.getPublicKey();
   }
 
-
   /**
    * Calculate ecdh key agreement.
    *
@@ -76,11 +77,22 @@ public class NodeKey {
     return nodeKeyProvider.calculateECDHKeyAgreement(partyKey);
   }
 
-  private void writeSignMetrics(final long startTime, final long endTime, final String finality, final Integer signatureLength){
-    long totalTime = endTime - startTime;
-
-    String data = stringBuilder.append(totalTime + "," + signatureLength + "," + finality + "\n").toString();
-    signWriter.write(data);
-    stringBuilder.setLength(0);
+  /**
+   * A row of the sign metrics, in the columns {@link MetricWriters#buildSignHeader()} names:
+   * signing time, algorithm and purpose.
+   *
+   * @param signingTimeNanos how long signing took
+   * @param signature the signature produced
+   * @param context the purpose of the signature
+   * @return the CSV line, newline terminated
+   */
+  static String signMetricsLine(
+      final long signingTimeNanos, final Signature signature, final String context) {
+    return signingTimeNanos
+        + ","
+        + signature.getAlgorithm()
+        + ","
+        + context
+        + "\n";
   }
 }

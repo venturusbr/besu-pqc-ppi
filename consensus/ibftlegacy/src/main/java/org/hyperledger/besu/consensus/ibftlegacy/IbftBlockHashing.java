@@ -109,7 +109,8 @@ public class IbftBlockHashing {
         DSAProviderFactory.getActiveDSA(),
         ibftExtraData.getProposerSeal(),
         Optional.empty(),
-        proposerHash);
+        proposerHash,
+        "ibftlegacy-proposer-seal");
   }
 
   /**
@@ -133,7 +134,8 @@ public class IbftBlockHashing {
                     DSAProviderFactory.getActiveDSA(),
                     p.getSignature(),
                     Optional.empty(),
-                    committerHash))
+                    committerHash,
+                    "ibftlegacy-commit-seal"))
         .collect(Collectors.toList());
   }
 

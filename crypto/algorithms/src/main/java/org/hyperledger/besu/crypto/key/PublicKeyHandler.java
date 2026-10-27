@@ -18,7 +18,9 @@ import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.HybridDigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.PublicKeyRecoverable;
 import org.hyperledger.besu.crypto.SECPPublicKey;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
+import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.types.CompositeSignature;
 
@@ -64,6 +66,9 @@ public class PublicKeyHandler {
    * @param maybePartialPk the key that travelled with the payload, if any: the halves that cannot
    *     be recovered, or a whole composite key whose recoverable halves are ignored
    * @param recoveryHash the hash the signature was made over
+   * @param context what the signature is over, e.g. {@code tx} or {@code qbft-commit}: each key
+   *     actually recovered is recorded under it in the PKR metrics, and a key that is only taken
+   *     from {@code maybePartialPk} is not
    * @return the signer's public key
    * @throws IllegalArgumentException if no key can be recovered from the signature, such as one
    *     made on another curve, or if the algorithm cannot recover keys and none was provided:
@@ -73,21 +78,29 @@ public class PublicKeyHandler {
       final DigitalSignatureAlgorithm signatureAlgorithm,
       final Signature signature,
       final Optional<PublicKey> maybePartialPk,
-      final Bytes32 recoveryHash) {
+      final Bytes32 recoveryHash,
+      final String context) {
     if (signatureAlgorithm instanceof HybridDigitalSignatureAlgorithm hybrid) {
-      return Optional.of(extractHybridPublicKey(hybrid, signature, maybePartialPk, recoveryHash));
+      return Optional.of(
+          extractHybridPublicKey(hybrid, signature, maybePartialPk, recoveryHash, context));
     }
 
     return Optional.of(
         resolveSingleAlgorithmPublicKey(
-            signatureAlgorithm, signature, maybePartialPk, recoveryHash));
+            signatureAlgorithm,
+            signature,
+            maybePartialPk,
+            recoveryHash,
+            context,
+            signatureAlgorithm.getDsaParametersSet()));
   }
 
   private static PublicKey extractHybridPublicKey(
       final HybridDigitalSignatureAlgorithm hybrid,
       final Signature signature,
       final Optional<PublicKey> maybePartialPk,
-      final Bytes32 recoveryHash) {
+      final Bytes32 recoveryHash,
+      final String context) {
 
     final DigitalSignatureAlgorithm first = hybrid.getFirstAlgorithm();
     final DigitalSignatureAlgorithm second = hybrid.getSecondAlgorithm();
@@ -98,14 +111,18 @@ public class PublicKeyHandler {
             first,
             hybridSignature.getFirstSignature(),
             halfOf(maybePartialPk, CompositePublicKey::getFirstKey),
-            recoveryHash);
+            recoveryHash,
+            context,
+            hybrid.getDsaParametersSet());
 
     PublicKey secondPk =
         resolveSingleAlgorithmPublicKey(
             second,
             hybridSignature.getSecondSignature(),
             halfOf(maybePartialPk, CompositePublicKey::getSecondKey),
-            recoveryHash);
+            recoveryHash,
+            context,
+            hybrid.getDsaParametersSet());
 
     return CompositePublicKey.create(firstPk, secondPk);
   }
@@ -125,11 +142,15 @@ public class PublicKeyHandler {
       final DigitalSignatureAlgorithm dsa,
       final Signature signature,
       final Optional<PublicKey> maybePartialPk,
-      final Bytes32 recoveryHash) {
+      final Bytes32 recoveryHash,
+      final String context,
+      final DSAParametersSet signed) {
 
     if (dsa instanceof PublicKeyRecoverable recoverable) {
-      return recoverable
-          .recoverPublicKeyFromSignature(recoveryHash, signature)
+      return MetricWriters.timeRecovery(
+              context,
+              MetricWriters.recoveredAlgorithm(signed, dsa.getDsaParametersSet()),
+              () -> recoverable.recoverPublicKeyFromSignature(recoveryHash, signature))
           .orElseThrow(() -> new IllegalArgumentException("Cannot recover public key"));
     }
 

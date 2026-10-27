@@ -107,7 +107,7 @@ public class CommitValidator {
     // does not hold up as absent instead of throwing.
     final Optional<Address> commitSealCreator =
         new CommitSeal(payload.getCommitSeal(), signedPayload.getPublicKey())
-            .recoverVerifiedAuthor(expectedCommitDigest);
+            .recoverVerifiedAuthor(expectedCommitDigest, "qbft-commit-seal");
 
     if (commitSealCreator.isEmpty()) {
       LOG.info("{}: Seal could not be verified", ERROR_PREFIX);

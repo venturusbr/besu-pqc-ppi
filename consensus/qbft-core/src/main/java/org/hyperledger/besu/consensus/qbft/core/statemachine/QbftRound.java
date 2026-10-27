@@ -385,7 +385,7 @@ public class QbftRound {
   private Signature createCommitSeal(final QbftBlock block) {
     final QbftBlock commitBlock = createCommitBlock(block);
     final Hash commitHash = commitBlock.getHash();
-    return nodeKey.sign(Bytes32.wrap(commitHash.getBytes()), "seal");
+    return nodeKey.sign(Bytes32.wrap(commitHash.getBytes()), "qbft-commit-seal");
   }
 
   private QbftBlock createCommitBlock(final QbftBlock block) {

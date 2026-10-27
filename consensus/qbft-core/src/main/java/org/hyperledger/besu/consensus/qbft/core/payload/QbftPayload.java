@@ -16,6 +16,7 @@ package org.hyperledger.besu.consensus.qbft.core.payload;
 
 import org.hyperledger.besu.consensus.common.bft.ConsensusRoundIdentifier;
 import org.hyperledger.besu.consensus.common.bft.payload.Payload;
+import org.hyperledger.besu.consensus.qbft.core.messagedata.QbftV1;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPOutput;
 import org.hyperledger.besu.ethereum.rlp.RLPInput;
@@ -44,6 +45,17 @@ public abstract class QbftPayload implements Payload {
    */
   protected static ConsensusRoundIdentifier readConsensusRound(final RLPInput in) {
     return new ConsensusRoundIdentifier(in.readLongScalar(), in.readIntScalar());
+  }
+
+  @Override
+  public String getMetricsLabel() {
+    return switch (getMessageType()) {
+      case QbftV1.PROPOSAL -> "qbft-proposal";
+      case QbftV1.PREPARE -> "qbft-prepare";
+      case QbftV1.COMMIT -> "qbft-commit";
+      case QbftV1.ROUND_CHANGE -> "qbft-round-change";
+      default -> "qbft-message-" + getMessageType();
+    };
   }
 
   @Override

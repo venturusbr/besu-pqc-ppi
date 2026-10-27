@@ -21,8 +21,6 @@ import static org.hyperledger.besu.evm.worldstate.CodeDelegationHelper.hasCodeDe
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.PublicKeyRecoverable;
 import org.hyperledger.besu.crypto.SignatureValidationContext;
-import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
-import org.hyperledger.besu.crypto.pqc.metrics.CSVWriter;
 import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.providers.VerifierProvider;
@@ -44,6 +42,8 @@ import java.security.PublicKey;
 import java.util.Optional;
 import java.util.Set;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.slf4j.Logger;
@@ -75,9 +75,16 @@ public class MainnetTransactionValidator implements TransactionValidator {
 
   private final VerifierProvider dsaProvider;
 
-  private final CSVWriter verifyWriter;
-
-  private final StringBuilder stringBuilder;
+  /**
+   * Hashes of flexible transactions whose signature verified. A transaction is checked on admission
+   * to the pool, on every attempt to select it into a block, when a proposal carrying it is
+   * validated and when that block is imported, each time from a different decoded copy. The hash
+   * covers every byte verification reads -- the algorithm, the signed fields, the carried key and
+   * the signature -- so a transaction with a cached hash is the one that verified. Only successes
+   * are kept: a failure is never served from here.
+   */
+  private final Cache<Hash, Boolean> verifiedSignatures =
+      CacheBuilder.newBuilder().maximumSize(100_000L).build();
 
   public MainnetTransactionValidator(
       final GasCalculator gasCalculator,
@@ -98,8 +105,6 @@ public class MainnetTransactionValidator implements TransactionValidator {
     this.blobsValidator =
         new MainnetBlobsValidator(acceptedBlobVersions, gasLimitCalculator, gasCalculator);
     this.dsaProvider = DSAProviderFactory.getVerifierProvider();
-    this.verifyWriter = MetricWriters.getVerifyInstance();
-    this.stringBuilder = new StringBuilder();
   }
 
   @Override
@@ -231,20 +236,17 @@ public class MainnetTransactionValidator implements TransactionValidator {
                         Bytes32 authorizationHashNoSignature =
                             codeDelegation.getOrComputeSenderRecoveryHash();
 
-                        long verifyStart = System.nanoTime();
-                        Boolean isValid =
-                            dsa.verify(
-                                authorizationHashNoSignature, signature, signerPublicKey.get());
-                        long verifyEnd = System.nanoTime();
+                        final PublicKey signerKey = signerPublicKey.get();
+                        final boolean isValid =
+                            MetricWriters.timeVerification(
+                                "delegation",
+                                MetricWriters.verifiedAlgorithm(dsa),
+                                () ->
+                                    Boolean.TRUE.equals(
+                                        dsa.verify(
+                                            authorizationHashNoSignature, signature, signerKey)));
 
-                        saveMetrics(
-                            verifyStart,
-                            verifyEnd,
-                            "delegation",
-                            isValid,
-                            dsa.getDsaParametersSet());
-
-                        if (!Boolean.TRUE.equals(isValid)) {
+                        if (!isValid) {
                           return ValidationResult.invalid(
                               TransactionInvalidReason.INVALID_SIGNATURE,
                               "Invalid code delegation signature");
@@ -460,47 +462,41 @@ public class MainnetTransactionValidator implements TransactionValidator {
     }
 
     if (transaction.getDsaType().isPresent()) { // is a flexible transaction
+      // A DSA type that is not enabled never gets here: the lookup throws, and decoding the
+      // transaction already did the same lookup.
       DigitalSignatureAlgorithm dsa =
           dsaProvider.getAccountEnabledDSAById(transaction.getDsaType().get());
 
+      // A key that is recovered whole from the signature is authenticated by that recovery, which
+      // resolving the sender above already did, so there is nothing to verify. Every other key is
+      // at least partly taken from the transaction itself, and only verification ties it to the
+      // signature.
+      if (dsa instanceof PublicKeyRecoverable) {
+        return ValidationResult.valid();
+      }
+
+      final Hash transactionHash = transaction.getHash();
+      if (verifiedSignatures.getIfPresent(transactionHash) != null) {
+        return ValidationResult.valid();
+      }
+
       PublicKey pk = transaction.getMountedPublicKey();
 
-      long verifyStart = System.nanoTime();
-      Boolean isValid = dsa.verify(Bytes.wrap(transaction.getSigningHash()), txSignature, pk);
-      long verifyEnd = System.nanoTime();
-
-      saveMetrics(verifyStart, verifyEnd, "tx", isValid, dsa.getDsaParametersSet());
+      final boolean isValid =
+          MetricWriters.timeVerification(
+              "tx",
+              MetricWriters.verifiedAlgorithm(dsa),
+              () ->
+                  Boolean.TRUE.equals(
+                      dsa.verify(Bytes.wrap(transaction.getSigningHash()), txSignature, pk)));
 
       if (!isValid) {
         return ValidationResult.invalid(
             TransactionInvalidReason.INVALID_SIGNATURE,
             String.format("Invalid %s transaction signature", txSignature.getAlgorithm()));
       }
+      verifiedSignatures.put(transactionHash, Boolean.TRUE);
     }
     return ValidationResult.valid();
-  }
-
-  private void saveMetrics(
-      final long verifyStart,
-      final long verifyEnd,
-      final String object,
-      final Boolean isValid,
-      final DSAParametersSet dsaParams) {
-    long verifyTime = verifyEnd - verifyStart;
-
-    String data =
-        stringBuilder
-            .append(
-                verifyTime
-                    + ","
-                    + object
-                    + ","
-                    + (isValid ? "yes," : "no,")
-                    + dsaParams.getName()
-                    + ",\n")
-            .toString();
-    verifyWriter.write(data);
-
-    stringBuilder.setLength(0);
   }
 }

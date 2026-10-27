@@ -106,7 +106,10 @@ public class BftBlockHashing {
     final Hash committerHash = calculateDataHashForCommittedSeal(header, bftExtraData);
 
     return bftExtraData.getSeals().stream()
-        .map(seal -> seal.recoverVerifiedAuthor(committerHash))
+        .map(
+            seal ->
+                seal.recoverVerifiedAuthor(
+                    committerHash, bftExtraDataCodec.getCommitSealMetricsLabel()))
         .flatMap(Optional::stream)
         .collect(Collectors.toList());
   }

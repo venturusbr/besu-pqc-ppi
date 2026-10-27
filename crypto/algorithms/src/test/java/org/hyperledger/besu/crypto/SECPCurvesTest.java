@@ -225,7 +225,7 @@ class SECPCurvesTest {
         SignatureFactory.createSignatureFromBytes(
             signature.encodedBytes(), DSAParametersSet.SECP256R1);
     final PublicKey recovered =
-        PublicKeyHandler.resolvePublicKey(r1, decoded, Optional.empty(), hash).orElseThrow();
+        PublicKeyHandler.resolvePublicKey(r1, decoded, Optional.empty(), hash, "test").orElseThrow();
     assertThat(Bytes.wrap(recovered.getEncoded()))
         .isEqualTo(Bytes.wrap(keyPair.getPublicKey().getEncoded()));
     assertThat(r1.verify(hash, decoded, recovered)).isTrue();

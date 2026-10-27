@@ -14,9 +14,17 @@
  */
 package org.hyperledger.besu.cryptoservices;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
+import org.hyperledger.besu.crypto.Hash;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.config.SupportedAlgorithms;
+import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
+import org.hyperledger.besu.crypto.signature.Signature;
 
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -50,5 +58,40 @@ public class NodeKeyTest {
 
     Assertions.assertThat(Bytes.wrap(nodeKey.getPublicKey().getEncoded()))
         .isEqualByComparingTo(keyPairPubKey);
+  }
+
+  @Test
+  public void signMetricsLineHasTheColumnsOfTheHeader() {
+    final NodeKey nodeKey = secp256k1NodeKey();
+    final Signature signature = nodeKey.sign(HASH, "qbft-commit");
+
+    final String line = NodeKey.signMetricsLine(1_234L, signature, "qbft-commit");
+
+    final String[] header = MetricWriters.buildSignHeader().trim().split(",", -1);
+    assertThat(line).endsWith("\n");
+    assertThat(line.trim().split(",", -1))
+        .hasSameSizeAs(header)
+        .containsExactly("1234", DSAParametersSet.SECP256K1.getName(), "qbft-commit");
+  }
+
+  @Test
+  public void signMetricsLineNamesAHybridAlgorithmAsItsParameterSet() {
+    final DigitalSignatureAlgorithm hybrid =
+        new SupportedAlgorithms().getDSAByName(DSAParametersSet.SECP256K1MLDSA44.getName()).get();
+    final KeyPair keyPair = hybrid.generateNodeKeyPair();
+    final Signature signature = hybrid.sign(HASH, keyPair.getPrivateKey());
+
+    final String line = NodeKey.signMetricsLine(1L, signature, "qbft-commit-seal");
+
+    assertThat(line.trim().split(",", -1)[1])
+        .isEqualTo(DSAParametersSet.SECP256K1MLDSA44.getName());
+  }
+
+  private static final Bytes32 HASH = Hash.keccak256(Bytes.fromHexString("0xc0ffee"));
+
+  private static NodeKey secp256k1NodeKey() {
+    final SignatureAlgorithm signatureAlgorithm = SignatureAlgorithmFactory.getInstance();
+    final KeyPair keyPair = signatureAlgorithm.generateKeyPair();
+    return new NodeKey(new SecurityModuleAdapter(new KeyPairSecurityModule(keyPair)));
   }
 }

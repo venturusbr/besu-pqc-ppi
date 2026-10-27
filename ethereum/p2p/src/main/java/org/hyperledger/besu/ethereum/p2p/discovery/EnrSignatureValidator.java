@@ -21,6 +21,7 @@ import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.KeyFactory;
 import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
+import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.SignatureFactory;
@@ -52,6 +53,9 @@ public class EnrSignatureValidator {
 
   private static final Logger LOG = LoggerFactory.getLogger(EnrSignatureValidator.class);
 
+  /** What a node record signature is called in the sign, verify and PKR metrics. */
+  private static final String NODE_RECORD = "node-record";
+
   /**
    * Whether the record is structurally sound and carries a signature made by the key it advertises.
    *
@@ -64,7 +68,8 @@ public class EnrSignatureValidator {
     }
     // Every other scheme carries its own verification in the library: v4 checks the secp256k1
     // field and the ECDSA signature over the same preimage.
-    if (!nodeRecord.isValid()) {
+    if (!MetricWriters.timeVerification(
+        NODE_RECORD, DSAParametersSet.SECP256K1.getName(), nodeRecord::isValid)) {
       LOG.trace("Node record rejected: failed the identity scheme's own checks. {}", nodeRecord);
       return false;
     }
@@ -101,11 +106,11 @@ public class EnrSignatureValidator {
    * else: it reads the composite key out of {@link EnrField#PKEY_SECP256K1_MLDSA44} and splits the
    * signature into its two halves, so it does not generalise to another hybrid pairing.
    *
-   * <p>The two halves are checked separately on purpose. The node's active DSA covers the
-   * ML-DSA-44 half; it deliberately skips any half whose algorithm supports public key recovery,
-   * because such a signature is authenticated by recovering the key rather than by verifying
-   * against a given one. A transaction gets that for free, since its sender address is derived
-   * from the recovered key. A record does not, so the recovery and the comparison happen here.
+   * <p>The two halves are checked separately on purpose. The node's active DSA covers the ML-DSA-44
+   * half; it deliberately skips any half whose algorithm supports public key recovery, because such
+   * a signature is authenticated by recovering the key rather than by verifying against a given
+   * one. A transaction gets that for free, since its sender address is derived from the recovered
+   * key. A record does not, so the recovery and the comparison happen here.
    */
   private boolean isSecp256k1MlDsa44SignatureValid(final NodeRecord nodeRecord) {
     final DSAParametersSet params = DSAParametersSet.SECP256K1MLDSA44;
@@ -170,22 +175,25 @@ public class EnrSignatureValidator {
 
   /**
    * The active DSA verifies the ML-DSA-44 half and waves the classical one through, since a
-   * recoverable signature is authenticated by recovering its key rather than by verifying against
-   * a given one.
+   * recoverable signature is authenticated by recovering its key rather than by verifying against a
+   * given one.
    */
   private static boolean isMlDsaHalfValid(
       final Bytes32 data, final CompositeSignature signature, final CompositePublicKey key) {
-    return DSAProviderFactory.getActiveDSA().verify(data, signature, key);
+    return MetricWriters.timeVerification(
+        NODE_RECORD,
+        MetricWriters.verifiedAlgorithm(DSAProviderFactory.getActiveDSA()),
+        () -> Boolean.TRUE.equals(DSAProviderFactory.getActiveDSA().verify(data, signature, key)));
   }
 
   /**
    * Does that recovery and compares the result with the key the record states.
    *
    * <p>A flexible transaction gets this for free: its sender address is derived from the recovered
-   * key, so a forged classical half simply produces a different sender. A record states its own
-   * key instead of deriving it, so nothing forces the stated key and the recovered one to agree
-   * unless they are compared here. The same is true of a discovery packet, which is why that one
-   * assembles its node id through public key recovery rather than trusting a stated key.
+   * key, so a forged classical half simply produces a different sender. A record states its own key
+   * instead of deriving it, so nothing forces the stated key and the recovered one to agree unless
+   * they are compared here. The same is true of a discovery packet, which is why that one assembles
+   * its node id through public key recovery rather than trusting a stated key.
    */
   private static boolean isRecoverableHalfValid(
       final Bytes32 data, final CompositeSignature signature, final CompositePublicKey key) {
@@ -193,7 +201,13 @@ public class EnrSignatureValidator {
       return false;
     }
     final Optional<SECPPublicKey> recovered =
-        SignatureAlgorithmFactory.getInstance().recoverPublicKeyFromSignature(data, ecdsaSignature);
+        MetricWriters.timeRecovery(
+            NODE_RECORD,
+            MetricWriters.recoveredAlgorithm(
+                DSAParametersSet.SECP256K1MLDSA44, DSAParametersSet.SECP256K1),
+            () ->
+                SignatureAlgorithmFactory.getInstance()
+                    .recoverPublicKeyFromSignature(data, ecdsaSignature));
     // Compared on the key material alone: SECPPublicKey.equals also compares the algorithm label
     // it was built with, which differs between a recovered key and one that was decoded.
     return recovered.isPresent()

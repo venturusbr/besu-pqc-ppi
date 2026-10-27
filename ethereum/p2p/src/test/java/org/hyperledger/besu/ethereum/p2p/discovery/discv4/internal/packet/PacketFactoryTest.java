@@ -37,7 +37,6 @@ import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.pong.P
 import org.hyperledger.besu.ethereum.rlp.RLPOutput;
 
 import java.lang.reflect.Field;
-import java.util.Optional;
 
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -106,7 +105,7 @@ public class PacketFactoryTest {
     Mockito.verify(pingPacketDataRlpWriter)
         .writeTo(Mockito.eq(packetData), Mockito.any(RLPOutput.class));
     ArgumentCaptor<Bytes32> typeAndDataBytesHashCaptor = ArgumentCaptor.forClass(Bytes32.class);
-    Mockito.verify(nodeKey).sign(typeAndDataBytesHashCaptor.capture(), Mockito.eq("packet"));
+    Mockito.verify(nodeKey).sign(typeAndDataBytesHashCaptor.capture(), Mockito.eq("discv4-packet"));
     Mockito.verify(packetSignatureEncoder).encodeSignature(secpSignature);
     Mockito.verify(nodeKey).getPublicKey();
     Mockito.verifyNoInteractions(
@@ -168,7 +167,7 @@ public class PacketFactoryTest {
     Mockito.verify(pongPacketDataRlpWriter)
         .writeTo(Mockito.eq(packetData), Mockito.any(RLPOutput.class));
     ArgumentCaptor<Bytes32> typeAndDataBytesHashCaptor = ArgumentCaptor.forClass(Bytes32.class);
-    Mockito.verify(nodeKey).sign(typeAndDataBytesHashCaptor.capture(), Mockito.eq("packet"));
+    Mockito.verify(nodeKey).sign(typeAndDataBytesHashCaptor.capture(), Mockito.eq("discv4-packet"));
     Mockito.verify(packetSignatureEncoder).encodeSignature(secpSignature);
     Mockito.verify(nodeKey).getPublicKey();
     Mockito.verifyNoInteractions(
@@ -230,7 +229,7 @@ public class PacketFactoryTest {
     Mockito.verify(findNeighborsPacketDataRlpWriter)
         .writeTo(Mockito.eq(packetData), Mockito.any(RLPOutput.class));
     ArgumentCaptor<Bytes32> typeAndDataBytesHashCaptor = ArgumentCaptor.forClass(Bytes32.class);
-    Mockito.verify(nodeKey).sign(typeAndDataBytesHashCaptor.capture(), Mockito.eq("packet"));
+    Mockito.verify(nodeKey).sign(typeAndDataBytesHashCaptor.capture(), Mockito.eq("discv4-packet"));
     Mockito.verify(packetSignatureEncoder).encodeSignature(secpSignature);
     Mockito.verify(nodeKey).getPublicKey();
     Mockito.verifyNoInteractions(
@@ -292,7 +291,7 @@ public class PacketFactoryTest {
     Mockito.verify(neighborsPacketDataRlpWriter)
         .writeTo(Mockito.eq(packetData), Mockito.any(RLPOutput.class));
     ArgumentCaptor<Bytes32> typeAndDataBytesHashCaptor = ArgumentCaptor.forClass(Bytes32.class);
-    Mockito.verify(nodeKey).sign(typeAndDataBytesHashCaptor.capture(), Mockito.eq("packet"));
+    Mockito.verify(nodeKey).sign(typeAndDataBytesHashCaptor.capture(), Mockito.eq("discv4-packet"));
     Mockito.verify(packetSignatureEncoder).encodeSignature(secpSignature);
     Mockito.verify(nodeKey).getPublicKey();
     Mockito.verifyNoInteractions(
@@ -354,7 +353,7 @@ public class PacketFactoryTest {
     Mockito.verify(enrRequestPacketDataRlpWriter)
         .writeTo(Mockito.eq(packetData), Mockito.any(RLPOutput.class));
     ArgumentCaptor<Bytes32> typeAndDataBytesHashCaptor = ArgumentCaptor.forClass(Bytes32.class);
-    Mockito.verify(nodeKey).sign(typeAndDataBytesHashCaptor.capture(), Mockito.eq("packet"));
+    Mockito.verify(nodeKey).sign(typeAndDataBytesHashCaptor.capture(), Mockito.eq("discv4-packet"));
     Mockito.verify(packetSignatureEncoder).encodeSignature(secpSignature);
     Mockito.verify(nodeKey).getPublicKey();
     Mockito.verifyNoInteractions(
@@ -416,7 +415,7 @@ public class PacketFactoryTest {
     Mockito.verify(enrResponsePacketDataRlpWriter)
         .writeTo(Mockito.eq(packetData), Mockito.any(RLPOutput.class));
     ArgumentCaptor<Bytes32> typeAndDataBytesHashCaptor = ArgumentCaptor.forClass(Bytes32.class);
-    Mockito.verify(nodeKey).sign(typeAndDataBytesHashCaptor.capture(), Mockito.eq("packet"));
+    Mockito.verify(nodeKey).sign(typeAndDataBytesHashCaptor.capture(), Mockito.eq("discv4-packet"));
     Mockito.verify(packetSignatureEncoder).encodeSignature(secpSignature);
     Mockito.verify(nodeKey).getPublicKey();
     Mockito.verifyNoInteractions(
@@ -480,8 +479,7 @@ public class PacketFactoryTest {
     Assertions.assertEquals(packetData, packet.getPacketData());
     Assertions.assertEquals(hash, packet.getHash());
     Assertions.assertEquals(encodedSignature, packet.getSignature().encodedBytes());
-    Assertions.assertEquals(
-        Bytes.wrap(keyPair.getPublicKey().getEncoded()), packet.getNodeId());
+    Assertions.assertEquals(Bytes.wrap(keyPair.getPublicKey().getEncoded()), packet.getNodeId());
   }
 
   @Test
@@ -496,12 +494,10 @@ public class PacketFactoryTest {
     final Bytes hash = Hash.keccak256(Bytes.concatenate(encodedSignature, signedPayload));
     final Bytes message = Bytes.concatenate(hash, encodedSignature, signedPayload);
 
-    final Packet packet =
-        factory.create(PacketType.PING, Mockito.mock(PacketData.class), message);
+    final Packet packet = factory.create(PacketType.PING, Mockito.mock(PacketData.class), message);
 
     // the recovery still yields a key, just not the one that holds the private half, so the
     // packet is attributed to a different node id rather than being accepted as this one
-    Assertions.assertNotEquals(
-        Bytes.wrap(keyPair.getPublicKey().getEncoded()), packet.getNodeId());
+    Assertions.assertNotEquals(Bytes.wrap(keyPair.getPublicKey().getEncoded()), packet.getNodeId());
   }
 }

@@ -35,7 +35,6 @@ import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.key.PublicKeyHandler;
-import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.AccessListEntry;
@@ -306,34 +305,26 @@ public class Transaction
     return dsaType;
   }
 
-  private void saveMetrics(final long pkrStart, final long pkrEnd, final String object) {
-    // Neither the writer nor a string builder is kept per transaction. The writer is a
-    // singleton, and the builder was only ever concatenating one short line, so holding them
-    // on every instance was retained memory the pool pays for on each pending transaction.
-    MetricWriters.getPkrInstance().write((pkrEnd - pkrStart) + "," + object + "\n");
-  }
-
   @Override
   public PublicKey getMountedPublicKey(){
     if(publicKey == null){
       if (unresolvableSigner != null) {
         throw unresolvableSigner;
       }
-      long startPkr = System.nanoTime();
       try {
+        // The handler records the recovery, when there is one, in the PKR metrics. A key that
+        // travelled with the transaction is not recovered, so it is not recorded.
         publicKey = PublicKeyHandler.resolvePublicKey(
           signatureAlgorithm,
           signature,
           providedPublicKey,
-          getOrComputeSenderRecoveryHash()
+          getOrComputeSenderRecoveryHash(),
+          "tx"
         ).get();
       } catch (final IllegalArgumentException e) {
         unresolvableSigner = e;
         throw e;
       }
-      long endPkr = System.nanoTime();
-
-      saveMetrics(startPkr, endPkr, "tx");
     }
     return publicKey;
   }
@@ -531,9 +522,17 @@ public class Transaction
   @Override
   public Address getSender() {
     if (sender == null) {
-      publicKey = getMountedPublicKey();
-      Optional<Address> cachedSender = Optional.ofNullable(senderCache.getIfPresent(getHash()));
-      sender = cachedSender.orElseGet(this::computeSender);
+      // The cache is consulted before the key is resolved: the hash covers every byte the key is
+      // resolved from, so a transaction whose sender is cached resolves to that same sender, and
+      // each decoded copy of it -- from gossip, a proposal, a block -- would otherwise repeat the
+      // recovery. The key is still resolved on demand wherever it is needed itself.
+      final Address cachedSender = senderCache.getIfPresent(getHash());
+      if (cachedSender != null) {
+        sender = cachedSender;
+      } else {
+        publicKey = getMountedPublicKey();
+        sender = computeSender();
+      }
     }
     
     return sender;

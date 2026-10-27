@@ -363,7 +363,7 @@ public class IbftRound {
     final Hash commitHash =
         new BftBlockHashing(bftExtraDataCodec)
             .calculateDataHashForCommittedSeal(proposedHeader, extraData);
-    return nodeKey.sign(Bytes32.wrap(commitHash.getBytes()), "seal");
+    return nodeKey.sign(Bytes32.wrap(commitHash.getBytes()), "ibft-commit-seal");
   }
 
   private void notifyNewBlockListeners(final Block block) {

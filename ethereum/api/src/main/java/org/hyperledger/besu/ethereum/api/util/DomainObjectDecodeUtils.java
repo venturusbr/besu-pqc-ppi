@@ -14,6 +14,7 @@
  */
 package org.hyperledger.besu.ethereum.api.util;
 
+import org.hyperledger.besu.crypto.config.DsaNotEnabledException;
 import org.hyperledger.besu.ethereum.api.jsonrpc.internal.exception.InvalidJsonRpcRequestException;
 import org.hyperledger.besu.ethereum.api.jsonrpc.internal.response.RpcErrorType;
 import org.hyperledger.besu.ethereum.core.Transaction;
@@ -36,6 +37,10 @@ public class DomainObjectDecodeUtils {
     } catch (final RLPException r) {
       throw new InvalidJsonRpcRequestException(
           "Invalid RLP in raw transaction hex", RpcErrorType.INVALID_TRANSACTION_PARAMS, r);
+    } catch (final DsaNotEnabledException d) {
+      // Well formed, but signed with an algorithm this node does not accept: say which.
+      throw new InvalidJsonRpcRequestException(
+          d.getMessage(), RpcErrorType.INVALID_TRANSACTION_PARAMS, d);
     }
   }
 }
