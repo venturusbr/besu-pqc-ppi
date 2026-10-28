@@ -36,6 +36,7 @@ import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.key.PublicKeyHandler;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
+import org.hyperledger.besu.crypto.providers.VerifierProvider;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.AccessListEntry;
 import org.hyperledger.besu.datatypes.Address;
@@ -1868,9 +1869,21 @@ public class Transaction
           sizeForBlockInclusion);
     }
 
+    /**
+     * Sign with the algorithm of the DSA type, or with the default one when there is none, and
+     * build. When no public key was provided, the part of the signer's key that the algorithm
+     * cannot recover is provided, since the signature covers it.
+     *
+     * @param keys the signer's key pair, of the DSA type's algorithm
+     * @return the signed transaction
+     */
     public Transaction signAndBuild(final KeyPair keys) {
       checkState(
           signature == null, "The transaction signature has already been provided to this builder");
+      if (dsaType.isPresent() && providedPublicKey.isEmpty()) {
+        providedPublicKey =
+            PublicKeyHandler.providedPart(enabledDsa(dsaType.get()), keys.getPublicKey());
+      }
       signature(computeSignature(keys));
       sender(
           Address.extract(
@@ -1879,26 +1892,35 @@ public class Transaction
     }
 
     Signature computeSignature(final KeyPair keys) {
-      return SignatureAlgorithmFactory.getInstance()
-          .sign(
-              computeSenderRecoveryHash(
-                  transactionType,
-                  dsaType,
-                  nonce,
-                  gasPrice,
-                  maxPriorityFeePerGas,
-                  maxFeePerGas,
-                  maxFeePerBlobGas,
-                  gasLimit,
-                  to,
-                  value,
-                  providedPublicKey,
-                  payload,
-                  accessList,
-                  versionedHashes,
-                  codeDelegationAuthorizations,
-                  chainId),
-              keys);
+      final Bytes32 signingHash =
+          computeSenderRecoveryHash(
+              transactionType,
+              dsaType,
+              nonce,
+              gasPrice,
+              maxPriorityFeePerGas,
+              maxFeePerGas,
+              maxFeePerBlobGas,
+              gasLimit,
+              to,
+              value,
+              providedPublicKey,
+              payload,
+              accessList,
+              versionedHashes,
+              codeDelegationAuthorizations,
+              chainId);
+      return dsaType.isPresent()
+          ? enabledDsa(dsaType.get()).sign(signingHash, keys.getPrivateKey())
+          : SignatureAlgorithmFactory.getInstance().sign(signingHash, keys);
+    }
+
+    private static DigitalSignatureAlgorithm enabledDsa(final Short dsaType) {
+      final VerifierProvider verifierProvider = DSAProviderFactory.getVerifierProvider();
+      final DigitalSignatureAlgorithm dsa =
+          verifierProvider != null ? verifierProvider.getAccountEnabledDSAById(dsaType) : null;
+      checkState(dsa != null, "DSA type %s is not enabled", dsaType);
+      return dsa;
     }
 
     public Builder kzgBlobs(

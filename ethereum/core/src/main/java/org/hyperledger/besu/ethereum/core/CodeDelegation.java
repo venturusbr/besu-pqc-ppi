@@ -455,27 +455,51 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
     }
 
     /**
-     * Sign the authorization with the given key pair and return the authorization.
+     * Sign the authorization with the given key pair and return the authorization. A flexible
+     * authorization is signed with the algorithm of its DSA type and, when no public key was set,
+     * provides the part of the signer's key that the algorithm cannot recover, since the signature
+     * covers it.
      *
-     * @param keyPair the key pair
+     * @param keyPair the key pair, of the DSA type's algorithm for a flexible authorization
      * @return CodeDelegation
      */
     public org.hyperledger.besu.datatypes.CodeDelegation signAndBuild(final KeyPair keyPair) {
-      final BytesValueRLPOutput output = new BytesValueRLPOutput();
+      if (address == null) {
+        throw new IllegalStateException("Address must be set");
+      }
+      if (nonce == null) {
+        throw new IllegalStateException("Nonce must be set");
+      }
 
-      // change: serialize by authorityType
-      output.startList();
-      output.writeBigIntegerScalar(chainId);
-      output.writeBytes(address.getBytes());
-      output.writeLongScalar(nonce);
-      output.endList();
+      final DigitalSignatureAlgorithm flexibleDsa;
+      if (authorizationType == CodeDelegationType.FLEXIBLE) {
+        if (dsaType == null) {
+          throw new IllegalStateException("DSA type must be set for a flexible authorization");
+        }
+        flexibleDsa = enabledDsa(dsaType);
+        if (publicKey == null) {
+          publicKey = PublicKeyHandler.providedPart(flexibleDsa, keyPair.getPublicKey()).orElse(null);
+        }
+      } else {
+        flexibleDsa = null;
+      }
+
+      // Hashed the way verification hashes it, which the signature does not enter.
+      final Bytes32 signingHash =
+          new CodeDelegation(
+                  authorizationType,
+                  Optional.ofNullable(dsaType),
+                  chainId,
+                  address,
+                  nonce,
+                  Optional.ofNullable(publicKey),
+                  null)
+              .getOrComputeSenderRecoveryHash();
 
       signature(
-          SIGNATURE_ALGORITHM
-              .get()
-              .sign(
-                  Bytes32.wrap(Hash.hash(Bytes.concatenate(MAGIC, output.encoded())).getBytes()),
-                  keyPair));
+          flexibleDsa != null
+              ? flexibleDsa.sign(signingHash, keyPair.getPrivateKey())
+              : SIGNATURE_ALGORITHM.get().sign(signingHash, keyPair));
       return build();
     }
 
