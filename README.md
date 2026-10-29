@@ -1,3 +1,26 @@
+# Besu PQC: a post-quantum fork of Hyperledger Besu
+
+> **This repository is a fork of [Hyperledger Besu](https://github.com/hyperledger/besu) 26.1.0.**
+
+**besu-pqc-ppi** makes Besu agnostic to the digital signature algorithm. Transactions, EIP-7702 code delegations,
+consensus messages (QBFT, IBFT 2.0, Clique), block seals and peer identities can be signed with the post-quantum
+algorithms **ML-DSA** (FIPS 204) and **Falcon-512**, with **hybrid** ECDSA + post-quantum schemes, or with classical
+ECDSA on secp256k1 or secp256r1. Standard Ethereum transactions keep working unchanged. The goal is to prepare
+permissioned Ethereum networks for the arrival of quantum computers that can break ECDSA.
+
+- ⚡ **[Quick start](docs/pqc/00-quick-start.md)**: build, start a four-validator network and send a post-quantum transaction
+- 📖 **[Fork documentation](docs/pqc/README.md)**: architecture, cryptography, transactions, consensus, networking, APIs, security, configuration and usage
+- 🧰 Companion projects: [besu-qbft](https://github.com/venturusbr/besu-qbft) (network scripts) and
+  [besu-flex-wallet-ppi](https://github.com/venturusbr/besu-flex-wallet-ppi) (post-quantum wallet)
+
+**Acknowledgement:** This work was supported by the Ministério da Ciência, Tecnologia e Inovação (MCTI) under Law
+No. 8,248 of October 23, 1991, through the PPI-SOFTEX program, coordinated by Softex, and published under PDI 19,
+DOU 01245.010909/2024-41.
+
+The rest of this file is the original Besu README.
+
+---
+
 # Besu Ethereum Client
  [![CircleCI](https://circleci.com/gh/hyperledger/besu/tree/main.svg?style=svg)](https://circleci.com/gh/hyperledger/besu/tree/main)
  [![CodeQL](https://github.com/hyperledger/besu/actions/workflows/codeql.yml/badge.svg)](https://github.com/hyperledger/besu/actions/workflows/codeql.yml)
