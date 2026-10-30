@@ -2,9 +2,9 @@
 
 ---
 
-# Besu PQC: post-quantum signatures for Hyperledger Besu
+# Besu PQC: post-quantum signatures for Besu
 
-**besu-pqc-ppi** is a fork of [Hyperledger Besu](https://github.com/hyperledger/besu) 26.1.0. It makes the client
+**besu-pqc-ppi** is a experimental fork of [Besu](https://github.com/hyperledger/besu) 26.1.0. It makes the client
 **agnostic to the digital signature algorithm (DSA)**. Transactions, code delegations, consensus messages, block seals
 and discovery v4 packets can be signed with the post-quantum
 algorithms **ML-DSA** (FIPS 204) and **Falcon-512**, with **hybrid** ECDSA + post-quantum schemes, or with classical
@@ -79,7 +79,7 @@ Each page has a navigation bar at the top and the bottom. Follow **Next →** to
 
 ## About this project
 
-This fork is developed by [Venturus](https://www.venturus.org.br).
+This experimental fork is developed by [Venturus](https://www.venturus.org.br).
 
 ---
 

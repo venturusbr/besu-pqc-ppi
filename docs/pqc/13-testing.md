@@ -97,7 +97,7 @@ A suggested matrix:
 
 ## Base version
 
-The fork is based on Hyperledger Besu **26.1.0**. Upstream release notes up to that version are in
+The fork is based on Besu **26.1.0**. Upstream release notes up to that version are in
 [CHANGELOG.md](../../CHANGELOG.md). Changes specific to the fork are described in this documentation.
 
 ---
