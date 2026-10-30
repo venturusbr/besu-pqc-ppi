@@ -1,6 +1,6 @@
-# Besu PQC: a post-quantum fork of Hyperledger Besu
+# Besu PQC: a post-quantum fork of Besu
 
-> **This repository is a fork of [Hyperledger Besu](https://github.com/hyperledger/besu) 26.1.0.**
+> **This repository is an experimental fork of [Besu](https://github.com/hyperledger/besu) 26.1.0.**
 
 **besu-pqc-ppi** makes Besu agnostic to the digital signature algorithm. Transactions, EIP-7702 code delegations,
 consensus messages (QBFT, IBFT 2.0, Clique) and block seals and discovery v4 packets can be signed with the post-quantum
