@@ -20,19 +20,30 @@ Every DSA is a constant of `DSAParametersSet`
 (`crypto/algorithms/.../algorithms/parameters/DSAParametersSet.java`). The 2-byte identifier is what goes on the wire
 (the `dsaType` field), and the name is what the CLI options use.
 
-| Name | ID | Private key (B) | Public key (B) | Signature (B) | Recoverable | Standard |
-|---|---|---|---|---|---|---|
-| `SECP256K1` | `0x0001` | 32 | 64 | 65 | ✓ | SEC 2 (Ethereum default) |
-| `SECP256R1` | `0x0002` | 32 | 64 | 65 | ✓ | NIST P-256 |
-| `MLDSA44` | `0x0030` | 2560 | 1312 | 2420 | — | FIPS 204, category 2 |
-| `MLDSA65` | `0x0031` | 4032 | 1952 | 3309 | — | FIPS 204, category 3 |
-| `MLDSA87` | `0x0032` | 4896 | 2592 | 4627 | — | FIPS 204, category 5 |
-| `FALCON512` | `0x0040` | 2176 | 896 | variable, ≤ 752 | — | Falcon round 3 (FN-DSA), category 1 |
-| `SECP256K1-MLDSA44` | `0x0060` | 2592 | 1376 | 2485 | ECDSA half only | hybrid |
-| `SECP256K1-FALCON512` | `0x0070` | 2208 | 960 | 65 + variable | ECDSA half only | hybrid |
+| Name | ID | Private key (B) | Seed (B) | Public key (B) | Signature (B) | Supports PKR | Standard |
+|---|---|---|---|---|---|---|---|
+| `SECP256K1` | `0x0001` | 32 | — | 64 | 65 | ✓ | SEC 2 (Ethereum default) |
+| `SECP256R1` | `0x0002` | 32 | — | 64 | 65 | ✓ | NIST P-256 |
+| `MLDSA44` | `0x0030` | 2560 | 32 | 1312 | 2420 | ✗ | FIPS 204, category 2 |
+| `MLDSA65` | `0x0031` | 4032 | 32 | 1952 | 3309 | ✗ | FIPS 204, category 3 |
+| `MLDSA87` | `0x0032` | 4896 | 32 | 2592 | 4627 | ✗ | FIPS 204, category 5 |
+| `FALCON512` | `0x0040` | 2176 | — | 896 | variable, ≤ 752 | ✗ (see note) | Falcon round 3 (FN-DSA), category 1 |
+| `SECP256K1-MLDSA44` | `0x0060` | 2592 | — | 1376 | 2485 | ECDSA half only | hybrid |
+| `SECP256K1-FALCON512` | `0x0070` | 2208 | — | 960 | 65 + variable | ECDSA half only | hybrid |
 
-Identifier ranges: `0x00 0x0X` classical, `0x003X` ML-DSA, `0x004X` Falcon, `0x006X` secp256k1 + ML-DSA hybrids,
-`0x007X` hybrids with other post-quantum algorithms.
+**Seed**: ML-DSA private keys can also be given as a 32-byte seed (FIPS 204 ξ), from which the expanded private key
+is derived deterministically when the key is loaded.
+
+**Supports PKR**: whether the signer's public key can be recovered from the signature (public key recovery), so that it
+does not have to travel with the signature. When it cannot, the public key, or its post-quantum half for a hybrid, is
+carried alongside the signature (see [the public key field](../04-transactions.md#the-public-key-field)).
+
+> **Falcon and PKR.** The Falcon specification also defines a second, *key-recovery* mode, in which the public key can
+> be recovered from the signature, at the cost of a larger signature. It is not implemented here: `FALCON512` uses the
+> standard mode (the one Bouncy Castle implements), which does not support PKR.
+
+Identifier ranges: `0x00 0x0X` classical, `0x003X` ML-DSA, `0x004X` Falcon, `0x006X` secp256k1 with ML-DSA hybrids,
+`0x007X` secp256k1 with Falcon hybrids.
 
 > In the source, the constructor arguments are `(id, name, privateKeyLength, publicKeyLength, signatureLength,
 > seedLength)`. The private key length comes **before** the public key length.
@@ -101,17 +112,65 @@ on networks whose genesis `ecCurve` is secp256k1 (the default).
 | `SECP256K1-FALCON512` | ✓ | ⚠ experimental (static peers only) |
 
 Note: a node whose key is purely post-quantum cannot complete the RLPx handshake, which needs an elliptic-curve key for
-ECDH. Use a hybrid as the node DSA. See [Key management](key-management.md#key-agreement-ecdh).
+ECDHE. Use a hybrid as the node DSA. See [Key management](key-management.md#key-agreement-ecdh).
 
 ## Adding an algorithm
 
-1. Implement `DigitalSignatureAlgorithm` (and `PublicKeyRecoverable` if the algorithm supports recovery), plus its
-   `Signature` and key types.
-2. Add a constant to `DSAParametersSet` with a free identifier and the key and signature sizes.
-3. Register a factory in `SupportedAlgorithms`.
-4. Teach `KeyFactory` (key decoding and derivation) and `SignatureFactory` (signature decoding) about the new
-   parameter set.
-5. Add the parameter set to the parameterized tests, for example `SignAndBuildTest` and the BFT integration tests.
+**Crypto agility.** Besu is crypto-agile for **account** and **consensus** signatures. Transactions, code delegations,
+consensus messages, commit seals, Clique seals, the CLI options, `vnt_getAccountsSupportedDSAs` and the metrics work
+through the `DigitalSignatureAlgorithm` abstraction and the `dsaType` identifier, so adding an algorithm does not require
+re-engineering them: it is a matter of implementing it and registering it in the places listed below.
+
+It is **not yet fully crypto-agile**: the P2P layer is still tied to specific algorithms. The RLPx handshake needs a
+secp256k1 key for ECDH, discv4 packets need a fixed-length signature, and the `vnt` node record (ENR) is hard-wired to
+`SECP256K1-MLDSA44` (`NodeRecordManager`, `EnrSignatureValidator`, `BootnodeRecordFactory`, `EthereumNodeRecord`). A
+new algorithm can therefore be used as an account DSA, but not as a node DSA on a P2P network, without changes there.
+Re-engineering the P2P layer to remove these assumptions is left for future research (see
+[Networking](../06-networking.md)).
+
+### Steps
+
+1. **Implement the algorithm.** Implement `DigitalSignatureAlgorithm` (and `PublicKeyRecoverable` if the algorithm
+   supports public key recovery), plus its `Signature`, `PublicKey` and `PrivateKey` types. `isValid(context)` on the
+   signature should check its structure (for example its length), and verification should return `false` rather than
+   throw on malformed input. If the algorithm wraps a Bouncy Castle parameter set, map the new name to it (as
+   `MLDSA.RENAMING_TO_LIB` does for ML-DSA).
+2. **Add a constant to `DSAParametersSet`** with a free identifier in the right range (see
+   [Identifiers and sizes](#identifiers-and-sizes)), and its private key, public key, signature and seed lengths. Use
+   `null` for a signature length that is not fixed. The name is the one the CLI options and the logs use.
+3. **Register the new DSA in `SupportedAlgorithms`.** This is what makes the name usable with `--node-dsa` and
+   `--accounts-supported-dsas`.
+4. **Teach `KeyFactory`** to create the new private and public keys from bytes, and to derive the public key from the
+   private key.
+5. **Teach `SignatureFactory`** to create the new signature type from bytes.
+6. **For a hybrid**, also:
+   - build it with a combiner in `SupportedAlgorithms`, with the recoverable (ECDSA) half first. The existing hybrids
+     use `HybridStrongNestingConcatenation`, but the combiner is not fixed: another one, different from Strong Nesting,
+     can be implemented as a new `HybridDigitalSignatureAlgorithm`. The rest of the code recognizes hybrids through
+     that interface (`getFirstAlgorithm()` / `getSecondAlgorithm()`), for example to decide which half of the public
+     key is carried. A combiner whose signature is not a concatenation of the two halves also needs its own signature
+     type and decoding in `SignatureFactory`;
+   - teach `KeyFactory` and `SignatureFactory` to split the concatenated key and signature. A variable-length half
+     (such as Falcon) must come **last**, so that the other half can be cut out at a fixed offset;
+   - choose an identifier in `0x006X` (secp256k1 + ML-DSA) or `0x007X` (other hybrids).
+7. **Nothing to change** in the transaction encoders and decoders, the validator, consensus or JSON-RPC: they work from
+   the `dsaType` and the algorithm's interfaces. `PublicKeyEncoder` and `PublicKeyDecoder` decide whether a public key
+   is carried from `PublicKeyRecoverable` and the sizes in `DSAParametersSet`.
+8. **Add tests:**
+   - unit tests for the algorithm itself (sign, verify, key round trip, malformed input), like `MLDSATest`,
+     `FalconTest` or `Secp256k1Falcon512HybridTest` (`crypto/algorithms`);
+   - the new parameter set in the parameterized consensus tests that list algorithms explicitly:
+     `CommitValidatorNonRecoverableTest` (QBFT), `SignedDataValidatorNonRecoverableTest` (IBFT 2.0),
+     `CliqueBlockCreatorNonRecoverableTest` and `CliqueExtraDataNonRecoverableTest` (Clique);
+   - the name in the `algorithms` list of `gradle/consensus-dsa-integration-tests.gradle` (and in `pqcAlgorithms` if it
+     is post-quantum), which registers an `integrationTest<NAME>` task and adds it to `integrationTestPqc` /
+     `integrationTestAllDsas`;
+   - a flexible transaction test that encodes, decodes and verifies a transaction signed with the new DSA, like
+     `FlexibleEIP1559Falcon512TransactionTest` (`ethereum/core`).
+9. **Update the documentation:** the [Identifiers and sizes](#identifiers-and-sizes) table,
+   [Where each algorithm can be used](#where-each-algorithm-can-be-used), the
+   [size impact](../12-metrics-and-performance.md#size-impact) table and the
+   [compatibility matrix](../10-configuration.md#compatibility-matrix).
 
 ---
 

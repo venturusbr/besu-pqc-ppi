@@ -18,18 +18,25 @@
 
 ```mermaid
 flowchart TD
-  S[BesuCommand start-up] --> G["Read genesis ecCurve<br/>(secp256k1 default)"]
-  G --> N["--node-dsa<br/>(default: the ecCurve's algorithm)"]
-  N --> V{"Same curve as<br/>the genesis?"}
+  S[BesuCommand start-up] --> A["Build account DSAs from<br/>--accounts-supported-dsas"]
+  A --> N["--node-dsa<br/>(default: the genesis ecCurve's algorithm,<br/>SECP256K1 when ecCurve is not set)"]
+  N --> C{"Does the node DSA<br/>(or its classical half)<br/>use an elliptic curve?"}
+  C -->|"no (pure post-quantum)"| P[DSAProviderFactory.setDsaProvider]
+  C -->|yes| V{"Is that curve the<br/>genesis ecCurve?"}
   V -->|no| X[Refuse to start]
-  V -->|yes| A["Build account DSAs from<br/>--accounts-supported-dsas"]
-  A --> P[DSAProviderFactory.setDsaProvider]
+  V -->|yes| P
   P --> K{"Node DSA is<br/>SECP256K1 / SECP256R1?"}
   K -->|yes| SM["Upstream path:<br/>SecurityModule → SecurityModuleAdapter<br/>(key auto-generated if missing)"]
   K -->|no| KM["KeyManager.loadNodeKeyPair()<br/>reads --node-private-key-file"]
 ```
 
 This logic lives in `instantiateDsaProvider()` and `nodeKeyProvider()` in `BesuCommand`.
+
+The curve check compares **curves, not algorithm names**. For a hybrid, it looks at the curve of its classical half.
+With the default genesis (secp256k1), `--node-dsa SECP256K1-MLDSA44` starts, because its ECDSA half is on secp256k1. A
+purely post-quantum node DSA has no curve, so the check does not apply to it. The check refuses, for example,
+`--node-dsa SECP256K1` or `SECP256K1-MLDSA44` on a genesis with `"ecCurve": "secp256r1"` (see
+[Configuration](../10-configuration.md#genesis-eccurve-and-node-dsa)).
 
 - **Classical node keys** (`SECP256K1`, `SECP256R1`) still go through upstream's `SecurityModule` plugin interface,
   wrapped by `SecurityModuleAdapter`. Behaviour is the same as in upstream Besu, including generating `<data-path>/key`
@@ -73,7 +80,7 @@ networkFiles/
     └── 0x<address-2>/ …
 ```
 
-- The directory names are the validators' addresses: `keccak256(publicKey)[12:]` over the **full** public key (see
+- The directory names are the nodes' addresses: `keccak256(publicKey)[-20:]` over the **full** public key (see
   [Hybrid addresses](hybrid-signatures.md#hybrid-addresses)).
 - The [besu-qbft](../11-usage/running-a-network.md) scripts run exactly this command inside Docker.
 - Public keys imported through the configuration file's `keys` array are still read as ECDSA keys only.
@@ -85,7 +92,7 @@ networkFiles/
 | `KeyFactory` | Creates private keys, public keys and key pairs for each `DSAParametersSet`. It derives the public key from the private key and accepts full or partial (post-quantum half only) hybrid public keys |
 | `KeyExtractor` | Slices concatenated key bytes at the right offsets |
 | `KeyManager` | Reads the node key file and holds the node `KeyPair` |
-| `KeyConfiguration` | The key file path plus the representation (`SEED` / `EXPANDED`) of each key half. Built with `createSingleKeyConfig` or `createHybridKeyConfig` |
+| `KeyConfiguration` | The key file path plus the representation (`SEED`(WIP) / `EXPANDED`) of each key half. Built with `createSingleKeyConfig` or `createHybridKeyConfig` |
 | `CompositePublicKey` / `CompositePrivateKey` | Hybrid keys. The encoding is `first ‖ second` |
 | `MLDSAPrivateKey` / `MLDSAPublicKey` | ML-DSA keys, stored as raw bytes |
 | `FalconPrivateKey` / `FalconPublicKey` | Falcon keys. The private key embeds `h`, and equality is checked in constant time |
@@ -111,7 +118,12 @@ and it rejects a full composite key where only one half is expected.
 
 ## Key agreement (ECDH)
 
-The RLPx transport (ECIES handshake) and the discv5 handshake still use **elliptic-curve Diffie-Hellman**.
+Two handshakes still use **elliptic-curve Diffie-Hellman**:
+
+- the **RLPx** handshake (ECIES), which opens every TCP connection between peers, whatever the discovery version;
+- the **discv5** session handshake (UDP), when discovery v5 is enabled. discv4 does not use ECDH: its packets are
+  only signed, not encrypted.
+
 `DigitalSignatureAlgorithmProvider.calculateECDHKeyAgreement` takes the ECDSA half of a hybrid key on both sides and
 delegates to upstream's ECDH. If the node key has no elliptic-curve part, it fails with
 `Besu only supports ECDH with SECP private key`.
@@ -120,11 +132,15 @@ Consequences:
 
 - A **hybrid** node DSA is required for a networked post-quantum node. A pure ML-DSA or Falcon node key cannot complete
   the RLPx handshake.
-- Peer-to-peer *encryption* is still classical. The fork makes *authentication* (signatures) post-quantum; a
-  post-quantum key encapsulation mechanism (for example ML-KEM) for the transport is future work. See
+- Peer-to-peer *key establishment* is still classical. The session keys of RLPx and discovery come from ECDHE, and the
+  symmetric ciphers they protect are only as safe as that agreement. The fork makes *authentication* (signatures)
+  post-quantum; replacing ECDHE with a post-quantum key encapsulation mechanism (for example ML-KEM) is future work. See
   [Security considerations](../08-security.md#out-of-scope-and-limitations).
 
 ## Limitations
+
+> 🚧 **Work in progress.** The limitations below are known gaps of the current implementation, not design decisions.
+> They are being worked on and are expected to be lifted in the future.
 
 - `besu public-key export` and `besu public-key export-address` understand ECDSA keys only. For hybrid keys, use the
   `key.pub` file and directory name written by `operator generate-blockchain-config`.

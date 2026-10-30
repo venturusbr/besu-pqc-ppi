@@ -78,7 +78,7 @@ Strong nesting means that the post-quantum half signs `hash ‖ σ₁`, so `σ�
 | Vector | Mitigation |
 |---|---|
 | Large transactions (2–5 KB signatures, 1–2.6 KB keys) | The pool accounts for the real memory size of keys and signatures. Block gas limits still apply |
-| Expensive verification | Verification results are cached by transaction hash (100 000 entries). ECDSA needs no separate verification step. Algorithm instances are built once |
+| Expensive verification | Verification results are cached by transaction hash (100 000 entries). ECDSA needs no separate verification step. |
 | Disabled or unknown DSAs | Rejected while decoding, before verification |
 | Malformed lengths | Exact length checks for keys and ML-DSA and hybrid signatures; Falcon signatures are limited to 752 bytes; Clique footer lengths are bounded |
 | Repeated failed key recovery | Failure is cached per transaction |
@@ -103,8 +103,9 @@ could fill blocks with transactions that are cheap in gas but expensive to verif
 
 ## Out of scope and limitations
 
-- **Transport encryption is classical.** RLPx and discv5 use secp256k1 ECDH. An attacker who records traffic today and
-  has a quantum computer later can decrypt it ("harvest now, decrypt later"). Signatures and consensus integrity are
+- **Transport key establishment is classical.** RLPx and discv5 derive their session keys from secp256k1 ECDHE. An
+  attacker who records traffic today and has a quantum computer later can recover those keys and decrypt the traffic
+  ("harvest now, decrypt later"). Signatures and consensus integrity are
   not affected.
 - **The RLPx handshake authenticates only the ECDSA half of a hybrid node ID.** The post-quantum identity is proven in
   discovery and in consensus messages, not in the transport handshake.

@@ -6,8 +6,9 @@
 
 **besu-pqc-ppi** is a fork of [Hyperledger Besu](https://github.com/hyperledger/besu) 26.1.0. It makes the client
 **agnostic to the digital signature algorithm (DSA)**. Transactions, code delegations, consensus messages, block seals
-and peer-to-peer identities can be signed with post-quantum algorithms (**ML-DSA** and **Falcon**), with **hybrid**
-schemes that combine ECDSA and a post-quantum algorithm, or with classical ECDSA on secp256k1 or secp256r1. Standard
+and discovery v4 packets can be signed with the post-quantum
+algorithms **ML-DSA** (FIPS 204) and **Falcon-512**, with **hybrid** ECDSA + post-quantum schemes, or with classical
+ECDSA on secp256k1 or secp256r1. Nonetheless, peer identities (Ethereum Node Records) can be signed solely with standard ECDSA or SECP256K1-MLDSA44. Standard
 Ethereum transactions keep working unchanged.
 
 This documentation covers only what differs from upstream Besu. For everything else, see the
@@ -27,7 +28,7 @@ This documentation covers only what differs from upstream Besu. For everything e
 | Consensus | QBFT, IBFT 2.0 and Clique accept validators whose keys cannot be recovered from a signature. Messages and seals carry the signer's public key | [Consensus](05-consensus.md) |
 | Networking | Node IDs, discovery (discv4) packets and node records (ENR) are signed with the node's DSA | [Networking](06-networking.md) |
 | JSON-RPC | The new `VNT` namespace with `vnt_getAccountsSupportedDSAs`; transaction objects gain `dsaType` and `publicKey` | [JSON-RPC API](07-json-rpc-api.md) |
-| Configuration | New options `--node-dsa` and `--accounts-supported-dsas` | [Configuration](10-configuration.md) |
+| Configuration | New options flags `--node-dsa` and `--accounts-supported-dsas` | [Configuration](10-configuration.md) |
 | Tooling | Signature metrics and a microbenchmark that expresses verification cost in gas | [Metrics and performance](12-metrics-and-performance.md) |
 
 ## Table of contents
@@ -58,7 +59,7 @@ Each page has a navigation bar at the top and the bottom. Follow **Next →** to
 
 | Project | Purpose |
 |---|---|
-| [besu-qbft](https://github.com/venturusbr/besu-qbft) | Scripts that generate and start a local QBFT network of N validators, with any supported node DSA |
+| [besu-qbft](https://github.com/venturusbr/besu-qbft) | Scripts that generate and start a local QBFT network of N validators |
 | [besu-flex-wallet-ppi](https://github.com/venturusbr/besu-flex-wallet-ppi) | A command-line wallet that signs and sends flexible (hybrid post-quantum) and standard EIP-1559 transactions |
 
 ## Glossary
@@ -66,23 +67,19 @@ Each page has a navigation bar at the top and the bottom. Follow **Next →** to
 | Term | Meaning |
 |---|---|
 | **DSA** | Digital signature algorithm. In this fork, a named *parameter set* such as `MLDSA44` or `SECP256K1-MLDSA44`, identified by a 2-byte ID |
-| **PQC** | Post-quantum cryptography: algorithms believed to resist attacks by large quantum computers |
+| **PQC** | Post-quantum cryptography: algorithms believed to resist attacks by cryptographically relevant quantum computers |
 | **ML-DSA** | Module-Lattice-Based Digital Signature Algorithm, standardized in NIST FIPS 204 (formerly CRYSTALS-Dilithium) |
 | **Falcon** | A lattice-based signature scheme selected by NIST, with compact signatures (FN-DSA, draft FIPS 206) |
 | **Hybrid signature** | A signature made of a classical ECDSA signature and a post-quantum signature. It is valid only if both parts verify |
-| **PKR** | Public-key recovery: computing the signer's public key from a signature and the message, as ECDSA allows. Post-quantum schemes do not support it |
+| **PKR** | Public-key recovery: computing the signer's public key from a signature and the message, as ECDSA allows. Post-quantum schemes do not support it (only Falcon supports it in a second mode, which is not applicable in this work)|
 | **Recoverable / non-recoverable DSA** | Whether a DSA supports PKR. Data signed with a non-recoverable DSA must also carry the signer's public key |
-| **Flexible transaction** | A transaction of type `0x41`–`0x44` that names its DSA and carries the signer's public key |
+| **Flexible transaction** | A transaction of type `0x41`–`0x44` and signature agnostic that names its DSA and carries the signer's public key |
 | **Node DSA** | The DSA of a node's own key, used for consensus, block seals and P2P identity (`--node-dsa`) |
 | **Account DSA** | A DSA that externally owned accounts may use to sign transactions (`--accounts-supported-dsas`) |
 
 ## About this project
 
 This fork is developed by [Venturus](https://www.venturus.org.br).
-
-**Acknowledgement:** This work was supported by the Ministério da Ciência, Tecnologia e Inovação (MCTI) under Law
-No. 8,248 of October 23, 1991, through the PPI-SOFTEX program, coordinated by Softex, and published under PDI 19,
-DOU 01245.010909/2024-41.
 
 ---
 

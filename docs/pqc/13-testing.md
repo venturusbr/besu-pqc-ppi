@@ -89,7 +89,7 @@ A suggested matrix:
 | No gas charged for signature verification | [Transactions](04-transactions.md#gas) |
 | `SECP256K1-FALCON512` node keys: no discovery | [Networking](06-networking.md#falcon-node-keys) |
 | Pure post-quantum node keys cannot open RLPx sessions | [Key management](03-cryptography/key-management.md#key-agreement-ecdh) |
-| Transport encryption remains classical (ECDH) | [Security](08-security.md#out-of-scope-and-limitations) |
+| Transport key establishment remains classical (ECDHE) | [Security](08-security.md#out-of-scope-and-limitations) |
 | The node DSA cannot change on a running chain | [Consensus](05-consensus.md#network-wide-requirements) |
 | IBFT 1.0 (legacy) supports ECDSA only | [Consensus](05-consensus.md#support-matrix) |
 | `besu public-key export` supports ECDSA keys only | [Key management](03-cryptography/key-management.md#limitations) |
