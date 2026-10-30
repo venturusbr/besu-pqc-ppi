@@ -6,6 +6,7 @@ import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.config.DigitalSignatureAlgorithmConfiguration;
+import org.hyperledger.besu.crypto.config.DsaNotEnabledException;
 import org.hyperledger.besu.crypto.config.KeyConfiguration;
 
 public class DSAProviderFactory {
@@ -25,6 +26,22 @@ public class DSAProviderFactory {
 
   public static void setDsaProvider(final DigitalSignatureAlgorithmConfiguration dsaConfig, final KeyConfiguration keyConfig) {
     nodeDsaProvider = new DigitalSignatureAlgorithmProvider(dsaConfig, keyConfig);
+  }
+
+  /**
+   * Returns the algorithm enabled for accounts under the given DSA type. Without a configured DSA
+   * provider no type is enabled, so the lookup fails the same way as for a type left out of the
+   * configuration.
+   *
+   * @param dsaId the DSA type
+   * @return the account-enabled algorithm for that type
+   * @throws DsaNotEnabledException if the type is not enabled for accounts on this node
+   */
+  public static DigitalSignatureAlgorithm getAccountEnabledDSA(final Short dsaId) {
+    if (nodeDsaProvider == null) {
+      throw new DsaNotEnabledException(dsaId);
+    }
+    return nodeDsaProvider.getAccountEnabledDSAById(dsaId);
   }
 
   /**

@@ -36,7 +36,6 @@ import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.key.PublicKeyHandler;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
-import org.hyperledger.besu.crypto.providers.VerifierProvider;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.datatypes.AccessListEntry;
 import org.hyperledger.besu.datatypes.Address;
@@ -1882,7 +1881,8 @@ public class Transaction
           signature == null, "The transaction signature has already been provided to this builder");
       if (dsaType.isPresent() && providedPublicKey.isEmpty()) {
         providedPublicKey =
-            PublicKeyHandler.providedPart(enabledDsa(dsaType.get()), keys.getPublicKey());
+            PublicKeyHandler.providedPart(
+                DSAProviderFactory.getAccountEnabledDSA(dsaType.get()), keys.getPublicKey());
       }
       signature(computeSignature(keys));
       sender(
@@ -1911,16 +1911,9 @@ public class Transaction
               codeDelegationAuthorizations,
               chainId);
       return dsaType.isPresent()
-          ? enabledDsa(dsaType.get()).sign(signingHash, keys.getPrivateKey())
+          ? DSAProviderFactory.getAccountEnabledDSA(dsaType.get())
+              .sign(signingHash, keys.getPrivateKey())
           : SignatureAlgorithmFactory.getInstance().sign(signingHash, keys);
-    }
-
-    private static DigitalSignatureAlgorithm enabledDsa(final Short dsaType) {
-      final VerifierProvider verifierProvider = DSAProviderFactory.getVerifierProvider();
-      final DigitalSignatureAlgorithm dsa =
-          verifierProvider != null ? verifierProvider.getAccountEnabledDSAById(dsaType) : null;
-      checkState(dsa != null, "DSA type %s is not enabled", dsaType);
-      return dsa;
     }
 
     public Builder kzgBlobs(

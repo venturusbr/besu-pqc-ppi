@@ -27,7 +27,6 @@ import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.PublicKeyHandler;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
-import org.hyperledger.besu.crypto.providers.VerifierProvider;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.SignatureFactory;
 import org.hyperledger.besu.datatypes.Address;
@@ -185,7 +184,8 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
     // may be provided, so a stated recoverable half is never taken on trust.
     final Optional<PublicKey> maybePk =
         maybePublicKey != null
-            ? PublicKeyDecoder.fromProvidedBytes(enabledDsa(dsaType), maybePublicKey)
+            ? PublicKeyDecoder.fromProvidedBytes(
+                DSAProviderFactory.getAccountEnabledDSA(dsaType), maybePublicKey)
             : Optional.empty();
 
     return new CodeDelegation(
@@ -196,16 +196,6 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
         nonce,
         maybePk,
         sig);
-  }
-
-  private static DigitalSignatureAlgorithm enabledDsa(final Short dsaType) {
-    final VerifierProvider verifierProvider = DSAProviderFactory.getVerifierProvider();
-    final DigitalSignatureAlgorithm dsa =
-        verifierProvider != null ? verifierProvider.getAccountEnabledDSAById(dsaType) : null;
-    if (dsa == null) {
-      throw new IllegalArgumentException("DSA type " + dsaType + " is not enabled");
-    }
-    return dsa;
   }
 
   @JsonProperty("type")
@@ -464,6 +454,12 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
      * @return CodeDelegation
      */
     public org.hyperledger.besu.datatypes.CodeDelegation signAndBuild(final KeyPair keyPair) {
+      // Signing stores the signature and the provided key in this builder, so a second signer
+      // would sign over the first one's key.
+      if (signature != null) {
+        throw new IllegalStateException(
+            "The authorization signature has already been provided to this builder");
+      }
       if (address == null) {
         throw new IllegalStateException("Address must be set");
       }
@@ -476,9 +472,10 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
         if (dsaType == null) {
           throw new IllegalStateException("DSA type must be set for a flexible authorization");
         }
-        flexibleDsa = enabledDsa(dsaType);
+        flexibleDsa = DSAProviderFactory.getAccountEnabledDSA(dsaType);
         if (publicKey == null) {
-          publicKey = PublicKeyHandler.providedPart(flexibleDsa, keyPair.getPublicKey()).orElse(null);
+          publicKey =
+              PublicKeyHandler.providedPart(flexibleDsa, keyPair.getPublicKey()).orElse(null);
         }
       } else {
         flexibleDsa = null;

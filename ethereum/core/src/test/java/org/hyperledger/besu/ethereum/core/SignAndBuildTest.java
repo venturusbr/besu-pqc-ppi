@@ -22,6 +22,7 @@ import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.config.DigitalSignatureAlgorithmConfiguration;
+import org.hyperledger.besu.crypto.config.DsaNotEnabledException;
 import org.hyperledger.besu.crypto.config.SupportedAlgorithms;
 import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
@@ -133,7 +134,20 @@ class SignAndBuildTest {
 
     assertThatThrownBy(
             () -> flexibleTransaction(DSAParametersSet.MLDSA65).signAndBuild(signer))
-        .hasMessageContaining("not enabled");
+        .isInstanceOf(DsaNotEnabledException.class);
+  }
+
+  /** With no DSA provider no type is enabled, and the lookup fails as for any other such type. */
+  @Test
+  void withoutADsaProviderNoFlexibleTransactionOrDelegationIsSigned() {
+    DSAProviderFactory.resetDsaProvider();
+    final KeyPair signer = algorithm(DSAParametersSet.FALCON512).generateNodeKeyPair();
+
+    assertThatThrownBy(
+            () -> flexibleTransaction(DSAParametersSet.FALCON512).signAndBuild(signer))
+        .isInstanceOf(DsaNotEnabledException.class);
+    assertThatThrownBy(() -> flexibleDelegation(DSAParametersSet.FALCON512).signAndBuild(signer))
+        .isInstanceOf(DsaNotEnabledException.class);
   }
 
   @ParameterizedTest
@@ -145,13 +159,7 @@ class SignAndBuildTest {
     final KeyPair signer = dsa.generateNodeKeyPair();
 
     final org.hyperledger.besu.datatypes.CodeDelegation signed =
-        CodeDelegation.builder()
-            .type(CodeDelegationType.FLEXIBLE)
-            .dsaType(params.getId())
-            .chainId(CHAIN_ID)
-            .address(DELEGATE)
-            .nonce(3L)
-            .signAndBuild(signer);
+        flexibleDelegation(params).signAndBuild(signer);
     final org.hyperledger.besu.datatypes.CodeDelegation decoded =
         roundTrip(delegationTransaction(signed)).getCodeDelegationList().orElseThrow().get(0);
 
@@ -178,6 +186,29 @@ class SignAndBuildTest {
     assertThat(decoded.getType()).isEqualTo(CodeDelegationType.LEGACY);
     assertThat(decoded.maybePublicKey()).isEmpty();
     assertThat(decoded.authorizer()).contains(addressOf(signer));
+  }
+
+  @Test
+  void aDelegationOfADsaTypeThatIsNotEnabledIsNotSigned() {
+    final KeyPair signer = algorithm(DSAParametersSet.MLDSA65).generateNodeKeyPair();
+
+    assertThatThrownBy(() -> flexibleDelegation(DSAParametersSet.MLDSA65).signAndBuild(signer))
+        .isInstanceOf(DsaNotEnabledException.class);
+  }
+
+  /**
+   * Signing stores the provided key in the builder, so signing again would sign a second signer's
+   * authorization over the first one's key.
+   */
+  @Test
+  void aDelegationBuilderSignsOnlyOnce() {
+    final DigitalSignatureAlgorithm dsa = algorithm(DSAParametersSet.FALCON512);
+    final CodeDelegation.Builder builder = flexibleDelegation(DSAParametersSet.FALCON512);
+    builder.signAndBuild(dsa.generateNodeKeyPair());
+
+    assertThatThrownBy(() -> builder.signAndBuild(dsa.generateNodeKeyPair()))
+        .isInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("already been provided");
   }
 
   @Test
@@ -225,6 +256,15 @@ class SignAndBuildTest {
         .value(Wei.of(1_000))
         .payload(Bytes.EMPTY)
         .accessList(List.of());
+  }
+
+  private static CodeDelegation.Builder flexibleDelegation(final DSAParametersSet params) {
+    return CodeDelegation.builder()
+        .type(CodeDelegationType.FLEXIBLE)
+        .dsaType(params.getId())
+        .chainId(CHAIN_ID)
+        .address(DELEGATE)
+        .nonce(3L);
   }
 
   private static Transaction delegationTransaction(
