@@ -19,6 +19,7 @@ import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.OptionalDouble;
 import java.util.OptionalLong;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -154,12 +155,13 @@ public class SignatureGasReport {
     for (final Map.Entry<DSAParametersSet, Result<?>> entry : byType.entrySet()) {
       final Result<?> result = entry.getValue();
       final double ratio = result.getScore() / baseline.getScore();
+      final OptionalDouble error = error(result);
       final OptionalLong conservative = conservativeGas(result, baseline);
       System.out.printf(
-          "%-22s %12.3f %10.3f %7.2f %,15d %15s %,15d%n",
+          "%-22s %12.3f %10s %7.2f %,15d %15s %,15d%n",
           entry.getKey().getName(),
           result.getScore(),
-          error(result),
+          error.isPresent() ? String.format("%.3f", error.getAsDouble()) : "n/a",
           ratio,
           (long) Math.ceil(ECRECOVER_GAS * ratio),
           conservative.isPresent() ? String.format("%,d", conservative.getAsLong()) : "n/a",
@@ -174,7 +176,16 @@ public class SignatureGasReport {
       }
     }
 
-    if (error(baseline) >= baseline.getScore()) {
+    final boolean anyMissingInterval =
+        byType.values().stream().anyMatch(result -> error(result).isEmpty());
+    final OptionalDouble baselineError = error(baseline);
+    if (anyMissingInterval) {
+      System.out.println();
+      System.out.println(
+          "n/a: JMH could not compute an error interval, which takes at least two samples per"
+              + " algorithm. Run more iterations.");
+    }
+    if (baselineError.isPresent() && baselineError.getAsDouble() >= baseline.getScore()) {
       System.out.println();
       System.out.println(
           "n/a: the baseline's error is as large as its score, so no lower bound exists for it."
@@ -183,15 +194,20 @@ public class SignatureGasReport {
   }
 
   /**
-   * The relative gas at the pessimistic ends of both error intervals, or empty when the baseline's
-   * interval reaches zero and the bound does not exist.
+   * The relative gas at the pessimistic ends of both error intervals, or empty when either
+   * interval is unknown or the baseline's reaches zero, since the bound then does not exist.
    */
   private static OptionalLong conservativeGas(final Result<?> result, final Result<?> baseline) {
-    final double baselineLowerBound = baseline.getScore() - error(baseline);
+    final OptionalDouble error = error(result);
+    final OptionalDouble baselineError = error(baseline);
+    if (error.isEmpty() || baselineError.isEmpty()) {
+      return OptionalLong.empty();
+    }
+    final double baselineLowerBound = baseline.getScore() - baselineError.getAsDouble();
     if (baselineLowerBound <= 0) {
       return OptionalLong.empty();
     }
-    final double ratio = (result.getScore() + error(result)) / baselineLowerBound;
+    final double ratio = (result.getScore() + error.getAsDouble()) / baselineLowerBound;
     return OptionalLong.of((long) Math.ceil(ECRECOVER_GAS * ratio));
   }
 
@@ -211,9 +227,12 @@ public class SignatureGasReport {
     return isNative ? "native" : "Java (BouncyCastle)";
   }
 
-  /** The half-width of the 99.9% confidence interval, or zero when it could not be computed. */
-  private static double error(final Result<?> result) {
+  /**
+   * The half-width of the 99.9% confidence interval, or empty when JMH could not compute it, as
+   * with a single sample. An unknown interval is not a zero one, so it is never reported as such.
+   */
+  private static OptionalDouble error(final Result<?> result) {
     final double error = result.getScoreError();
-    return Double.isNaN(error) ? 0 : error;
+    return Double.isNaN(error) ? OptionalDouble.empty() : OptionalDouble.of(error);
   }
 }

@@ -57,8 +57,11 @@ tasks.register('signatureGasReport', JavaExec) {
   if (project.hasProperty('jmhArgs')) {
     args project.property('jmhArgs').toString().split(' ')
   }
-  // -PallowJavaBaseline runs the report even when the native secp256k1 library does not load
+  // -PallowJavaBaseline (or =true) runs the report even when the native secp256k1 library does not
+  // load. The value is passed on and parsed by the report, so =false keeps the check.
   if (project.hasProperty('allowJavaBaseline')) {
-    systemProperty 'signatureGasReport.allowJavaBaseline', 'true'
+    final String allowJavaBaseline = project.property('allowJavaBaseline').toString()
+    systemProperty 'signatureGasReport.allowJavaBaseline',
+      allowJavaBaseline.isEmpty() ? 'true' : allowJavaBaseline
   }
 }
