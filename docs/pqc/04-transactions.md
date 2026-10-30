@@ -5,8 +5,9 @@
 # Transactions
 
 Ethereum transactions do not say which algorithm signed them. Everything assumes ECDSA on secp256k1: the signature is
-`(v, r, s)` and the sender is recovered from it. The fork adds **flexible transactions**, which name their DSA, carry a
-signature of any length and, when the DSA cannot recover keys, carry the signer's public key.
+`(v, r, s)` and the sender is recovered from it. The fork adds **flexible transactions**, which are algorithm-agnostic: they drop `v`, `r` and `s` altogether, name their DSA, carry a signature of any length and, when the DSA cannot recover
+the public key from the signature, carry the signer's public key.
+
 
 Standard transaction types (`0x00`–`0x04`) are unchanged and keep working.
 
@@ -37,8 +38,10 @@ and the high nibble `0x4` marks the type as flexible.
 | `FLEXIBLE_BLOB` | `0x43` | `BLOB` (`0x03`) | ✓ | ✓ | ✓ | — |
 | `FLEXIBLE_DELEGATE_CODE` | `0x44` | `DELEGATE_CODE` (`0x04`) | ✓ | ✓ | — | ✓ |
 
-There is no flexible counterpart of legacy (Frontier) transactions. `TransactionType.isFlexible()` is true for
-`0x41`–`0x44`.
+There is no flexible counterpart of legacy (Frontier) transactions. A legacy transaction has no explicit `chainId` field:
+under EIP-155 the chain ID is calculated through `v`. Since flexible transactions have no `v`, `r` or `s`, a flexible legacy
+transaction would have no way to carry the chain ID, and nothing left of the legacy format to preserve.
+`TransactionType.isFlexible()` is true for `0x41`–`0x44`.
 
 ## Wire encoding
 
@@ -62,17 +65,9 @@ Compared with the standard type, the field list changes in three ways:
   ML-DSA-44 (`0x0030`) is encoded as `0x82 0x00 0x30`. The identifiers are listed in
   [Algorithms](03-cryptography/algorithms.md#identifiers-and-sizes).
 - **`(publicKey)`**: present or absent depending on `dsaType`, never as an empty placeholder. See the next section.
-- **Network form of `0x43`**: like upstream blob transactions, its pooled form wraps the list with the blobs,
-  commitments and proofs: `[[fields…], (wrapperVersion), blobs, commitments, proofs]`.
 
 Encoders and decoders live in `ethereum/core/.../core/encoding/` (`Flexible*TransactionEncoder` and
 `Flexible*TransactionDecoder`). They are registered in `TransactionEncoder` and `TransactionDecoder`.
-
-```mermaid
-flowchart LR
-  A["0x42"] --> B["rlp([ dsaType | chainId … accessList | publicKey? | signature ])"]
-  B --> C["keccak256 → tx hash"]
-```
 
 ## The public key field
 

@@ -18,73 +18,12 @@ algorithm (DSA)** can sign and verify, whether or not it can recover public keys
 
 ## Contents
 
-- [Class diagram](#class-diagram)
 - [Core interfaces](#core-interfaces)
 - [Providers and the process-wide DSA provider](#providers-and-the-process-wide-dsa-provider)
 - [Configuration: node DSA and account DSAs](#configuration-node-dsa-and-account-dsas)
 - [Signatures](#signatures)
 - [Resolving the signer's public key](#resolving-the-signers-public-key)
 - [Addresses](#addresses)
-
-## Class diagram
-
-```mermaid
-classDiagram
-  direction LR
-  class DigitalSignatureAlgorithm {
-    <<interface>>
-    +sign(Bytes data, PrivateKey) Signature
-    +verify(Bytes data, Signature, PublicKey) Boolean
-    +generateNodeKeyPair() KeyPair
-    +getDsaParametersSet() DSAParametersSet
-  }
-  class PublicKeyRecoverable {
-    <<interface>>
-    +recoverPublicKeyFromSignature(Bytes32, Signature) Optional~PublicKey~
-  }
-  class HybridDigitalSignatureAlgorithm {
-    <<interface>>
-    +getFirstAlgorithm()
-    +getSecondAlgorithm()
-  }
-  class SignatureAlgorithm {
-    <<interface>>
-    upstream ECDSA API
-  }
-  DigitalSignatureAlgorithm <|-- SignatureAlgorithm
-  DigitalSignatureAlgorithm <|-- HybridDigitalSignatureAlgorithm
-  SignatureAlgorithm <|.. AbstractSECP256
-  PublicKeyRecoverable <|.. AbstractSECP256
-  AbstractSECP256 <|-- SECP256K1
-  AbstractSECP256 <|-- SECP256R1
-  DigitalSignatureAlgorithm <|.. MLDSA
-  DigitalSignatureAlgorithm <|.. Falcon
-  HybridDigitalSignatureAlgorithm <|.. HybridStrongNestingConcatenation
-  HybridStrongNestingConcatenation o-- "2" DigitalSignatureAlgorithm
-
-  class DigitalSignatureAlgorithmProvider
-  class NodeKeyProvider { <<interface>> }
-  class KeyManagementProvider { <<interface>> }
-  class VerifierProvider { <<interface>> }
-  NodeKeyProvider <|.. DigitalSignatureAlgorithmProvider
-  KeyManagementProvider <|.. DigitalSignatureAlgorithmProvider
-  VerifierProvider <|.. DigitalSignatureAlgorithmProvider
-  DigitalSignatureAlgorithmProvider --> DigitalSignatureAlgorithmConfiguration
-  DigitalSignatureAlgorithmProvider --> KeyManager
-  DigitalSignatureAlgorithmConfiguration --> SupportedAlgorithms
-  DSAProviderFactory --> DigitalSignatureAlgorithmProvider : holds one
-```
-
-## Core interfaces
-
-| Type | Role |
-|---|---|
-| `DigitalSignatureAlgorithm` | The root abstraction: `sign`, `verify`, `generateNodeKeyPair`, `getDsaParametersSet`. Keys are JCA `PrivateKey` / `PublicKey`. |
-| `PublicKeyRecoverable` | A mix-in for algorithms that can recover the signer's key from a signature (ECDSA). The rest of the code tests for it with `instanceof` to decide whether a public key must travel with a signature. |
-| `HybridDigitalSignatureAlgorithm` | A DSA made of two DSAs. The only implementation is `HybridStrongNestingConcatenation`. |
-| `SignatureAlgorithm` | The upstream ECDSA interface. It now extends `DigitalSignatureAlgorithm`, so `SECP256K1` and `SECP256R1` are DSAs too, and all upstream ECDSA code keeps compiling. |
-| `SECPCurves` | Returns the algorithm of a given curve, so that a key or signature is handled on its own curve rather than on the process-wide default curve. |
-| `SignatureValidationContext` | Options for structural signature checks. Today it has one flag, `disallowMalleability`. |
 
 ## Providers and the process-wide DSA provider
 
@@ -111,7 +50,7 @@ The fork distinguishes two independent choices:
 | Concept | Option | Scope | Implementation |
 |---|---|---|---|
 | **Node DSA** | `--node-dsa` | the node's own key: consensus messages, block seals, P2P identity | `DigitalSignatureAlgorithmConfiguration.nodeActiveDSA` |
-| **Account DSAs** | `--accounts-supported-dsas` | which DSAs transactions and code delegations may use | `DigitalSignatureAlgorithmConfiguration.accountsEnabledDSAs` |
+| **Account DSAs** | `--accounts-supported-dsas` | which DSAs transactions and code delegations the node will accept from users | `DigitalSignatureAlgorithmConfiguration.accountsEnabledDSAs` |
 
 - `SupportedAlgorithms` maps every DSA name to a factory.
 - The account DSAs are built **once** at start-up into an immutable map keyed by DSA identifier. The algorithm
@@ -129,7 +68,7 @@ See [Configuration](../10-configuration.md) for the option reference.
 | `SECPSignature` | `r (32) ‖ s (32) ‖ recId (1)`. It also records its curve | low-`s` check on its own curve when malleability is disallowed |
 | `MLDSASignature` | raw FIPS 204 signature | non-empty |
 | `FalconSignature` | raw Falcon signature, variable length | non-empty and at most 752 bytes (Falcon-512) |
-| `CompositeSignature` | `first ‖ second` | both halves valid |
+| `CompositeSignature` | `first ‖ second` | calls `isValid(context)` on each half with the same context (e.g. the low-`s` check on the ECDSA half, the length check on the Falcon half), and is valid only if both are |
 
 `SignatureFactory.createSignatureFromBytes(bytes, dsaParametersSet)` turns bytes received from the network into a typed
 signature, and splits hybrid signatures (see [Hybrid signatures](hybrid-signatures.md#signature-layout)).

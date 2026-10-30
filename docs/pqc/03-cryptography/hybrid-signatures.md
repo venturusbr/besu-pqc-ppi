@@ -4,8 +4,13 @@
 
 # Hybrid signatures
 
-A hybrid signature combines a classical signature (ECDSA secp256k1) and a post-quantum signature (ML-DSA-44 or
-Falcon-512). It stays secure as long as **at least one** of the two algorithms is unbroken:
+A hybrid signature combines the signatures of two DSAs. It stays secure as long as **at least one** of the two
+algorithms is unbroken. The construction does not require one half to be classical and the other post-quantum: any two
+DSAs can be combined, for example two post-quantum algorithms based on different mathematical problems (lattices and
+hash-based signatures, say), so that a break of one family does not compromise the signature.
+
+The hybrids available today, `SECP256K1-MLDSA44` and `SECP256K1-FALCON512`, combine a classical signature (ECDSA
+secp256k1) with a post-quantum one (ML-DSA-44 or Falcon-512):
 
 - ECDSA protects against a flaw in the comparatively young post-quantum scheme or its implementation.
 - The post-quantum half protects against a quantum computer that breaks ECDSA.
@@ -26,17 +31,6 @@ Hybrids are also the bridge for migration. The ECDSA half keeps public-key recov
 
 Implemented by `crypto/algorithms/.../algorithms/hybrid/HybridStrongNestingConcatenation.java`.
 
-```mermaid
-flowchart LR
-  M["m (32-byte hash)"] --> E["ECDSA sign"]
-  E --> S1["σ₁ (65 bytes)"]
-  M --> C["m ‖ σ₁"]
-  S1 --> C
-  C --> P["PQ sign<br/>(ML-DSA-44 / Falcon-512)"]
-  P --> S2["σ₂"]
-  S1 --> O["σ = σ₁ ‖ σ₂"]
-  S2 --> O
-```
 
 ```java
 Signature first  = ecdsa.sign(data, sk.getFirstKey());
@@ -117,11 +111,27 @@ full and the partial forms are accepted.
 
 ## Hybrid addresses
 
-A hybrid account's address is `keccak256(pk_ecdsa ‖ pk_pq)[12:]`. It commits to **both** keys, so:
+Address derivation is unchanged: as in Ethereum, an address is the last 20 bytes of the Keccak-256 hash of the public
+key, `keccak256(publicKey)[-20:]` (`Address.extract`). What changes is the public key itself: in this implementation it
+can be a hybrid key, the concatenation of the public keys of two DSAs, and the hash is taken over the whole
+concatenation.
 
-- the hybrid account and the plain ECDSA account derived from the same ECDSA key are **different accounts**;
-- an attacker who forges only one half (for example a quantum attacker who recovers `sk_ecdsa`) cannot spend from the
-  hybrid account.
+For example, with `SECP256K1-MLDSA44` the public key is the 64-byte secp256k1 key followed by the 1312-byte ML-DSA-44
+key, 1376 bytes in all, and the address is:
+
+```
+address = keccak256(pk_secp256k1 ‖ pk_mldsa44)[-20:]
+```
+
+The address is therefore bound to **both** public keys:
+
+- **The account is quantum-safe**, because one of the two keys belongs to a quantum-safe DSA. Spending from the
+  account requires a hybrid signature whose ML-DSA-44 half verifies against `pk_mldsa44`. A quantum attacker who
+  recovers `sk_secp256k1` from `pk_secp256k1` can forge the ECDSA half, but not the ML-DSA-44 half. Nor can they swap
+  in an ML-DSA-44 key of their own, because the address commits to `pk_mldsa44`: a different key gives a different
+  address.
+- The hybrid account and the plain ECDSA account derived from the same secp256k1 key are **different accounts**, since
+  their addresses are hashes of different public keys.
 
 Tests: `AddressFromHybridPublicKeyTest` (`datatypes`).
 

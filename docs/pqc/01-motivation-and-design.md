@@ -16,7 +16,7 @@
 ## The quantum threat to Ethereum signatures
 
 Everything that is signed in Ethereum uses ECDSA on secp256k1. That includes transactions, EIP-7702 code delegations,
-consensus messages and block seals, and peer identities. A large enough quantum computer running **Shor's algorithm**
+consensus messages and block seals, discovery packets and peer identities. A large enough quantum computer running **Shor's algorithm**
 can compute an ECDSA private key from its public key. Every exposed public key is then compromised. With ECDSA, the
 public key of any account that has sent a transaction can be recovered from the transaction's signature.
 
@@ -44,15 +44,15 @@ blockchain client to them raises several engineering problems:
 ## Why hybrids
 
 Post-quantum schemes are young. Implementation flaws and new cryptanalysis are still possible, as the break of the NIST
-candidate Rainbow in 2022 showed. A **hybrid** signature is valid only if both an ECDSA signature and a post-quantum
-signature verify, so it is at least as strong as the stronger of the two. The fork uses **Strong Nesting
+candidate Rainbow in 2022 showed, among other examples. A **hybrid** signature is valid only if both an ECDSA signature and a post-quantum
+signature are valid, so it is at least as strong as the stronger of the two. The fork uses the combiner **Strong Nesting
 Concatenation**: the post-quantum half signs the message together with the ECDSA signature, which binds the two halves
 (see [Hybrid signatures](03-cryptography/hybrid-signatures.md)).
 
 Hybrids also solve practical problems:
 
 - The ECDSA half still supports **public-key recovery**, so only the post-quantum half of the key has to be carried.
-- The ECDSA half supplies the elliptic-curve key that the **RLPx handshake** (ECDH) needs.
+- The ECDSA half supplies the elliptic-curve key that the **RLPx handshake** (ECDHE) needs.
 
 ## Design principles
 
@@ -92,14 +92,16 @@ flowchart TB
 
 ## Non-goals
 
-- **Post-quantum key exchange.** RLPx still encrypts with classical ECDH. Only authentication is made post-quantum.
+- **Post-quantum key exchange.** The RLPx handshake still performs ECDHE on secp256k1, and authenticates a peer with
+  the ECDSA half of its node key only. Making RLPx post-quantum, for example with a post-quantum KEM such as ML-KEM and by binding the
+  post-quantum half of the node identity to the session, is left for future research.
 - **Migration of existing accounts.** An ECDSA account cannot be converted into a post-quantum account. Users move funds
   to a new hybrid or post-quantum address.
 - **Mainnet compatibility for post-quantum features.** Flexible transactions are not part of any Ethereum Improvement
   Proposal. They are intended for permissioned and consortium networks.
-- **Gas pricing of verification.** Verification is not charged in gas yet. The
+- **Gas pricing of verification.** Verification of a PQC signature is not charged in gas yet. The
   [microbenchmark](12-metrics-and-performance.md#dsa-microbenchmark-verification-cost-in-gas) provides data for a future
-  decision.
+  decision. The base gas cost of flexible transactions is still 21,000
 
 ---
 

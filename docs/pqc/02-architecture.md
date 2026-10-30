@@ -25,7 +25,7 @@ The fork keeps Besu's module structure. These are the modules it changes:
 | `ethereum/core` | Flexible transaction encoders and decoders, `Transaction` (dsaType, publicKey, sender resolution), `CodeDelegation`, `PublicKeyEncoder` / `PublicKeyDecoder`, `MainnetTransactionValidator`, `MainnetProtocolSpecs` (Prague) |
 | `ethereum/eth` | Transaction pool memory accounting for large signatures |
 | `ethereum/api` | `VNT` namespace, `vnt_getAccountsSupportedDSAs`, transaction and delegation result objects |
-| `ethereum/p2p` | Node IDs of any length, discv4 packets with partial keys, `vnt` node records, ECDH with the ECDSA half |
+| `ethereum/p2p` | Node IDs of any length, discv4 packets with partial keys, `vnt` node records, ECDHE with the ECDSA half |
 | `consensus/common`, `qbft`, `qbft-core`, `ibft`, `clique` | Signed messages carrying keys, commit seals with keys, Clique key-carrying `extraData`, integration tests per DSA |
 | `app` | `--node-dsa`, `--accounts-supported-dsas`, DSA provider start-up, `operator generate-blockchain-config --node-dsa` |
 | `settings.gradle`, `platform` | Source dependency on the forked discovery library, Bouncy Castle |
@@ -136,7 +136,7 @@ sequenceDiagram
   N->>Bv: message
   Bv->>Bv: recover pk_ecdsa from σ₁
   Bv->>Bv: verify σ₂ with pk_mldsa
-  Bv->>Bv: author = keccak256(pk_ecdsa ‖ pk_mldsa)[12:]
+  Bv->>Bv: author = keccak256(pk_ecdsa ‖ pk_mldsa)[-20:]
   Bv->>Bv: check that the author is a validator
 ```
 

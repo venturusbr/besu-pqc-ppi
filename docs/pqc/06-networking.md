@@ -90,7 +90,7 @@ The RLPx (ECIES) handshake that establishes encrypted peer sessions is unchanged
 of the node key (`PublicKeyHandler.secp256k1`, `EnodeURLImpl.secp256k1PublicKey`) for ECDH.
 
 - Pure ML-DSA or Falcon node keys cannot complete the handshake (`Besu only supports ECDH with SECP private key`).
-- Session encryption keys are derived with classical ECDH. Replacing ECIES with a post-quantum KEM is outside the scope
+- Session keys are established with classical ECDHE. Replacing it with a post-quantum KEM is outside the scope
   of this fork (see [Security considerations](08-security.md#out-of-scope-and-limitations)).
 - Post-quantum *authentication* of a peer's identity comes from discovery (signed packets and records) and from
   consensus (every consensus message is signed). The RLPx handshake itself authenticates only the ECDSA half.
