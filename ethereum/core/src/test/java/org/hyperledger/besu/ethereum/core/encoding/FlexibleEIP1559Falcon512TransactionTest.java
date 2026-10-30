@@ -22,7 +22,6 @@ import org.hyperledger.besu.crypto.algorithms.Falcon;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.config.DigitalSignatureAlgorithmConfiguration;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
-import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.types.FalconSignature;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.TransactionType;
@@ -114,17 +113,8 @@ class FlexibleEIP1559Falcon512TransactionTest {
     assertThat(verifyAsTheValidatorDoes(decoded)).isFalse();
   }
 
-  private Transaction sign(final KeyPair keyPair, final Wei value) {
-    // Transaction.Builder#signAndBuild always signs with SECP256K1, so sign the hash directly.
-    // The signing hash covers every field but the signature, so a placeholder is enough to read it.
-    final Bytes signingHash =
-        Bytes.wrap(
-            unsigned(keyPair.getPublicKey(), value)
-                .signature(FalconSignature.create(Bytes.of(0), DSAParametersSet.FALCON512))
-                .build()
-                .getSigningHash());
-    final Signature signature = falcon.sign(signingHash, keyPair.getPrivateKey());
-    return unsigned(keyPair.getPublicKey(), value).signature(signature).build();
+  private static Transaction sign(final KeyPair keyPair, final Wei value) {
+    return unsigned(keyPair.getPublicKey(), value).signAndBuild(keyPair);
   }
 
   private static Transaction.Builder unsigned(final PublicKey publicKey, final Wei value) {

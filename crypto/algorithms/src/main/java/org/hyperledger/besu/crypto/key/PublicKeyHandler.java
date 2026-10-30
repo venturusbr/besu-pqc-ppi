@@ -95,6 +95,43 @@ public class PublicKeyHandler {
             signatureAlgorithm.getDsaParametersSet()));
   }
 
+  /**
+   * The part of a signer's public key that travels with what it signs: the key itself when the
+   * algorithm cannot recover it, only the half that cannot be recovered for a hybrid, and nothing
+   * when every key is recovered from the signature. It is the inverse of {@link
+   * #resolvePublicKey}, for signers that have to state the key before signing over it.
+   *
+   * @param signatureAlgorithm the algorithm the signer signs with
+   * @param publicKey the signer's whole public key, composite for a hybrid
+   * @return the key to provide alongside the signature, if any
+   * @throws IllegalArgumentException if the algorithm is a hybrid and the key is not composite
+   */
+  public static Optional<PublicKey> providedPart(
+      final DigitalSignatureAlgorithm signatureAlgorithm, final PublicKey publicKey) {
+    if (!(signatureAlgorithm instanceof HybridDigitalSignatureAlgorithm hybrid)) {
+      return signatureAlgorithm instanceof PublicKeyRecoverable
+          ? Optional.empty()
+          : Optional.of(publicKey);
+    }
+
+    final boolean firstRecoverable = hybrid.getFirstAlgorithm() instanceof PublicKeyRecoverable;
+    final boolean secondRecoverable = hybrid.getSecondAlgorithm() instanceof PublicKeyRecoverable;
+    if (firstRecoverable && secondRecoverable) {
+      return Optional.empty();
+    }
+    if (!firstRecoverable && !secondRecoverable) {
+      return Optional.of(publicKey);
+    }
+    if (!(publicKey instanceof CompositePublicKey composite)) {
+      throw new IllegalArgumentException(
+          "Expected a composite public key for "
+              + hybrid.getDsaParametersSet().getName()
+              + ", but found "
+              + publicKey.getAlgorithm());
+    }
+    return Optional.of(firstRecoverable ? composite.getSecondKey() : composite.getFirstKey());
+  }
+
   private static PublicKey extractHybridPublicKey(
       final HybridDigitalSignatureAlgorithm hybrid,
       final Signature signature,

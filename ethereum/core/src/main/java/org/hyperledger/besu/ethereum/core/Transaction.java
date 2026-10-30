@@ -1868,9 +1868,22 @@ public class Transaction
           sizeForBlockInclusion);
     }
 
+    /**
+     * Sign with the algorithm of the DSA type, or with the default one when there is none, and
+     * build. When no public key was provided, the part of the signer's key that the algorithm
+     * cannot recover is provided, since the signature covers it.
+     *
+     * @param keys the signer's key pair, of the DSA type's algorithm
+     * @return the signed transaction
+     */
     public Transaction signAndBuild(final KeyPair keys) {
       checkState(
           signature == null, "The transaction signature has already been provided to this builder");
+      if (dsaType.isPresent() && providedPublicKey.isEmpty()) {
+        providedPublicKey =
+            PublicKeyHandler.providedPart(
+                DSAProviderFactory.getAccountEnabledDSA(dsaType.get()), keys.getPublicKey());
+      }
       signature(computeSignature(keys));
       sender(
           Address.extract(
@@ -1879,26 +1892,28 @@ public class Transaction
     }
 
     Signature computeSignature(final KeyPair keys) {
-      return SignatureAlgorithmFactory.getInstance()
-          .sign(
-              computeSenderRecoveryHash(
-                  transactionType,
-                  dsaType,
-                  nonce,
-                  gasPrice,
-                  maxPriorityFeePerGas,
-                  maxFeePerGas,
-                  maxFeePerBlobGas,
-                  gasLimit,
-                  to,
-                  value,
-                  providedPublicKey,
-                  payload,
-                  accessList,
-                  versionedHashes,
-                  codeDelegationAuthorizations,
-                  chainId),
-              keys);
+      final Bytes32 signingHash =
+          computeSenderRecoveryHash(
+              transactionType,
+              dsaType,
+              nonce,
+              gasPrice,
+              maxPriorityFeePerGas,
+              maxFeePerGas,
+              maxFeePerBlobGas,
+              gasLimit,
+              to,
+              value,
+              providedPublicKey,
+              payload,
+              accessList,
+              versionedHashes,
+              codeDelegationAuthorizations,
+              chainId);
+      return dsaType.isPresent()
+          ? DSAProviderFactory.getAccountEnabledDSA(dsaType.get())
+              .sign(signingHash, keys.getPrivateKey())
+          : SignatureAlgorithmFactory.getInstance().sign(signingHash, keys);
     }
 
     public Builder kzgBlobs(

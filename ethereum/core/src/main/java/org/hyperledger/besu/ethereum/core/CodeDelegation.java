@@ -27,7 +27,6 @@ import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.PublicKeyHandler;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
-import org.hyperledger.besu.crypto.providers.VerifierProvider;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.SignatureFactory;
 import org.hyperledger.besu.datatypes.Address;
@@ -185,7 +184,8 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
     // may be provided, so a stated recoverable half is never taken on trust.
     final Optional<PublicKey> maybePk =
         maybePublicKey != null
-            ? PublicKeyDecoder.fromProvidedBytes(enabledDsa(dsaType), maybePublicKey)
+            ? PublicKeyDecoder.fromProvidedBytes(
+                DSAProviderFactory.getAccountEnabledDSA(dsaType), maybePublicKey)
             : Optional.empty();
 
     return new CodeDelegation(
@@ -196,16 +196,6 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
         nonce,
         maybePk,
         sig);
-  }
-
-  private static DigitalSignatureAlgorithm enabledDsa(final Short dsaType) {
-    final VerifierProvider verifierProvider = DSAProviderFactory.getVerifierProvider();
-    final DigitalSignatureAlgorithm dsa =
-        verifierProvider != null ? verifierProvider.getAccountEnabledDSAById(dsaType) : null;
-    if (dsa == null) {
-      throw new IllegalArgumentException("DSA type " + dsaType + " is not enabled");
-    }
-    return dsa;
   }
 
   @JsonProperty("type")
@@ -455,27 +445,58 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
     }
 
     /**
-     * Sign the authorization with the given key pair and return the authorization.
+     * Sign the authorization with the given key pair and return the authorization. A flexible
+     * authorization is signed with the algorithm of its DSA type and, when no public key was set,
+     * provides the part of the signer's key that the algorithm cannot recover, since the signature
+     * covers it.
      *
-     * @param keyPair the key pair
+     * @param keyPair the key pair, of the DSA type's algorithm for a flexible authorization
      * @return CodeDelegation
      */
     public org.hyperledger.besu.datatypes.CodeDelegation signAndBuild(final KeyPair keyPair) {
-      final BytesValueRLPOutput output = new BytesValueRLPOutput();
+      // Signing stores the signature and the provided key in this builder, so a second signer
+      // would sign over the first one's key.
+      if (signature != null) {
+        throw new IllegalStateException(
+            "The authorization signature has already been provided to this builder");
+      }
+      if (address == null) {
+        throw new IllegalStateException("Address must be set");
+      }
+      if (nonce == null) {
+        throw new IllegalStateException("Nonce must be set");
+      }
 
-      // change: serialize by authorityType
-      output.startList();
-      output.writeBigIntegerScalar(chainId);
-      output.writeBytes(address.getBytes());
-      output.writeLongScalar(nonce);
-      output.endList();
+      final DigitalSignatureAlgorithm flexibleDsa;
+      if (authorizationType == CodeDelegationType.FLEXIBLE) {
+        if (dsaType == null) {
+          throw new IllegalStateException("DSA type must be set for a flexible authorization");
+        }
+        flexibleDsa = DSAProviderFactory.getAccountEnabledDSA(dsaType);
+        if (publicKey == null) {
+          publicKey =
+              PublicKeyHandler.providedPart(flexibleDsa, keyPair.getPublicKey()).orElse(null);
+        }
+      } else {
+        flexibleDsa = null;
+      }
+
+      // Hashed the way verification hashes it, which the signature does not enter.
+      final Bytes32 signingHash =
+          new CodeDelegation(
+                  authorizationType,
+                  Optional.ofNullable(dsaType),
+                  chainId,
+                  address,
+                  nonce,
+                  Optional.ofNullable(publicKey),
+                  null)
+              .getOrComputeSenderRecoveryHash();
 
       signature(
-          SIGNATURE_ALGORITHM
-              .get()
-              .sign(
-                  Bytes32.wrap(Hash.hash(Bytes.concatenate(MAGIC, output.encoded())).getBytes()),
-                  keyPair));
+          flexibleDsa != null
+              ? flexibleDsa.sign(signingHash, keyPair.getPrivateKey())
+              : SIGNATURE_ALGORITHM.get().sign(signingHash, keyPair));
       return build();
     }
 
