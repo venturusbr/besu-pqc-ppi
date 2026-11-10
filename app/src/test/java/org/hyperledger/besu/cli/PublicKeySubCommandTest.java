@@ -82,7 +82,13 @@ public class PublicKeySubCommandTest extends CommandTestAbstract {
           + System.lineSeparator()
           + "                            The node's private key file (default: a file named"
           + System.lineSeparator()
-          + "                              \"key\" in the Besu data directory)"
+          + "                              \"key\" in the Besu data directory, for an"
+          + System.lineSeparator()
+          + "                              elliptic-curve node key only; a hybrid or"
+          + System.lineSeparator()
+          + "                              post-quantum --node-dsa needs this option, as"
+          + System.lineSeparator()
+          + "                              such keys are not generated automatically)"
           + System.lineSeparator()
           + "      --to=<FILE>           File to write public key to instead of standard"
           + System.lineSeparator()
@@ -112,7 +118,13 @@ public class PublicKeySubCommandTest extends CommandTestAbstract {
           + System.lineSeparator()
           + "                            The node's private key file (default: a file named"
           + System.lineSeparator()
-          + "                              \"key\" in the Besu data directory)"
+          + "                              \"key\" in the Besu data directory, for an"
+          + System.lineSeparator()
+          + "                              elliptic-curve node key only; a hybrid or"
+          + System.lineSeparator()
+          + "                              post-quantum --node-dsa needs this option, as"
+          + System.lineSeparator()
+          + "                              such keys are not generated automatically)"
           + System.lineSeparator()
           + "      --to=<FILE>           File to write address to instead of standard output"
           + System.lineSeparator()
