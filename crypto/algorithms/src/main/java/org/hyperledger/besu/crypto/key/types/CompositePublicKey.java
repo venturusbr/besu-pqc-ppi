@@ -1,46 +1,58 @@
+/*
+ * Copyright contributors to Besu.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.hyperledger.besu.crypto.key.types;
 
 import java.security.PublicKey;
 
 import org.apache.tuweni.bytes.Bytes;
 
-public class CompositePublicKey implements PublicKey{
-    private final PublicKey firstKey;
-    private final PublicKey secondKey;
+public class CompositePublicKey implements PublicKey {
+  private final PublicKey firstKey;
+  private final PublicKey secondKey;
 
-    public CompositePublicKey(final PublicKey firstKey, final PublicKey secondKey){
+  public CompositePublicKey(final PublicKey firstKey, final PublicKey secondKey) {
 
-        this.firstKey = firstKey;
-        this.secondKey = secondKey;
-    }
-    
-    public PublicKey getFirstKey(){
-        return firstKey;
-    }
+    this.firstKey = firstKey;
+    this.secondKey = secondKey;
+  }
 
-    public PublicKey getSecondKey(){
-        return secondKey;
-    }
+  public PublicKey getFirstKey() {
+    return firstKey;
+  }
 
-    @Override
-    public String getAlgorithm(){
-        return firstKey.getAlgorithm() + "-" + secondKey.getAlgorithm();
-    }
+  public PublicKey getSecondKey() {
+    return secondKey;
+  }
 
-    @Override
-    public String getFormat(){
-        return "concatenated";
-    }
+  @Override
+  public String getAlgorithm() {
+    return firstKey.getAlgorithm() + "-" + secondKey.getAlgorithm();
+  }
 
-    @Override
-    public byte[] getEncoded(){
-        return Bytes.concatenate(
-            Bytes.wrap(firstKey.getEncoded()),
-            Bytes.wrap(secondKey.getEncoded())
-        ).toArrayUnsafe();
-    }
+  @Override
+  public String getFormat() {
+    return "concatenated";
+  }
 
-    public static CompositePublicKey create(final PublicKey firstPk, final PublicKey secondPk){
-        return new CompositePublicKey(firstPk, secondPk);
-    }
+  @Override
+  public byte[] getEncoded() {
+    return Bytes.concatenate(Bytes.wrap(firstKey.getEncoded()), Bytes.wrap(secondKey.getEncoded()))
+        .toArrayUnsafe();
+  }
+
+  public static CompositePublicKey create(final PublicKey firstPk, final PublicKey secondPk) {
+    return new CompositePublicKey(firstPk, secondPk);
+  }
 }

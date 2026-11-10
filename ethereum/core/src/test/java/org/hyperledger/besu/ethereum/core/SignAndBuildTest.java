@@ -132,8 +132,7 @@ class SignAndBuildTest {
   void aTransactionOfADsaTypeThatIsNotEnabledIsNotSigned() {
     final KeyPair signer = algorithm(DSAParametersSet.MLDSA65).generateNodeKeyPair();
 
-    assertThatThrownBy(
-            () -> flexibleTransaction(DSAParametersSet.MLDSA65).signAndBuild(signer))
+    assertThatThrownBy(() -> flexibleTransaction(DSAParametersSet.MLDSA65).signAndBuild(signer))
         .isInstanceOf(DsaNotEnabledException.class);
   }
 
@@ -143,8 +142,7 @@ class SignAndBuildTest {
     DSAProviderFactory.resetDsaProvider();
     final KeyPair signer = algorithm(DSAParametersSet.FALCON512).generateNodeKeyPair();
 
-    assertThatThrownBy(
-            () -> flexibleTransaction(DSAParametersSet.FALCON512).signAndBuild(signer))
+    assertThatThrownBy(() -> flexibleTransaction(DSAParametersSet.FALCON512).signAndBuild(signer))
         .isInstanceOf(DsaNotEnabledException.class);
     assertThatThrownBy(() -> flexibleDelegation(DSAParametersSet.FALCON512).signAndBuild(signer))
         .isInstanceOf(DsaNotEnabledException.class);

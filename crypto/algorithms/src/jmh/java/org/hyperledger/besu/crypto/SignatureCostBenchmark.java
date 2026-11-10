@@ -69,8 +69,7 @@ public class SignatureCostBenchmark {
   private static final int FIXTURES = 64;
 
   /** Without values, so JMH runs every constant of the enum and a new one is benchmarked too. */
-  @Param
-  public DSAParametersSet dsaType;
+  @Param public DSAParametersSet dsaType;
 
   private List<Operation> operations;
   private int next;

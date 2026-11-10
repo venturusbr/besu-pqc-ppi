@@ -93,13 +93,19 @@ public final class InitiatorHandshakeMessageV1 implements InitiatorHandshakeMess
       final Bytes32 staticSharedSecret,
       final Bytes32 nonce,
       final boolean token) {
-    final Bytes32 ephPubKeyHash = Hash.keccak256(Bytes.wrap(ephKeyPair.getPublicKey().getEncoded()));
+    final Bytes32 ephPubKeyHash =
+        Hash.keccak256(Bytes.wrap(ephKeyPair.getPublicKey().getEncoded()));
 
     // XOR of the static shared secret and the generated nonce.
     final SECPSignature signature =
         SIGNATURE_ALGORITHM.get().sign(staticSharedSecret.xor(nonce), ephKeyPair);
     return new InitiatorHandshakeMessageV1(
-        ourPubKey, signature, (SECPPublicKey) ephKeyPair.getPublicKey(), ephPubKeyHash, nonce, token);
+        ourPubKey,
+        signature,
+        (SECPPublicKey) ephKeyPair.getPublicKey(),
+        ephPubKeyHash,
+        nonce,
+        token);
   }
 
   /**

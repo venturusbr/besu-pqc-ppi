@@ -127,8 +127,7 @@ public class IbftBlockHeaderValidationRulesetFactoryTest {
     final NodeKey proposerNodeKey = NodeKeyUtils.generate();
     final Address proposerAddress = Address.extract(proposerNodeKey.getPublicKey());
 
-    final Address nonProposerAddress =
-        Address.extract(NodeKeyUtils.generate().getPublicKey());
+    final Address nonProposerAddress = Address.extract(NodeKeyUtils.generate().getPublicKey());
 
     final List<Address> validators = singletonList(proposerAddress);
 

@@ -93,8 +93,7 @@ class FlexibleSecp256k1TransactionResultTest {
         new ObjectMapper()
             .valueToTree(
                 new TransactionCompleteResult(
-                    new TransactionWithMetadata(
-                        signed, 1L, Optional.of(Wei.ONE), Hash.ZERO, 0)));
+                    new TransactionWithMetadata(signed, 1L, Optional.of(Wei.ONE), Hash.ZERO, 0)));
 
     assertThat(json.has("publicKey")).isFalse();
     assertThat(json.get("signature").asText())

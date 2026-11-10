@@ -36,6 +36,7 @@ public class CliqueBlockHashing {
 
   /** What the proposer seal is called in the sign, verify and PKR metrics. */
   private static final String CLIQUE_BLOCK_HEADER = "clique-block-header";
+
   /** Default constructor. */
   private CliqueBlockHashing() {}
 

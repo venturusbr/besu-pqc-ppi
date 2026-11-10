@@ -36,7 +36,8 @@ public class EIP1559TransactionEncoder {
     out.writeUInt256Scalar(transaction.getValue());
     out.writeBytes(transaction.getPayload());
     writeAccessList(out, transaction.getAccessList());
-    TransactionSignatureEncoder.writeStandardSignatureAndRecoveryId(transaction.getSignature(), out);
+    TransactionSignatureEncoder.writeStandardSignatureAndRecoveryId(
+        transaction.getSignature(), out);
     out.endList();
   }
 }

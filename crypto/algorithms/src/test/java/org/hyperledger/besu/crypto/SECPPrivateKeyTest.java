@@ -40,7 +40,7 @@ public class SECPPrivateKeyTest {
   protected static String suiteName = null;
   public static ECDomainParameters curve;
 
-  @BeforeAll    
+  @BeforeAll
   public static void setUp() {
     suiteStartTime =
         LocalDateTime.now(ZoneId.systemDefault())
@@ -61,7 +61,7 @@ public class SECPPrivateKeyTest {
         .isInstanceOf(NullPointerException.class);
   }
 
-  @Test    
+  @Test
   public void privateKeyEquals() {
     final SECPPrivateKey privateKey1 = SECPPrivateKey.create(BigInteger.TEN, ALGORITHM);
     final SECPPrivateKey privateKey2 = SECPPrivateKey.create(BigInteger.TEN, ALGORITHM);

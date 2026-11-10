@@ -20,7 +20,6 @@ import org.hyperledger.besu.cli.BesuCommand;
 import org.hyperledger.besu.cli.options.PluginsConfigurationOptions;
 import org.hyperledger.besu.controller.BesuController;
 import org.hyperledger.besu.crypto.KeyPairUtil;
-import org.hyperledger.besu.crypto.pqc.metrics.CSVWriter;
 import org.hyperledger.besu.crypto.pqc.metrics.MetricWriters;
 import org.hyperledger.besu.ethereum.api.graphql.GraphQLHttpService;
 import org.hyperledger.besu.ethereum.api.jsonrpc.EngineJsonRpcService;

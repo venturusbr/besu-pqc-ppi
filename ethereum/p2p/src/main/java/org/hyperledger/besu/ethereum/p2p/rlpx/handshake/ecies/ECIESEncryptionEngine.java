@@ -55,7 +55,7 @@ import org.bouncycastle.util.Pack;
  */
 public class ECIESEncryptionEngine {
 
-  //TODO: remove SECP dependency
+  // TODO: remove SECP dependency
 
   public static final int ENCRYPTION_OVERHEAD = 113;
 
@@ -126,7 +126,8 @@ public class ECIESEncryptionEngine {
     final byte[] ivb = ECIESHandshaker.random(CIPHER_BLOCK_SIZE).toArray();
 
     return new ECIESEncryptionEngine(
-        signatureAlgorithm.calculateECDHKeyAgreement((SECPPrivateKey) ephKeyPair.getPrivateKey(), pubKey),
+        signatureAlgorithm.calculateECDHKeyAgreement(
+            (SECPPrivateKey) ephKeyPair.getPrivateKey(), pubKey),
         (SECPPublicKey) ephKeyPair.getPublicKey(),
         ivb);
   }

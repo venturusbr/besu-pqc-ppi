@@ -14,7 +14,6 @@
  */
 package org.hyperledger.besu.ethereum.api.jsonrpc.websocket.subscription.pending;
 
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.TransactionType;
 import org.hyperledger.besu.ethereum.api.jsonrpc.internal.results.JsonRpcResult;
 import org.hyperledger.besu.ethereum.api.jsonrpc.internal.results.Quantity;
@@ -23,6 +22,7 @@ import org.hyperledger.besu.ethereum.core.Transaction;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import org.apache.tuweni.bytes.Bytes;
 
 @JsonPropertyOrder({
   "from",
@@ -78,7 +78,7 @@ public class PendingTransactionDetailResult implements JsonRpcResult {
       this.dsaType = null;
       this.publicKey = null;
       this.signature = null;
-    } else if(isFlexible(transactionType)){
+    } else if (isFlexible(transactionType)) {
       this.type = Quantity.create(transactionType.getSerializedType());
       this.yParity = null;
       this.r = null;
@@ -106,11 +106,11 @@ public class PendingTransactionDetailResult implements JsonRpcResult {
     this.value = Quantity.create(tx.getValue());
   }
 
-  private Boolean isFlexible(final TransactionType txType){
-    return txType == TransactionType.FLEXIBLE_ACCESS_LIST ||
-      txType == TransactionType.FLEXIBLE_EIP1559 ||
-      txType == TransactionType.FLEXIBLE_BLOB ||
-      txType == TransactionType.FLEXIBLE_DELEGATE_CODE;
+  private Boolean isFlexible(final TransactionType txType) {
+    return txType == TransactionType.FLEXIBLE_ACCESS_LIST
+        || txType == TransactionType.FLEXIBLE_EIP1559
+        || txType == TransactionType.FLEXIBLE_BLOB
+        || txType == TransactionType.FLEXIBLE_DELEGATE_CODE;
   }
 
   @JsonGetter(value = "from")
@@ -164,12 +164,12 @@ public class PendingTransactionDetailResult implements JsonRpcResult {
   }
 
   @JsonGetter(value = "dsaType")
-  public String getDsaType(){
+  public String getDsaType() {
     return dsaType;
   }
 
   @JsonGetter(value = "signature")
-  public String getSignature(){
+  public String getSignature() {
     return signature;
   }
 

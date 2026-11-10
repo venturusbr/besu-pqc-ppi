@@ -110,15 +110,13 @@ public class PayloadDeserializers {
    * @return the signed data
    */
   protected static <M extends Payload> SignedData<M> from(
-      final M unsignedMessageData,
-      final Signature signature,
-      final Optional<PublicKey> publicKey) {
+      final M unsignedMessageData, final Signature signature, final Optional<PublicKey> publicKey) {
     return SignedData.create(unsignedMessageData, signature, publicKey);
   }
 
   /**
-   * Create signed payload data with no supplied public key, which is only sufficient for
-   * algorithms that support public key recovery.
+   * Create signed payload data with no supplied public key, which is only sufficient for algorithms
+   * that support public key recovery.
    *
    * @param <M> the type parameter
    * @param unsignedMessageData the unsigned message data
@@ -138,7 +136,8 @@ public class PayloadDeserializers {
    */
   protected static Signature readSignature(final RLPInput signedMessage) {
     final DSAParametersSet dsaParams = DSAProviderFactory.getActiveDsaParametersSet();
-    return signedMessage.readBytes(bytes -> SignatureFactory.createSignatureFromBytes(bytes, dsaParams));
+    return signedMessage.readBytes(
+        bytes -> SignatureFactory.createSignatureFromBytes(bytes, dsaParams));
   }
 
   /**

@@ -22,22 +22,40 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.apache.tuweni.units.bigints.UInt256;
 
-@JsonPropertyOrder({"type","dsaType","chainId", "address", "nonce", "yParity", "r", "s", "publicKey", "signature"})
+@JsonPropertyOrder({
+  "type",
+  "dsaType",
+  "chainId",
+  "address",
+  "nonce",
+  "yParity",
+  "r",
+  "s",
+  "publicKey",
+  "signature"
+})
 public class CodeDelegationResult {
   private final String type;
+
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private final String dsaType;
+
   private final String chainId;
   private final String address;
   private final String nonce;
+
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private final String yParity;
+
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private final String r;
+
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private final String s;
+
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private final String publicKey;
+
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private final String signature;
 
@@ -65,12 +83,12 @@ public class CodeDelegationResult {
   }
 
   @JsonProperty("type")
-  public String type(){
+  public String type() {
     return type;
   }
 
   @JsonProperty("dsaType")
-  public String dsaType(){
+  public String dsaType() {
     return dsaType;
   }
 
@@ -105,12 +123,12 @@ public class CodeDelegationResult {
   }
 
   @JsonProperty("publicKey")
-  public String publicKey(){
+  public String publicKey() {
     return publicKey;
   }
 
   @JsonProperty("signature")
-  public String signature(){
+  public String signature() {
     return signature;
   }
 }

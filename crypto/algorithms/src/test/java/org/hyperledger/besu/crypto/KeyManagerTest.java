@@ -32,8 +32,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 /**
- * How a hybrid node key file that is missing, not given, or of the wrong kind is reported. Each case
- * used to surface as an unrelated error: a NullPointerException, "index is out of bounds" or a
+ * How a hybrid node key file that is missing, not given, or of the wrong kind is reported. Each
+ * case used to surface as an unrelated error: a NullPointerException, "index is out of bounds" or a
  * message without the cause.
  */
 class KeyManagerTest {

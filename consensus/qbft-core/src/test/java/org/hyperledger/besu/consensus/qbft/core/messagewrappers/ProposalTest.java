@@ -90,7 +90,8 @@ public class ProposalTest {
     final PreparePayload preparePayload =
         new PreparePayload(new ConsensusRoundIdentifier(1, 0), BLOCK.getHash());
     return SignedData.create(
-        preparePayload, nodeKey.sign(Bytes32.wrap(preparePayload.hashForSignature().getBytes()), "seal"));
+        preparePayload,
+        nodeKey.sign(Bytes32.wrap(preparePayload.hashForSignature().getBytes()), "seal"));
   }
 
   private SignedData<RoundChangePayload> createRoundChange(final NodeKey nodeKey) {

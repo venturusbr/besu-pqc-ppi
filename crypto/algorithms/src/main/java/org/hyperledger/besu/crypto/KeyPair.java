@@ -58,7 +58,7 @@ public class KeyPair {
       final SECPPrivateKey privateKey, final ECDomainParameters curve, final String algorithm) {
     return new KeyPair(privateKey, SECPPublicKey.create(privateKey, curve, algorithm));
   }
-  
+
   /**
    * Generate key pair.
    *

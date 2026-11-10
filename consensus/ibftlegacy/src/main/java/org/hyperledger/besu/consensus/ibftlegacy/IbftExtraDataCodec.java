@@ -87,7 +87,8 @@ public class IbftExtraDataCodec extends BftExtraDataCodec {
     final Signature proposerSeal = parseProposerSeal(rlpInput);
     final DSAParametersSet dsaParams = DSAProviderFactory.getActiveDsaParametersSet();
     final Collection<Signature> seals =
-        rlpInput.readList(rlp -> SignatureFactory.createSignatureFromBytes(rlp.readBytes(), dsaParams));
+        rlpInput.readList(
+            rlp -> SignatureFactory.createSignatureFromBytes(rlp.readBytes(), dsaParams));
     rlpInput.leaveList();
 
     return new IbftLegacyExtraData(vanityData, seals, proposerSeal, validators);

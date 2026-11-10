@@ -35,8 +35,8 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.junit.jupiter.api.Test;
 
 /**
- * eth_getTransactionByHash reports each code delegation. Only a secp256k1 signature has yParity,
- * r and s; any other signature is reported whole, with no secp256k1 fields.
+ * eth_getTransactionByHash reports each code delegation. Only a secp256k1 signature has yParity, r
+ * and s; any other signature is reported whole, with no secp256k1 fields.
  */
 class CodeDelegationResultTest {
 

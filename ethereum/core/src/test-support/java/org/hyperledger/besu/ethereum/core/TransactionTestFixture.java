@@ -25,7 +25,6 @@ import org.hyperledger.besu.datatypes.TransactionType;
 import org.hyperledger.besu.datatypes.VersionedHash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.ethereum.core.encoding.CodeDelegationEncoder;
-import org.hyperledger.besu.ethereum.core.encoding.CodeDelegationTransactionEncoder;
 import org.hyperledger.besu.ethereum.core.kzg.BlobsWithCommitments;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPOutput;
 
@@ -116,7 +115,7 @@ public class TransactionTestFixture {
         builder.accessList(accessListEntries.orElse(List.of()));
         builder.codeDelegations(codeDelegations.orElse(List.of(CODE_DELEGATION)));
         break;
-      default: 
+      default:
         break;
     }
 

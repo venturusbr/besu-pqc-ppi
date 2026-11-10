@@ -41,8 +41,8 @@ if (discoveryPath == null) {
   def discoveryDir = file(discoveryPath)
   if (!discoveryDir.directory) {
     throw new GradleException(
-      "Local discovery checkout not found at ${discoveryDir}. Clone ${discoveryFork}, or drop "
-        + "-PdiscoveryPath to let Gradle build the fork straight from the branch.")
+    "Local discovery checkout not found at ${discoveryDir}. Clone ${discoveryFork}, or drop "
+    + "-PdiscoveryPath to let Gradle build the fork straight from the branch.")
   }
   includeBuild(discoveryDir) {
     dependencySubstitution {

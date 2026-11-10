@@ -36,8 +36,8 @@ import org.hyperledger.besu.ethereum.p2p.rlpx.handshake.HandshakeException;
 import org.hyperledger.besu.ethereum.p2p.rlpx.handshake.Handshaker;
 
 import java.security.InvalidAlgorithmParameterException;
-import java.util.Optional;
 import java.security.PublicKey;
+import java.util.Optional;
 
 import io.netty.buffer.ByteBuf;
 import org.apache.tuweni.bytes.Bytes32;
@@ -77,9 +77,9 @@ class HybridNodeKeyHandshakeTest {
   /**
    * The whole exchange, with real ECDH on both sides rather than a stubbed key agreement.
    *
-   * <p>ECIES is elliptic-curve only, so a hybrid node key takes part through its classical half
-   * and the ML-DSA-44 half plays no role here. That is what this pins down: if the RLPx handshake
-   * ever needs to be post-quantum, ECIES itself has to be replaced, not patched.
+   * <p>ECIES is elliptic-curve only, so a hybrid node key takes part through its classical half and
+   * the ML-DSA-44 half plays no role here. That is what this pins down: if the RLPx handshake ever
+   * needs to be post-quantum, ECIES itself has to be replaced, not patched.
    */
   @Test
   void twoHybridNodeKeysCompleteTheHandshakeAndAgreeOnSecrets()

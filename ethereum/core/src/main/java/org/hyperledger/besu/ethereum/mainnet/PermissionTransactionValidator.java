@@ -49,7 +49,8 @@ public class PermissionTransactionValidator implements TransactionValidator {
   }
 
   @Override
-  public ValidationResult<TransactionInvalidReason> validateTransactionSignature(final Transaction transaction){
+  public ValidationResult<TransactionInvalidReason> validateTransactionSignature(
+      final Transaction transaction) {
     return delegate.validateTransactionSignature(transaction);
   }
 

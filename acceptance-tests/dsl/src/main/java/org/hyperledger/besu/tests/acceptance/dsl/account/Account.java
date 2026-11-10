@@ -20,7 +20,6 @@ import org.hyperledger.besu.crypto.SECPPublicKey;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.tests.acceptance.dsl.blockchain.Amount;
 import org.hyperledger.besu.tests.acceptance.dsl.condition.Condition;
 import org.hyperledger.besu.tests.acceptance.dsl.condition.account.ExpectAccountBalance;
@@ -63,11 +62,7 @@ public class Account {
   }
 
   private Account(final EthTransactions eth, final String name, final KeyPair keyPair) {
-    this(
-        eth,
-        name,
-        Address.extract(keyPair.getPublicKey()),
-        Optional.of(keyPair));
+    this(eth, name, Address.extract(keyPair.getPublicKey()), Optional.of(keyPair));
   }
 
   public static Account create(final EthTransactions eth, final Address address) {

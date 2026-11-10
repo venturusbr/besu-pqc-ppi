@@ -16,6 +16,9 @@ package org.hyperledger.besu.crypto;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import org.hyperledger.besu.crypto.key.KeyFactory;
+import org.hyperledger.besu.crypto.signature.Signature;
+
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyPairGenerator;
@@ -42,8 +45,6 @@ import org.bouncycastle.jcajce.provider.asymmetric.ec.KeyPairGeneratorSpi;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.math.ec.ECAlgorithms;
 import org.bouncycastle.math.ec.ECPoint;
-import org.hyperledger.besu.crypto.signature.Signature;
-import org.hyperledger.besu.crypto.key.KeyFactory;
 
 /** The Abstract secp256. */
 public abstract class AbstractSECP256 implements SignatureAlgorithm, PublicKeyRecoverable {
@@ -65,6 +66,7 @@ public abstract class AbstractSECP256 implements SignatureAlgorithm, PublicKeyRe
 
   /** The Prime. */
   final BigInteger prime;
+
   /**
    * Instantiates a new Abstract secp 256.
    *
@@ -210,7 +212,7 @@ public abstract class AbstractSECP256 implements SignatureAlgorithm, PublicKeyRe
   }
 
   @Override
-  public KeyPair generateNodeKeyPair(){
+  public KeyPair generateNodeKeyPair() {
     KeyPair kp = generateKeyPair();
     return KeyFactory.createKeyPair(
         Bytes.wrap(kp.getPrivateKey().getEncoded()),
@@ -358,8 +360,7 @@ public abstract class AbstractSECP256 implements SignatureAlgorithm, PublicKeyRe
     Bytes skBytes = Bytes.wrap(keyPair.getPrivateKey().getEncoded());
 
     final ECPrivateKeyParameters privKey =
-        new ECPrivateKeyParameters(
-            skBytes.toUnsignedBigInteger(), curve);
+        new ECPrivateKeyParameters(skBytes.toUnsignedBigInteger(), curve);
     signer.init(true, privKey);
 
     final BigInteger[] components = signer.generateSignature(dataHash.toArrayUnsafe());

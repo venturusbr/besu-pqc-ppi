@@ -31,11 +31,11 @@ import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 
 /**
- * One MLDSA instance is shared by every thread of a node: discovery signs packets on several
- * worker threads at once while consensus signs on its own. The underlying signer accumulates the
- * message between init and generateSignature, so sharing one corrupted its state, surfacing as
- * "attempt to absorb with odd length queue" or an ArrayIndexOutOfBoundsException inside Keccak, and
- * at worst as a signature over the wrong message.
+ * One MLDSA instance is shared by every thread of a node: discovery signs packets on several worker
+ * threads at once while consensus signs on its own. The underlying signer accumulates the message
+ * between init and generateSignature, so sharing one corrupted its state, surfacing as "attempt to
+ * absorb with odd length queue" or an ArrayIndexOutOfBoundsException inside Keccak, and at worst as
+ * a signature over the wrong message.
  */
 class MLDSAConcurrencyTest {
 

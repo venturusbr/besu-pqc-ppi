@@ -17,9 +17,7 @@ package org.hyperledger.besu.crypto;
 import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.SECP256K1_EC_UNCOMPRESSED;
 
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
-import org.hyperledger.besu.crypto.key.KeyFactory;
 import org.hyperledger.besu.crypto.signature.Signature;
-import org.hyperledger.besu.crypto.signature.SignatureFactory;
 import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1;
 import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.secp256k1_ecdsa_recoverable_signature;
 import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.secp256k1_ecdsa_signature;
@@ -118,7 +116,7 @@ public class SECP256K1 extends AbstractSECP256 {
   }
 
   @Override
-  public Signature sign(final Bytes data, final PrivateKey sk){
+  public Signature sign(final Bytes data, final PrivateKey sk) {
     KeyPair kpSecp = super.createKeyPair(super.createPrivateKey(Bytes32.wrap(sk.getEncoded())));
 
     SECPSignature secpSignature = sign(Bytes32.wrap(data), kpSecp);
@@ -127,15 +125,15 @@ public class SECP256K1 extends AbstractSECP256 {
   }
 
   @Override
-  public DSAParametersSet getDsaParametersSet(){
+  public DSAParametersSet getDsaParametersSet() {
     return secpParameters;
   }
 
   /**
    * Verifies the given ECDSA signature against the message bytes using the public key bytes.
    *
-   * <p>When using native ECDSA verification, data must be 32 bytes, and no element mauseNativey be larger
-   * than 520 bytes.
+   * <p>When using native ECDSA verification, data must be 32 bytes, and no element mauseNativey be
+   * larger than 520 bytes.
    *
    * @param data Hash of the data to verify.
    * @param signature ASN.1 encoded signature.
@@ -152,7 +150,7 @@ public class SECP256K1 extends AbstractSECP256 {
   }
 
   @Override
-  public Boolean verify(final Bytes data, final Signature signature, final PublicKey pk){
+  public Boolean verify(final Bytes data, final Signature signature, final PublicKey pk) {
     SECPSignature secpSignature = (SECPSignature) signature;
     SECPPublicKey secpPk = (SECPPublicKey) pk;
     return verify(data, secpSignature, secpPk);

@@ -46,7 +46,8 @@ public class AccessListTransactionEncoder {
                     new IllegalStateException(
                         "Developer error: access list should be guaranteed to be present")),
         rlpOutput);
-    TransactionSignatureEncoder.writeStandardSignatureAndRecoveryId(transaction.getSignature(), rlpOutput);
+    TransactionSignatureEncoder.writeStandardSignatureAndRecoveryId(
+        transaction.getSignature(), rlpOutput);
     rlpOutput.endList();
   }
 

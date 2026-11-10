@@ -348,8 +348,7 @@ public abstract class AbstractIsolationTests {
 
   protected Transaction burnTransaction(final KeyPair sender, final Long nonce, final Address to) {
     return new TransactionTestFixture()
-        .sender(
-            Address.extract(sender.getPublicKey()))
+        .sender(Address.extract(sender.getPublicKey()))
         .to(Optional.of(to))
         .value(Wei.of(1_000_000_000_000_000_000L))
         .gasLimit(21_000L)

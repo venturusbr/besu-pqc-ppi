@@ -53,13 +53,13 @@ public class PublicKeyHandler {
   }
 
   /**
-   * The public key behind a signature: recovered from the signature wherever the algorithm
-   * supports it, and taken from the provided key otherwise.
+   * The public key behind a signature: recovered from the signature wherever the algorithm supports
+   * it, and taken from the provided key otherwise.
    *
    * <p>A half whose algorithm supports recovery is always recovered, even when the caller hands in
-   * a whole composite key. Verifying a hybrid signature does not check that half, since recovery
-   * is what authenticates it, so a stated one would go unchecked and the signature would pass on
-   * its other half alone.
+   * a whole composite key. Verifying a hybrid signature does not check that half, since recovery is
+   * what authenticates it, so a stated one would go unchecked and the signature would pass on its
+   * other half alone.
    *
    * @param signatureAlgorithm the algorithm that produced the signature
    * @param signature the signature
@@ -98,8 +98,8 @@ public class PublicKeyHandler {
   /**
    * The part of a signer's public key that travels with what it signs: the key itself when the
    * algorithm cannot recover it, only the half that cannot be recovered for a hybrid, and nothing
-   * when every key is recovered from the signature. It is the inverse of {@link
-   * #resolvePublicKey}, for signers that have to state the key before signing over it.
+   * when every key is recovered from the signature. It is the inverse of {@link #resolvePublicKey},
+   * for signers that have to state the key before signing over it.
    *
    * @param signatureAlgorithm the algorithm the signer signs with
    * @param publicKey the signer's whole public key, composite for a hybrid
@@ -170,7 +170,8 @@ public class PublicKeyHandler {
    * ignores it.
    */
   private static Optional<PublicKey> halfOf(
-      final Optional<PublicKey> maybePartialPk, final Function<CompositePublicKey, PublicKey> half) {
+      final Optional<PublicKey> maybePartialPk,
+      final Function<CompositePublicKey, PublicKey> half) {
     return maybePartialPk.map(
         pk -> pk instanceof CompositePublicKey composite ? half.apply(composite) : pk);
   }

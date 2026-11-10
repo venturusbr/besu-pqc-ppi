@@ -1,9 +1,19 @@
+/*
+ * Copyright contributors to Besu.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.hyperledger.besu.ethereum.core.encoding;
 
-import java.security.PublicKey;
-import java.util.Optional;
-
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.HybridDigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.PublicKeyRecoverable;
@@ -11,6 +21,11 @@ import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.KeyFactory;
 import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.ethereum.rlp.RLPInput;
+
+import java.security.PublicKey;
+import java.util.Optional;
+
+import org.apache.tuweni.bytes.Bytes;
 
 /*
  * Decodes a public key from RLP based on the DSA type.
@@ -36,9 +51,7 @@ import org.hyperledger.besu.ethereum.rlp.RLPInput;
  */
 public class PublicKeyDecoder {
 
-  public static Optional<PublicKey> decodeByDsaId(
-      final Short dsaType,
-      final RLPInput in) {
+  public static Optional<PublicKey> decodeByDsaId(final Short dsaType, final RLPInput in) {
 
     return decodeByDsa(
         DSAProviderFactory.getVerifierProvider().getAccountEnabledDSAById(dsaType), in);
@@ -50,8 +63,7 @@ public class PublicKeyDecoder {
    * active DSA).
    */
   public static Optional<PublicKey> decodeByDsa(
-      final DigitalSignatureAlgorithm dsa,
-      final RLPInput in) {
+      final DigitalSignatureAlgorithm dsa, final RLPInput in) {
 
     if (!carriesPublicKey(dsa)) {
       return Optional.empty();
@@ -67,8 +79,7 @@ public class PublicKeyDecoder {
    * Throws IllegalArgumentException when the bytes are not the key the algorithm expects.
    */
   public static Optional<PublicKey> fromProvidedBytes(
-      final DigitalSignatureAlgorithm dsa,
-      final Bytes pkBytes) {
+      final DigitalSignatureAlgorithm dsa, final Bytes pkBytes) {
 
     if (!carriesPublicKey(dsa)) {
       // Every key is recovered from the signature, so none is accepted from the payload.

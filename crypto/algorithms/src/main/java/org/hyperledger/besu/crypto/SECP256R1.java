@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 public class SECP256R1 extends AbstractSECP256 {
 
   private static final Logger LOG = LoggerFactory.getLogger(SECP256R1.class);
+
   /** The constant CURVE_NAME. */
   public static final String CURVE_NAME = "secp256r1";
 
@@ -120,16 +121,17 @@ public class SECP256R1 extends AbstractSECP256 {
   }
 
   @Override
-  public org.hyperledger.besu.crypto.signature.Signature sign(final Bytes data, final PrivateKey sk){
+  public org.hyperledger.besu.crypto.signature.Signature sign(
+      final Bytes data, final PrivateKey sk) {
     KeyPair kpSecp = super.createKeyPair(super.createPrivateKey(Bytes32.wrap(sk.getEncoded())));
 
     SECPSignature secpSignature = sign(Bytes32.wrap(data), kpSecp);
-    
+
     return SignatureFactory.createSignatureFromBytes(secpSignature.encodedBytes(), secpParameters);
   }
 
   @Override
-  public DSAParametersSet getDsaParametersSet(){
+  public DSAParametersSet getDsaParametersSet() {
     return secpParameters;
   }
 
@@ -153,7 +155,10 @@ public class SECP256R1 extends AbstractSECP256 {
   }
 
   @Override
-  public Boolean verify(final Bytes data, final org.hyperledger.besu.crypto.signature.Signature signature, final PublicKey pk){
+  public Boolean verify(
+      final Bytes data,
+      final org.hyperledger.besu.crypto.signature.Signature signature,
+      final PublicKey pk) {
     SECPSignature secpSignature = (SECPSignature) signature;
     SECPPublicKey secpPk = (SECPPublicKey) pk;
     return verify(data, secpSignature, secpPk);

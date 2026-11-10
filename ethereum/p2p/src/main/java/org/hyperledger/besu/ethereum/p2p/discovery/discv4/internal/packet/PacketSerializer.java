@@ -14,7 +14,6 @@
  */
 package org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet;
 
-import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
 import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.enrrequest.EnrRequestPacketData;
 import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.enrrequest.EnrRequestPacketDataRlpWriter;
@@ -30,10 +29,9 @@ import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.pong.P
 import org.hyperledger.besu.ethereum.p2p.discovery.discv4.internal.packet.pong.PongPacketDataRlpWriter;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPOutput;
 
+import java.security.PublicKey;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import java.security.PublicKey;
 
 import io.vertx.core.buffer.Buffer;
 import org.apache.tuweni.bytes.Bytes;

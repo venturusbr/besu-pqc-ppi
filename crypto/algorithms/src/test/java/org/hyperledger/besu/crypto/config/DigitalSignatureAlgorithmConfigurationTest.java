@@ -126,9 +126,7 @@ class DigitalSignatureAlgorithmConfigurationTest {
                   final Signature signature = dsa.sign(hash, keyPair.getPrivateKey());
                   assertThat(dsa.verify(hash, signature, keyPair.getPublicKey())).isTrue();
                   assertThat(dsa.verify(hash, signature, other.getPublicKey())).isFalse();
-                  assertThat(
-                          dsa.verify(
-                              Hash.keccak256(hash), signature, keyPair.getPublicKey()))
+                  assertThat(dsa.verify(Hash.keccak256(hash), signature, keyPair.getPublicKey()))
                       .isFalse();
                 }
                 return null;

@@ -79,12 +79,16 @@ public class TransactionPendingResult implements TransactionResult {
   private final String publicKey;
   private final String raw;
   private final String to;
+
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private final String dsaType;
+
   private final String type;
   private final String value;
+
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private final String signature;
+
   private final String yParity;
   private final String v;
   private final String r;
@@ -123,7 +127,7 @@ public class TransactionPendingResult implements TransactionResult {
       this.v = Quantity.create(transaction.getV());
       this.dsaType = null;
       this.signature = null;
-    } else if(isFlexible(transactionType)){
+    } else if (isFlexible(transactionType)) {
       this.type = Quantity.create(transactionType.getSerializedType());
       this.yParity = null;
       this.r = null;
@@ -131,7 +135,7 @@ public class TransactionPendingResult implements TransactionResult {
       this.v = null;
       this.dsaType = String.format("0x%04X", transaction.getDsaType().get() & 0xFFFF);
       this.signature = transaction.getSignature().encodedBytes().toHexString();
-    } else{
+    } else {
       this.type = Quantity.create(transactionType.getSerializedType());
       this.yParity = Quantity.create(transaction.getYParity());
       this.v =
@@ -156,11 +160,11 @@ public class TransactionPendingResult implements TransactionResult {
             .orElse(null);
   }
 
-  private Boolean isFlexible(final TransactionType txType){
-    return txType == TransactionType.FLEXIBLE_ACCESS_LIST ||
-      txType == TransactionType.FLEXIBLE_EIP1559 ||
-      txType == TransactionType.FLEXIBLE_BLOB ||
-      txType == TransactionType.FLEXIBLE_DELEGATE_CODE;
+  private Boolean isFlexible(final TransactionType txType) {
+    return txType == TransactionType.FLEXIBLE_ACCESS_LIST
+        || txType == TransactionType.FLEXIBLE_EIP1559
+        || txType == TransactionType.FLEXIBLE_BLOB
+        || txType == TransactionType.FLEXIBLE_DELEGATE_CODE;
   }
 
   @JsonGetter(value = "accessList")
@@ -224,12 +228,12 @@ public class TransactionPendingResult implements TransactionResult {
   }
 
   @JsonGetter(value = "dsaType")
-  public String getDsaType(){
+  public String getDsaType() {
     return dsaType;
   }
 
   @JsonGetter(value = "signature")
-  public String getSignature(){
+  public String getSignature() {
     return signature;
   }
 
