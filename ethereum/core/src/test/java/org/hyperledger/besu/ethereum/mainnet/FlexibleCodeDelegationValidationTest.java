@@ -57,9 +57,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Flexible code delegations are checked against the signer key resolved from the signature, not
- * the key the delegation carries: a hybrid carries only its ML-DSA half, and a delegation signed
- * with a fully recoverable algorithm carries no key at all.
+ * Flexible code delegations are checked against the signer key resolved from the signature, not the
+ * key the delegation carries: a hybrid carries only its ML-DSA half, and a delegation signed with a
+ * fully recoverable algorithm carries no key at all.
  */
 class FlexibleCodeDelegationValidationTest {
 

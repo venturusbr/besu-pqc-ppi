@@ -17,6 +17,19 @@ package org.hyperledger.besu.crypto;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
+import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.AbstractCrystalsDilithium3;
+import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3KeyPair;
+import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3PrivateKey;
+import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3PublicKey;
+import org.hyperledger.besu.crypto.pqc.falcon.Falcon;
+import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconKeyPair;
+import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconPrivateKey;
+import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconPublicKey;
+import org.hyperledger.besu.crypto.pqc.sphincsplus.SphincsPlus;
+import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusKeyPair;
+import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusPrivateKey;
+import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusPublicKey;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -28,24 +41,10 @@ import java.util.List;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.io.Resources;
-
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.AbstractCrystalsDilithium3;
-import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3KeyPair;
-import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3PrivateKey;
-import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.keys.Dilithium3PublicKey;
-import org.hyperledger.besu.crypto.pqc.falcon.Falcon;
-import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconKeyPair;
-import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconPrivateKey;
-import org.hyperledger.besu.crypto.pqc.falcon.keys.FalconPublicKey;
-import org.hyperledger.besu.crypto.pqc.sphincsplus.SphincsPlus;
-import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusPublicKey;
-import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusKeyPair;
-import org.hyperledger.besu.crypto.pqc.sphincsplus.keys.SphincsPlusPrivateKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.w3c.dom.Node;
 
 /** The Key pair util. */
 public class KeyPairUtil {
@@ -129,16 +128,21 @@ public class KeyPairUtil {
     return key;
   }
 
-  public static Dilithium3KeyPair loadPqcKeyPair(final File privateKeyFile, final File publicKeyFile) {
+  public static Dilithium3KeyPair loadPqcKeyPair(
+      final File privateKeyFile, final File publicKeyFile) {
 
     final Dilithium3KeyPair key;
     if (privateKeyFile.exists() && publicKeyFile.exists()) {
 
       key = loadPqc(privateKeyFile, publicKeyFile);
       LOG.info(
-          "Loaded PQC private key {} from {}", key.getPrivateKey().getEncoded().length, privateKeyFile.getAbsolutePath());
+          "Loaded PQC private key {} from {}",
+          key.getPrivateKey().getEncoded().length,
+          privateKeyFile.getAbsolutePath());
       LOG.info(
-          "Loaded PQC public key {} from {}", key.getPublicKey().getEncoded().length, publicKeyFile.getAbsolutePath());
+          "Loaded PQC public key {} from {}",
+          key.getPublicKey().getEncoded().length,
+          publicKeyFile.getAbsolutePath());
     } else {
       final AbstractCrystalsDilithium3 signatureAlgorithm = PQC_SIGNATURE_ALGORITHM.get();
       key = signatureAlgorithm.generateKeyPair();
@@ -152,16 +156,21 @@ public class KeyPairUtil {
     return key;
   }
 
-  public static SphincsPlusKeyPair loadSphincsKeyPair(final File privateKeyFile, final File publicKeyFile) {
+  public static SphincsPlusKeyPair loadSphincsKeyPair(
+      final File privateKeyFile, final File publicKeyFile) {
 
     final SphincsPlusKeyPair key;
     if (privateKeyFile.exists() && publicKeyFile.exists()) {
 
       key = loadSphincs(privateKeyFile, publicKeyFile);
       LOG.info(
-          "Loaded Sphincs private key {} from {}", key.getPrivateKey().getEncoded().length, privateKeyFile.getAbsolutePath());
+          "Loaded Sphincs private key {} from {}",
+          key.getPrivateKey().getEncoded().length,
+          privateKeyFile.getAbsolutePath());
       LOG.info(
-          "Loaded Sphincs public key {} from {}", key.getPublicKey().getEncoded().length, publicKeyFile.getAbsolutePath());
+          "Loaded Sphincs public key {} from {}",
+          key.getPublicKey().getEncoded().length,
+          publicKeyFile.getAbsolutePath());
     } else {
       final SphincsPlus signatureAlgorithm = SPHINCS_SIGNATURE_ALGORITHM.get();
       key = signatureAlgorithm.generateKeyPair();
@@ -175,16 +184,21 @@ public class KeyPairUtil {
     return key;
   }
 
-  public static FalconKeyPair loadFalconKeyPair(final File privateKeyFile, final File publicKeyFile) {
+  public static FalconKeyPair loadFalconKeyPair(
+      final File privateKeyFile, final File publicKeyFile) {
 
     final FalconKeyPair key;
     if (privateKeyFile.exists() && publicKeyFile.exists()) {
 
       key = loadFalcon(privateKeyFile, publicKeyFile);
       LOG.info(
-          "Loaded Falcon private key {} from {}", key.getPrivateKey().getEncoded().length, privateKeyFile.getAbsolutePath());
+          "Loaded Falcon private key {} from {}",
+          key.getPrivateKey().getEncoded().length,
+          privateKeyFile.getAbsolutePath());
       LOG.info(
-          "Loaded Falcon public key {} from {}", key.getPublicKey().getEncoded().length, publicKeyFile.getAbsolutePath());
+          "Loaded Falcon public key {} from {}",
+          key.getPublicKey().getEncoded().length,
+          publicKeyFile.getAbsolutePath());
     } else {
       final Falcon signatureAlgorithm = FALCON_SIGNATURE_ALGORITHM.get();
       key = signatureAlgorithm.generateKeyPair();
@@ -209,15 +223,18 @@ public class KeyPairUtil {
   }
 
   public static Dilithium3KeyPair loadPQCKeyPair(final Path directory) {
-    return loadPqcKeyPair(getDefaultPqcPrivateKeyFile(directory), getDefaultPqcPublicKeyFile(directory));
+    return loadPqcKeyPair(
+        getDefaultPqcPrivateKeyFile(directory), getDefaultPqcPublicKeyFile(directory));
   }
 
   public static SphincsPlusKeyPair loadSphincsKeyPair(final Path directory) {
-    return loadSphincsKeyPair(getDefaultPqcPrivateKeyFile(directory), getDefaultPqcPublicKeyFile(directory));
+    return loadSphincsKeyPair(
+        getDefaultPqcPrivateKeyFile(directory), getDefaultPqcPublicKeyFile(directory));
   }
 
   public static FalconKeyPair loadFalconKeyPair(final Path directory) {
-    return loadFalconKeyPair(getDefaultPqcPrivateKeyFile(directory), getDefaultPqcPublicKeyFile(directory));
+    return loadFalconKeyPair(
+        getDefaultPqcPrivateKeyFile(directory), getDefaultPqcPublicKeyFile(directory));
   }
 
   /**
@@ -287,18 +304,27 @@ public class KeyPairUtil {
   }
 
   public static Dilithium3KeyPair loadPqc(final File privateKeyFile, final File publicKeyFile) {
-    return PQC_SIGNATURE_ALGORITHM.get().createDilithium3KeyPair(loadPQCPrivateKeyFromFile(privateKeyFile),
-        loadPQCPublicKeyFromFile(publicKeyFile));
+    return PQC_SIGNATURE_ALGORITHM
+        .get()
+        .createDilithium3KeyPair(
+            loadPQCPrivateKeyFromFile(privateKeyFile), loadPQCPublicKeyFromFile(publicKeyFile));
   }
 
-  public static SphincsPlusKeyPair loadSphincs(final File privateKeyFile, final File publicKeyFile) {
-    return SPHINCS_SIGNATURE_ALGORITHM.get().createSphincsPlusKeyPair(loadSphincsPrivateKeyFromFile(privateKeyFile),
-    loadSphincsPublicKeyFromFile(publicKeyFile));
+  public static SphincsPlusKeyPair loadSphincs(
+      final File privateKeyFile, final File publicKeyFile) {
+    return SPHINCS_SIGNATURE_ALGORITHM
+        .get()
+        .createSphincsPlusKeyPair(
+            loadSphincsPrivateKeyFromFile(privateKeyFile),
+            loadSphincsPublicKeyFromFile(publicKeyFile));
   }
 
   public static FalconKeyPair loadFalcon(final File privateKeyFile, final File publicKeyFile) {
-    return FALCON_SIGNATURE_ALGORITHM.get().createFalconKeyPair(loadFalconPrivateKeyFromFile(privateKeyFile),
-    loadFalconPublicKeyFromFile(publicKeyFile));
+    return FALCON_SIGNATURE_ALGORITHM
+        .get()
+        .createFalconKeyPair(
+            loadFalconPrivateKeyFromFile(privateKeyFile),
+            loadFalconPublicKeyFromFile(publicKeyFile));
   }
 
   private static String readHexKey(final File file) throws IOException {
@@ -391,7 +417,9 @@ public class KeyPairUtil {
     final Path tempPath = Files.createTempFile(privateKeyDir.toPath(), ".tmp", "");
     Files.write(
         tempPath,
-        Bytes.wrap(keyPair.getPrivateKey().getEncoded()).toString().getBytes(StandardCharsets.UTF_8));
+        Bytes.wrap(keyPair.getPrivateKey().getEncoded())
+            .toString()
+            .getBytes(StandardCharsets.UTF_8));
     Files.move(tempPath, file.toPath(), REPLACE_EXISTING, ATOMIC_MOVE);
   }
 
@@ -399,9 +427,7 @@ public class KeyPairUtil {
     final File privateKeyDir = file.getParentFile();
     privateKeyDir.mkdirs();
     final Path tempPath = Files.createTempFile(privateKeyDir.toPath(), ".tmp", "");
-    Files.write(
-        tempPath,
-        keyPair.getPrivateKey().toString().getBytes(StandardCharsets.UTF_8));
+    Files.write(tempPath, keyPair.getPrivateKey().toString().getBytes(StandardCharsets.UTF_8));
     Files.move(tempPath, file.toPath(), REPLACE_EXISTING, ATOMIC_MOVE);
   }
 
@@ -409,9 +435,7 @@ public class KeyPairUtil {
     final File privateKeyDir = file.getParentFile();
     privateKeyDir.mkdirs();
     final Path tempPath = Files.createTempFile(privateKeyDir.toPath(), ".tmp", "");
-    Files.write(
-        tempPath,
-        keyPair.getPrivateKey().toString().getBytes(StandardCharsets.UTF_8));
+    Files.write(tempPath, keyPair.getPrivateKey().toString().getBytes(StandardCharsets.UTF_8));
     Files.move(tempPath, file.toPath(), REPLACE_EXISTING, ATOMIC_MOVE);
   }
 
@@ -419,9 +443,7 @@ public class KeyPairUtil {
     final File privateKeyDir = file.getParentFile();
     privateKeyDir.mkdirs();
     final Path tempPath = Files.createTempFile(privateKeyDir.toPath(), ".tmp", "");
-    Files.write(
-        tempPath,
-        keyPair.getPrivateKey().toString().getBytes(StandardCharsets.UTF_8));
+    Files.write(tempPath, keyPair.getPrivateKey().toString().getBytes(StandardCharsets.UTF_8));
     Files.move(tempPath, file.toPath(), REPLACE_EXISTING, ATOMIC_MOVE);
   }
 }

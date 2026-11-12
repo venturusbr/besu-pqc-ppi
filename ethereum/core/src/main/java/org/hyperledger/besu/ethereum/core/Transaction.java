@@ -19,17 +19,6 @@ import static com.google.common.base.Preconditions.checkState;
 import static org.hyperledger.besu.crypto.Hash.keccak256;
 import static org.hyperledger.besu.datatypes.VersionedHash.SHA256_VERSION_ID;
 
-import java.math.BigInteger;
-import java.security.PublicKey;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.units.bigints.UInt256;
-import org.apache.tuweni.units.bigints.UInt256s;
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPSignature;
@@ -63,9 +52,20 @@ import org.hyperledger.besu.ethereum.rlp.RLP;
 import org.hyperledger.besu.ethereum.rlp.RLPInput;
 import org.hyperledger.besu.ethereum.rlp.RLPOutput;
 
+import java.math.BigInteger;
+import java.security.PublicKey;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.primitives.Longs;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
+import org.apache.tuweni.units.bigints.UInt256;
+import org.apache.tuweni.units.bigints.UInt256s;
 
 /** An operation submitted by an external actor to be applied to the system. */
 public class Transaction
@@ -293,15 +293,16 @@ public class Transaction
     sizeForAnnouncement.ifPresent(i -> this.sizeForAnnouncement = i);
     sizeForBlockInclusion.ifPresent(i -> this.sizeForBlockInclusion = i);
 
-    if(dsaType.isPresent()){
-      this.signatureAlgorithm = DSAProviderFactory.getVerifierProvider().getAccountEnabledDSAById(dsaType.get());
+    if (dsaType.isPresent()) {
+      this.signatureAlgorithm =
+          DSAProviderFactory.getVerifierProvider().getAccountEnabledDSAById(dsaType.get());
     } else {
       this.signatureAlgorithm = SignatureAlgorithmFactory.getInstance();
     }
   }
 
   @Override
-  public Optional<Short> getDsaType(){
+  public Optional<Short> getDsaType() {
     return dsaType;
   }
 
@@ -319,21 +320,22 @@ public class Transaction
   }
 
   @Override
-  public PublicKey getMountedPublicKey(){
-    if(publicKey == null){
+  public PublicKey getMountedPublicKey() {
+    if (publicKey == null) {
       if (unresolvableSigner != null) {
         throw unresolvableSigner;
       }
       try {
         // The handler records the recovery, when there is one, in the PKR metrics. A key that
         // travelled with the transaction is not recovered, so it is not recorded.
-        publicKey = PublicKeyHandler.resolvePublicKey(
-          signatureAlgorithm,
-          signature,
-          providedPublicKey,
-          getOrComputeSenderRecoveryHash(),
-          "tx"
-        ).get();
+        publicKey =
+            PublicKeyHandler.resolvePublicKey(
+                    signatureAlgorithm,
+                    signature,
+                    providedPublicKey,
+                    getOrComputeSenderRecoveryHash(),
+                    "tx")
+                .get();
       } catch (final IllegalArgumentException e) {
         unresolvableSigner = e;
         throw e;
@@ -343,9 +345,10 @@ public class Transaction
   }
 
   @Override
-  public Optional<PublicKey> getMaybePublicKey(){
+  public Optional<PublicKey> getMaybePublicKey() {
     return providedPublicKey;
   }
+
   /**
    * Returns the transaction nonce.
    *
@@ -547,7 +550,7 @@ public class Transaction
         sender = computeSender();
       }
     }
-    
+
     return sender;
   }
 
@@ -590,8 +593,8 @@ public class Transaction
   public Optional<String> getPublicKey() {
     return Optional.ofNullable(Bytes.wrap(getMountedPublicKey().getEncoded()).toHexString());
   }
-  
-  public Bytes32 getSigningHash(){
+
+  public Bytes32 getSigningHash() {
     return getOrComputeSenderRecoveryHash();
   }
 
@@ -681,7 +684,7 @@ public class Transaction
   public BigInteger getYParity() {
     if (transactionType != null && transactionType != TransactionType.FRONTIER) {
       // EIP-2718 typed transaction, return yParity:
-      if(signature instanceof SECPSignature ecdsa){
+      if (signature instanceof SECPSignature ecdsa) {
         return BigInteger.valueOf(ecdsa.getRecId());
       }
       return null;
@@ -1022,49 +1025,49 @@ public class Transaction
                       () ->
                           new IllegalStateException(
                               "Developer error: the transaction should be guaranteed to have a code delegations here")));
-          case FLEXIBLE_ACCESS_LIST -> 
+          case FLEXIBLE_ACCESS_LIST ->
               flexibleAccessListPreimage(
-                dsaType,
-                nonce,
-                gasPrice,
-                gasLimit,
-                to,
-                value,
-                providedPublicKey,
-                payload,
-                accessList.orElseThrow(
-                    () ->
-                        new IllegalStateException(
-                            "Developer error: the transaction should be guaranteed to have an access list here")),
-                chainId);
-          case FLEXIBLE_EIP1559 -> 
+                  dsaType,
+                  nonce,
+                  gasPrice,
+                  gasLimit,
+                  to,
+                  value,
+                  providedPublicKey,
+                  payload,
+                  accessList.orElseThrow(
+                      () ->
+                          new IllegalStateException(
+                              "Developer error: the transaction should be guaranteed to have an access list here")),
+                  chainId);
+          case FLEXIBLE_EIP1559 ->
               flexibleEip1559Preimage(
-                dsaType,
-                nonce,
-                maxPriorityFeePerGas,
-                maxFeePerGas,
-                gasLimit,
-                to,
-                value,
-                providedPublicKey,
-                payload,
-                accessList,
-                chainId);
-          case FLEXIBLE_BLOB -> 
+                  dsaType,
+                  nonce,
+                  maxPriorityFeePerGas,
+                  maxFeePerGas,
+                  gasLimit,
+                  to,
+                  value,
+                  providedPublicKey,
+                  payload,
+                  accessList,
+                  chainId);
+          case FLEXIBLE_BLOB ->
               flexibleBlobPreimage(
-                dsaType,
-                nonce,
-                maxPriorityFeePerGas,
-                maxFeePerGas,
-                maxFeePerBlobGas,
-                gasLimit,
-                to,
-                value,
-                providedPublicKey,
-                payload,
-                chainId,
-                accessList,
-                versionedHashes);
+                  dsaType,
+                  nonce,
+                  maxPriorityFeePerGas,
+                  maxFeePerGas,
+                  maxFeePerBlobGas,
+                  gasLimit,
+                  to,
+                  value,
+                  providedPublicKey,
+                  payload,
+                  chainId,
+                  accessList,
+                  versionedHashes);
           case FLEXIBLE_DELEGATE_CODE ->
               flexibleCodeDelegationPreimage(
                   dsaType,
@@ -1144,23 +1147,23 @@ public class Transaction
   }
 
   private static Bytes flexibleEip1559Preimage(
-    final Optional<Short> dsaType,
-    final long nonce,
-    final Wei maxPriorityFeePerGas,
-    final Wei maxFeePerGas,
-    final long gasLimit,
-    final Optional<Address> to,
-    final Wei value,
-    final Optional<PublicKey> pk,
-    final Bytes payload,
-    final Optional<List<AccessListEntry>> accessList,
-    final Optional<BigInteger> chainId
-  ){
-    final Bytes encoded = 
-        RLP.encode(rlpOutput -> {
-          rlpOutput.startList();
-          rlpOutput.writeShort(dsaType.get());
-          eip1559PreimageFields(
+      final Optional<Short> dsaType,
+      final long nonce,
+      final Wei maxPriorityFeePerGas,
+      final Wei maxFeePerGas,
+      final long gasLimit,
+      final Optional<Address> to,
+      final Wei value,
+      final Optional<PublicKey> pk,
+      final Bytes payload,
+      final Optional<List<AccessListEntry>> accessList,
+      final Optional<BigInteger> chainId) {
+    final Bytes encoded =
+        RLP.encode(
+            rlpOutput -> {
+              rlpOutput.startList();
+              rlpOutput.writeShort(dsaType.get());
+              eip1559PreimageFields(
                   nonce,
                   maxPriorityFeePerGas,
                   maxFeePerGas,
@@ -1171,11 +1174,12 @@ public class Transaction
                   chainId,
                   accessList,
                   rlpOutput);
-          // Only a transaction whose key cannot be recovered carries one to commit to.
-          pk.ifPresent(publicKey -> rlpOutput.writeBytes(Bytes.wrap(publicKey.getEncoded())));
-          rlpOutput.endList();
-        });
-    return Bytes.concatenate(Bytes.of(TransactionType.FLEXIBLE_EIP1559.getSerializedType()), encoded);
+              // Only a transaction whose key cannot be recovered carries one to commit to.
+              pk.ifPresent(publicKey -> rlpOutput.writeBytes(Bytes.wrap(publicKey.getEncoded())));
+              rlpOutput.endList();
+            });
+    return Bytes.concatenate(
+        Bytes.of(TransactionType.FLEXIBLE_EIP1559.getSerializedType()), encoded);
   }
 
   private static void eip1559PreimageFields(
@@ -1248,14 +1252,13 @@ public class Transaction
       final Bytes payload,
       final Optional<BigInteger> chainId,
       final Optional<List<AccessListEntry>> accessList,
-      final List<VersionedHash> versionedHashes
-  ){
-    final Bytes encoded = 
+      final List<VersionedHash> versionedHashes) {
+    final Bytes encoded =
         RLP.encode(
-          rlpOutput -> {
-            rlpOutput.startList();
-            rlpOutput.writeShort(dsaType.get());
-            eip1559PreimageFields(
+            rlpOutput -> {
+              rlpOutput.startList();
+              rlpOutput.writeShort(dsaType.get());
+              eip1559PreimageFields(
                   nonce,
                   maxPriorityFeePerGas,
                   maxFeePerGas,
@@ -1266,13 +1269,12 @@ public class Transaction
                   chainId,
                   accessList,
                   rlpOutput);
-            rlpOutput.writeUInt256Scalar(maxFeePerBlobGas);
-            BlobTransactionEncoder.writeBlobVersionedHashes(rlpOutput, versionedHashes);
-            // Only a transaction whose key cannot be recovered carries one to commit to.
-            pk.ifPresent(publicKey -> rlpOutput.writeBytes(Bytes.wrap(publicKey.getEncoded())));
-            rlpOutput.endList();
-          }
-        );
+              rlpOutput.writeUInt256Scalar(maxFeePerBlobGas);
+              BlobTransactionEncoder.writeBlobVersionedHashes(rlpOutput, versionedHashes);
+              // Only a transaction whose key cannot be recovered carries one to commit to.
+              pk.ifPresent(publicKey -> rlpOutput.writeBytes(Bytes.wrap(publicKey.getEncoded())));
+              rlpOutput.endList();
+            });
     return Bytes.concatenate(Bytes.of(TransactionType.FLEXIBLE_BLOB.getSerializedType()), encoded);
   }
 
@@ -1306,28 +1308,27 @@ public class Transaction
       final Optional<PublicKey> pk,
       final Bytes payload,
       final List<AccessListEntry> accessList,
-      final Optional<BigInteger> chainId){
-    final Bytes encoded = 
-      RLP.encode(
-        rlpOutput -> {
-          rlpOutput.startList();
-          FlexibleAccessListTransactionEncoder.encodeAccessListInner(
-            dsaType,
-            chainId,
-            nonce,
-            gasPrice,
-            gasLimit,
-            to,
-            value,
-            pk,
-            payload,
-            accessList,
-            rlpOutput
-          );
-          rlpOutput.endList();
-        }
-      );
-    return Bytes.concatenate(Bytes.of(TransactionType.FLEXIBLE_ACCESS_LIST.getSerializedType()), encoded);
+      final Optional<BigInteger> chainId) {
+    final Bytes encoded =
+        RLP.encode(
+            rlpOutput -> {
+              rlpOutput.startList();
+              FlexibleAccessListTransactionEncoder.encodeAccessListInner(
+                  dsaType,
+                  chainId,
+                  nonce,
+                  gasPrice,
+                  gasLimit,
+                  to,
+                  value,
+                  pk,
+                  payload,
+                  accessList,
+                  rlpOutput);
+              rlpOutput.endList();
+            });
+    return Bytes.concatenate(
+        Bytes.of(TransactionType.FLEXIBLE_ACCESS_LIST.getSerializedType()), encoded);
   }
 
   private static Bytes codeDelegationPreimage(
@@ -1356,8 +1357,7 @@ public class Transaction
                   chainId,
                   accessList,
                   rlpOutput);
-              CodeDelegationEncoder.encodeCodeDelegationInner(
-                  authorizationList, rlpOutput);
+              CodeDelegationEncoder.encodeCodeDelegationInner(authorizationList, rlpOutput);
               rlpOutput.endList();
             });
     return Bytes.concatenate(Bytes.of(TransactionType.DELEGATE_CODE.getSerializedType()), encoded);
@@ -1392,15 +1392,15 @@ public class Transaction
                   chainId,
                   accessList,
                   rlpOutput);
-              CodeDelegationEncoder.encodeCodeDelegationInner(
-                  authorizationList, rlpOutput);
-                  
+              CodeDelegationEncoder.encodeCodeDelegationInner(authorizationList, rlpOutput);
+
               // Only a transaction whose key cannot be recovered carries one to commit to.
               providedPublicKey.ifPresent(
                   publicKey -> rlpOutput.writeBytes(Bytes.wrap(publicKey.getEncoded())));
               rlpOutput.endList();
             });
-    return Bytes.concatenate(Bytes.of(TransactionType.FLEXIBLE_DELEGATE_CODE.getSerializedType()), encoded);
+    return Bytes.concatenate(
+        Bytes.of(TransactionType.FLEXIBLE_DELEGATE_CODE.getSerializedType()), encoded);
   }
 
   @Override
@@ -1490,10 +1490,10 @@ public class Transaction
     }
     sb.append("dsaType=");
     if (dsaType.isPresent()) {
-        sb.append(String.format("0x%04X", dsaType.get() & 0xFFFF)).append(", ");
+      sb.append(String.format("0x%04X", dsaType.get() & 0xFFFF)).append(", ");
     }
     sb.append("providedPublicKey=");
-    if(getMaybePublicKey().isPresent()){
+    if (getMaybePublicKey().isPresent()) {
       sb.append(Bytes.wrap(getMaybePublicKey().get().getEncoded()).toHexString()).append(", ");
     }
     sb.append("signature=").append(getSignature().encodedBytes().toHexString()).append(", ");
@@ -1720,7 +1720,7 @@ public class Transaction
       return this;
     }
 
-    public Builder dsaType(final Short dsaType){
+    public Builder dsaType(final Short dsaType) {
       this.dsaType = Optional.of(dsaType);
       return this;
     }
@@ -1798,12 +1798,12 @@ public class Transaction
       return this;
     }
 
-    public Builder providedPublicKey(final Optional<PublicKey> providedPublicKey){
+    public Builder providedPublicKey(final Optional<PublicKey> providedPublicKey) {
       this.providedPublicKey = providedPublicKey;
       return this;
     }
 
-    public Builder publicKey(final PublicKey publicKey){
+    public Builder publicKey(final PublicKey publicKey) {
       this.publicKey = publicKey;
       return this;
     }

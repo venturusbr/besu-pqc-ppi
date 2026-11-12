@@ -14,12 +14,12 @@
  */
 package org.hyperledger.besu.crypto;
 
-import com.google.common.annotations.VisibleForTesting;
-
 import org.hyperledger.besu.crypto.pqc.PqcSignatureAlgorithm;
 import org.hyperledger.besu.crypto.pqc.crystalsdilithium3.AbstractCrystalsDilithium3;
 import org.hyperledger.besu.crypto.pqc.falcon.Falcon;
 import org.hyperledger.besu.crypto.pqc.sphincsplus.SphincsPlus;
+
+import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,8 +102,9 @@ public class SignatureAlgorithmFactory {
   /**
    * getInstance will always return a valid SignatureAlgorithm and never null. This is necessary in
    * the unit tests be able to use the factory without having to call setInstance first.
+   *
    * @return PqcSignatureAlgorithm instance
-  */
+   */
   public static PqcSignatureAlgorithm getPqcGenericInstance() {
     return genericPqcInstance != null
         ? genericPqcInstance
@@ -150,9 +151,9 @@ public class SignatureAlgorithmFactory {
   public static String getPqcAlgorithmName() {
     return pqcAlgorithmName;
   }
- 
+
   public static void setPqcParameterSpecIndex(final String index) {
-    if(!index.equals("none")){
+    if (!index.equals("none")) {
       Integer parameterIndex = Integer.valueOf(index);
       pqcParameterSpecIndex = parameterIndex;
     } else {

@@ -87,15 +87,20 @@ public class TransactionCompleteResult implements TransactionResult {
   private final String nonce;
   private final String to;
   private final String transactionIndex;
+
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private final String dsaType;
+
   private final String type;
   private final String value;
   private final String yParity;
+
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private final String publicKey;
+
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private final String signature;
+
   private final String v;
   private final String r;
   private final String s;
@@ -150,7 +155,10 @@ public class TransactionCompleteResult implements TransactionResult {
       this.dsaType = String.format("0x%04X", transaction.getDsaType().get() & 0xFFFF);
       // A flexible transaction whose key is recovered from its signature carries none.
       this.publicKey =
-          transaction.getMaybePublicKey().map(pk -> Bytes.wrap(pk.getEncoded()).toHexString()).orElse(null);
+          transaction
+              .getMaybePublicKey()
+              .map(pk -> Bytes.wrap(pk.getEncoded()).toHexString())
+              .orElse(null);
       this.signature = transaction.getSignature().encodedBytes().toHexString();
     } else {
       this.type = Quantity.create(transactionType.getSerializedType());
@@ -183,11 +191,11 @@ public class TransactionCompleteResult implements TransactionResult {
             .orElse(null);
   }
 
-  private Boolean isFlexible(final TransactionType txType){
-    return txType == TransactionType.FLEXIBLE_ACCESS_LIST ||
-      txType == TransactionType.FLEXIBLE_EIP1559 ||
-      txType == TransactionType.FLEXIBLE_BLOB ||
-      txType == TransactionType.FLEXIBLE_DELEGATE_CODE;
+  private Boolean isFlexible(final TransactionType txType) {
+    return txType == TransactionType.FLEXIBLE_ACCESS_LIST
+        || txType == TransactionType.FLEXIBLE_EIP1559
+        || txType == TransactionType.FLEXIBLE_BLOB
+        || txType == TransactionType.FLEXIBLE_DELEGATE_CODE;
   }
 
   @JsonGetter(value = "accessList")
@@ -280,18 +288,19 @@ public class TransactionCompleteResult implements TransactionResult {
   public String getYParity() {
     return yParity;
   }
+
   @JsonGetter(value = "dsaType")
-  public String getDsaType(){
+  public String getDsaType() {
     return dsaType;
   }
 
   @JsonGetter(value = "publicKey")
-  public String getPublicKey(){
+  public String getPublicKey() {
     return publicKey;
   }
 
   @JsonGetter(value = "signature")
-  public String getSignature(){
+  public String getSignature() {
     return signature;
   }
 

@@ -114,7 +114,6 @@ public class KeyPairSecurityModule implements SecurityModule {
     }
   }
 
-
   private static class PublicKeyImpl implements PublicKey {
     private final ECPoint w;
 

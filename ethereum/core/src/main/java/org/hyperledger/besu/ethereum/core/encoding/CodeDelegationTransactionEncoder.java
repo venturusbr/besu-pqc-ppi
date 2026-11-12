@@ -16,13 +16,9 @@ package org.hyperledger.besu.ethereum.core.encoding;
 
 import static org.hyperledger.besu.ethereum.core.encoding.AccessListTransactionEncoder.writeAccessList;
 
-import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.datatypes.BytesHolder;
-import org.hyperledger.besu.datatypes.CodeDelegation;
 import org.hyperledger.besu.ethereum.core.Transaction;
 import org.hyperledger.besu.ethereum.rlp.RLPOutput;
-
-import java.util.List;
 
 import org.apache.tuweni.bytes.Bytes;
 
@@ -52,7 +48,8 @@ public class CodeDelegationTransactionEncoder {
                     new IllegalStateException(
                         "Developer error: the transaction should be guaranteed to have a code delegation authorizations here")),
         out);
-    TransactionSignatureEncoder.writeStandardSignatureAndRecoveryId(transaction.getSignature(), out);
+    TransactionSignatureEncoder.writeStandardSignatureAndRecoveryId(
+        transaction.getSignature(), out);
     out.endList();
   }
 }

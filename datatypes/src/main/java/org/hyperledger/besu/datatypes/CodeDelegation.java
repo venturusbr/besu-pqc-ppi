@@ -14,11 +14,11 @@
  */
 package org.hyperledger.besu.datatypes;
 
+import org.hyperledger.besu.crypto.signature.Signature;
+
 import java.math.BigInteger;
 import java.security.PublicKey;
 import java.util.Optional;
-
-import org.hyperledger.besu.crypto.signature.Signature;
 
 import org.apache.tuweni.bytes.Bytes32;
 

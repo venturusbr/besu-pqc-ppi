@@ -128,8 +128,7 @@ class CodeDelegationWireEncodingTest {
     final Transaction copy = transaction.detachedCopy();
 
     assertSameDelegation(copy.getCodeDelegationList().orElseThrow().get(0), delegation);
-    assertThat(
-            TransactionEncoder.encodeOpaqueBytes(copy, EncodingContext.BLOCK_BODY))
+    assertThat(TransactionEncoder.encodeOpaqueBytes(copy, EncodingContext.BLOCK_BODY))
         .isEqualTo(TransactionEncoder.encodeOpaqueBytes(transaction, EncodingContext.BLOCK_BODY));
   }
 

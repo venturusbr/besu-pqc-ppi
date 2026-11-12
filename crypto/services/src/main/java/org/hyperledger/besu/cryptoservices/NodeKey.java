@@ -88,11 +88,6 @@ public class NodeKey {
    */
   static String signMetricsLine(
       final long signingTimeNanos, final Signature signature, final String context) {
-    return signingTimeNanos
-        + ","
-        + signature.getAlgorithm()
-        + ","
-        + context
-        + "\n";
+    return signingTimeNanos + "," + signature.getAlgorithm() + "," + context + "\n";
   }
 }

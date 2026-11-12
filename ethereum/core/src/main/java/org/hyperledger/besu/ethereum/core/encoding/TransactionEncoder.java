@@ -52,10 +52,11 @@ public class TransactionEncoder {
           FlexibleCodeDelegationTransactionEncoder::encode);
 
   private static final ImmutableMap<TransactionType, Encoder> POOLED_TRANSACTION_ENCODERS =
-      ImmutableMap.of(TransactionType.BLOB, BlobPooledTransactionEncoder::encode,
-      TransactionType.FLEXIBLE_BLOB,
-      FlexibleBlobPooledTransactionEncoder::encode
-      );
+      ImmutableMap.of(
+          TransactionType.BLOB,
+          BlobPooledTransactionEncoder::encode,
+          TransactionType.FLEXIBLE_BLOB,
+          FlexibleBlobPooledTransactionEncoder::encode);
 
   /**
    * Encodes a transaction into RLP format.

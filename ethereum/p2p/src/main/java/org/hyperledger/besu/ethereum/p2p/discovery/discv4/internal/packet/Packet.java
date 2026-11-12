@@ -31,11 +31,11 @@ import org.apache.tuweni.bytes.Bytes;
  * <p>The offsets follow the node's active DSA rather than being fixed, because a hybrid signature
  * is 2485 bytes where a classical one is 65.
  *
- * <p>Only the half of the public key that cannot be recovered travels on the wire: ML-DSA-44 has
- * no public key recovery, so the receiver would otherwise have no way to complete the sender's
+ * <p>Only the half of the public key that cannot be recovered travels on the wire: ML-DSA-44 has no
+ * public key recovery, so the receiver would otherwise have no way to complete the sender's
  * identity. The classical half is recovered from its own half of the signature, exactly as a
- * flexible transaction does. A node whose active DSA is classical therefore sends no key at all
- * and keeps the discv4 layout unchanged, with the type byte back at offset 97.
+ * flexible transaction does. A node whose active DSA is classical therefore sends no key at all and
+ * keeps the discv4 layout unchanged, with the type byte back at offset 97.
  */
 public class Packet {
   /** Length of the leading keccak256 integrity hash. */
@@ -62,8 +62,7 @@ public class Packet {
    * @return the length, zero for a classical node
    */
   public static int publicKeyLength() {
-    return DSAProviderFactory.getActiveDSA()
-            instanceof HybridDigitalSignatureAlgorithm hybrid
+    return DSAProviderFactory.getActiveDSA() instanceof HybridDigitalSignatureAlgorithm hybrid
         ? hybrid.getSecondAlgorithm().getDsaParametersSet().getPublicKeyLength()
         : 0;
   }

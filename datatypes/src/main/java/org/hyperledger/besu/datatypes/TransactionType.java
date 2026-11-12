@@ -31,16 +31,24 @@ public enum TransactionType {
   /** Eip7702 transaction type. */
   DELEGATE_CODE(0x04),
   /** DSA-agnostic Access list transaction type. */
-  FLEXIBLE_ACCESS_LIST (0x41),
+  FLEXIBLE_ACCESS_LIST(0x41),
   /** DSA-agnostic Eip1559 transaction type. */
-  FLEXIBLE_EIP1559 (0x42),
+  FLEXIBLE_EIP1559(0x42),
   /** DSA-agnostic Blob transaction type. */
-  FLEXIBLE_BLOB (0x43),
+  FLEXIBLE_BLOB(0x43),
   /** DSA-agnostic Eip7702 transaction type. */
   FLEXIBLE_DELEGATE_CODE(0x44);
 
   private static final Set<TransactionType> ACCESS_LIST_SUPPORTED_TRANSACTION_TYPES =
-      EnumSet.of(ACCESS_LIST, EIP1559, BLOB, DELEGATE_CODE, FLEXIBLE_ACCESS_LIST, FLEXIBLE_EIP1559, FLEXIBLE_BLOB, FLEXIBLE_DELEGATE_CODE);
+      EnumSet.of(
+          ACCESS_LIST,
+          EIP1559,
+          BLOB,
+          DELEGATE_CODE,
+          FLEXIBLE_ACCESS_LIST,
+          FLEXIBLE_EIP1559,
+          FLEXIBLE_BLOB,
+          FLEXIBLE_DELEGATE_CODE);
 
   private static final Set<TransactionType> LEGACY_FEE_MARKET_TRANSACTION_TYPES =
       EnumSet.of(FRONTIER, ACCESS_LIST, FLEXIBLE_ACCESS_LIST);
@@ -123,10 +131,7 @@ public enum TransactionType {
 
   public boolean isFlexible() {
     return switch (this) {
-      case FLEXIBLE_ACCESS_LIST,
-          FLEXIBLE_EIP1559,
-          FLEXIBLE_BLOB,
-          FLEXIBLE_DELEGATE_CODE -> true;
+      case FLEXIBLE_ACCESS_LIST, FLEXIBLE_EIP1559, FLEXIBLE_BLOB, FLEXIBLE_DELEGATE_CODE -> true;
       default -> false;
     };
   }

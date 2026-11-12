@@ -131,8 +131,7 @@ class StandardSignatureCurveEnabledTest {
   }
 
   @Test
-  void refusesAStandardTransactionWhenSecp256r1IsNotEnabledOnASecp256r1Network()
-      throws Exception {
+  void refusesAStandardTransactionWhenSecp256r1IsNotEnabledOnASecp256r1Network() throws Exception {
     SignatureAlgorithmFactory.resetInstance();
     SignatureAlgorithmFactory.setInstance(new SECP256R1());
     final MainnetTransactionValidator validator =

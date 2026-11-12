@@ -27,11 +27,10 @@ import org.hyperledger.besu.ethereum.rlp.BytesValueRLPInput;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPOutput;
 import org.hyperledger.besu.ethereum.rlp.RLPInput;
 
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
-
 import java.security.PublicKey;
 
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 
@@ -56,7 +55,7 @@ public final class InitiatorHandshakeMessageV4 implements InitiatorHandshakeMess
     return new InitiatorHandshakeMessageV4(
         ourPubKey,
         SIGNATURE_ALGORITHM.get().sign(staticSharedSecret.xor(nonce), ephKeyPair),
-        (SECPPublicKey)ephKeyPair.getPublicKey(),
+        (SECPPublicKey) ephKeyPair.getPublicKey(),
         nonce);
   }
 

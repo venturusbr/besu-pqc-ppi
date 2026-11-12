@@ -32,7 +32,6 @@ import org.hyperledger.besu.ethereum.chain.Blockchain;
 import org.hyperledger.besu.ethereum.core.BlockHeader;
 import org.hyperledger.besu.ethereum.core.BlockHeaderTestFixture;
 import org.hyperledger.besu.ethereum.core.NonBesuBlockHeader;
-import org.hyperledger.besu.ethereum.core.Util;
 import org.hyperledger.besu.plugin.services.query.BftQueryService;
 
 import java.util.List;

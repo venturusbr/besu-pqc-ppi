@@ -17,6 +17,9 @@ package org.hyperledger.besu.crypto;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
+import org.hyperledger.besu.crypto.signature.Signature;
+
 import java.math.BigInteger;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -25,11 +28,9 @@ import com.google.common.base.Suppliers;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.apache.tuweni.units.bigints.UInt256;
-import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
-import org.hyperledger.besu.crypto.signature.Signature;
 
 /** The Secp signature. */
-public class SECPSignature implements Signature{
+public class SECPSignature implements Signature {
 
   /** The constant BYTES_REQUIRED. */
   public static final int BYTES_REQUIRED = 65;
@@ -40,6 +41,7 @@ public class SECPSignature implements Signature{
    * recorded their curve.
    */
   private final DSAParametersSet curve;
+
   /**
    * The recovery id to reconstruct the public key used to create the signature.
    *
@@ -140,7 +142,7 @@ public class SECPSignature implements Signature{
   }
 
   @Override
-  public Boolean isValid(final SignatureValidationContext context){
+  public Boolean isValid(final SignatureValidationContext context) {
     // The limit is half the order of the signature's own curve: SECP256R1's is lower than
     // SECP256K1's, so judging an R1 signature by K1's limit would let malleated ones through.
     final BigInteger halfCurveOrder =
@@ -194,7 +196,7 @@ public class SECPSignature implements Signature{
   }
 
   @Override
-  public String getAlgorithm(){
+  public String getAlgorithm() {
     return (curve == null ? DSAParametersSet.SECP256K1 : curve).getName();
   }
 

@@ -14,11 +14,6 @@
  */
 package org.hyperledger.besu.ethereum.core;
 
-import java.math.BigInteger;
-import java.security.PublicKey;
-import java.util.Optional;
-import java.util.function.Supplier;
-
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SECPSignature;
@@ -33,23 +28,28 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.CodeDelegationType;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.ethereum.core.encoding.CodeDelegationEncoder;
+import org.hyperledger.besu.ethereum.core.encoding.PublicKeyDecoder;
 import org.hyperledger.besu.ethereum.core.json.ChainIdDeserializer;
 import org.hyperledger.besu.ethereum.rlp.BytesValueRLPOutput;
-import org.hyperledger.besu.ethereum.core.encoding.PublicKeyDecoder;
+
+import java.math.BigInteger;
+import java.security.PublicKey;
+import java.util.Optional;
+import java.util.function.Supplier;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Suppliers;
-
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
+
 // ignore `signer` field used in execution-spec-tests
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelegation {
-  private static final Supplier<SignatureAlgorithm> SIGNATURE_ALGORITHM = Suppliers
-      .memoize(SignatureAlgorithmFactory::getInstance);
+  private static final Supplier<SignatureAlgorithm> SIGNATURE_ALGORITHM =
+      Suppliers.memoize(SignatureAlgorithmFactory::getInstance);
 
   public static final Bytes MAGIC = Bytes.fromHexString("05");
 
@@ -63,17 +63,16 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
   private final Optional<PublicKey> maybePublicKey;
   private final Supplier<Optional<PublicKey>> signerPublicKeySupplier =
       Suppliers.memoize(this::computeSignerPublicKey);
-  private final Supplier<Optional<Address>> authorizerSupplier = Suppliers.memoize(this::computeAuthority);
+  private final Supplier<Optional<Address>> authorizerSupplier =
+      Suppliers.memoize(this::computeAuthority);
 
   /**
    * An access list entry as defined in EIP-7702
    *
-   * @param chainId   can be either the current chain id or zero
-   * @param address   the address from which the code will be set into the EOA
-   *                  account
-   * @param nonce     the nonce after which this auth expires
-   * @param signature the signature of the EOA account which will be used to set
-   *                  the code
+   * @param chainId can be either the current chain id or zero
+   * @param address the address from which the code will be set into the EOA account
+   * @param nonce the nonce after which this auth expires
+   * @param signature the signature of the EOA account which will be used to set the code
    */
   public CodeDelegation(
       final BigInteger chainId,
@@ -82,7 +81,7 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
       final Signature signature) {
     this.authorizationType = CodeDelegationType.LEGACY;
     this.dsaType = Optional.empty();
-    this.chainId = chainId; 
+    this.chainId = chainId;
     this.address = address;
     this.maybePublicKey = Optional.empty();
     this.nonce = nonce;
@@ -110,19 +109,19 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
    * Create code delegation.
    *
    * @param chainId can be either the current chain id or zero
-   * @param address the address from which the code will be set into the EOA
-   *                account
-   * @param nonce   the nonce
-   * @param v       the recovery id
-   * @param r       the r value of the signature
-   * @param s       the s value of the signature
+   * @param address the address from which the code will be set into the EOA account
+   * @param nonce the nonce
+   * @param v the recovery id
+   * @param r the r value of the signature
+   * @param s the s value of the signature
    * @return CodeDelegation
    */
   @JsonCreator
   public static org.hyperledger.besu.datatypes.CodeDelegation createCodeDelegation(
       @JsonProperty("type") final CodeDelegationType type,
       @JsonProperty("dsaType") final Short dsaType,
-      @JsonProperty("chainId") @JsonDeserialize(using = ChainIdDeserializer.class) final BigInteger chainId,
+      @JsonProperty("chainId") @JsonDeserialize(using = ChainIdDeserializer.class)
+          final BigInteger chainId,
       @JsonProperty("address") final Address address,
       @JsonProperty("nonce") final String nonce,
       @JsonProperty("maybePublicKey") final Bytes maybePublicKey,
@@ -132,8 +131,7 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
       @JsonProperty("s") final String s) {
 
     final long parsedNonce = Bytes.fromHexStringLenient(nonce).toLong();
-    final CodeDelegationType effectiveType =
-    type != null ? type : CodeDelegationType.LEGACY;
+    final CodeDelegationType effectiveType = type != null ? type : CodeDelegationType.LEGACY;
 
     switch (effectiveType) {
       case LEGACY:
@@ -148,28 +146,30 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
   }
 
   private static CodeDelegation createLegacy(
-    final BigInteger chainId,
-    final Address address,
-    final long nonce,
-    final String v,
-    final String r,
-    final String s) {
+      final BigInteger chainId,
+      final Address address,
+      final long nonce,
+      final String v,
+      final String r,
+      final String s) {
     final Signature sig =
-        SIGNATURE_ALGORITHM.get().createCodeDelegationSignature(
-            Bytes.fromHexStringLenient(r).toUnsignedBigInteger(),
-            Bytes.fromHexStringLenient(s).toUnsignedBigInteger(),
-            Bytes.fromHexStringLenient(v).get(0));
+        SIGNATURE_ALGORITHM
+            .get()
+            .createCodeDelegationSignature(
+                Bytes.fromHexStringLenient(r).toUnsignedBigInteger(),
+                Bytes.fromHexStringLenient(s).toUnsignedBigInteger(),
+                Bytes.fromHexStringLenient(v).get(0));
 
     return new CodeDelegation(chainId, address, nonce, sig);
   }
 
   private static CodeDelegation createFlexible(
-    final Short dsaType,
-    final BigInteger chainId,
-    final Address address,
-    final long nonce,
-    final Bytes maybePublicKey,
-    final Bytes signature) {
+      final Short dsaType,
+      final BigInteger chainId,
+      final Address address,
+      final long nonce,
+      final Bytes maybePublicKey,
+      final Bytes signature) {
 
     if (dsaType == null) {
       throw new IllegalArgumentException("dsaType is required for FLEXIBLE");
@@ -177,8 +177,7 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
 
     final DSAParametersSet dsaParams = DSAParametersSet.fromId(dsaType);
 
-    final Signature sig =
-        SignatureFactory.createSignatureFromBytes(signature, dsaParams);
+    final Signature sig = SignatureFactory.createSignatureFromBytes(signature, dsaParams);
 
     // Same rules as a code delegation decoded from RLP: only the halves that cannot be recovered
     // may be provided, so a stated recoverable half is never taken on trust.
@@ -189,13 +188,7 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
             : Optional.empty();
 
     return new CodeDelegation(
-        CodeDelegationType.FLEXIBLE,
-        Optional.of(dsaType),
-        chainId,
-        address,
-        nonce,
-        maybePk,
-        sig);
+        CodeDelegationType.FLEXIBLE, Optional.of(dsaType), chainId, address, nonce, maybePk, sig);
   }
 
   @JsonProperty("type")
@@ -227,9 +220,9 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
   public Optional<PublicKey> maybePublicKey() {
     return maybePublicKey;
   }
-  
+
   @Override
-  public Optional<String> publicKey(){
+  public Optional<String> publicKey() {
     // A delegation that relies on public key recovery carries no key of its own, and recovering
     // one needs the signing hash this object does not hold, so there is nothing to report.
     return maybePublicKey.map(pk -> Bytes.wrap(pk.getEncoded()).toHexString());
@@ -287,8 +280,8 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
   }
 
   /**
-   * The signer's public key, resolved once and shared by the authority and by signature
-   * validation, so the key is recovered from the signature only once.
+   * The signer's public key, resolved once and shared by the authority and by signature validation,
+   * so the key is recovered from the signature only once.
    */
   @Override
   public Optional<PublicKey> signerPublicKey() {
@@ -319,12 +312,7 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
     }
 
     return PublicKeyHandler.resolvePublicKey(
-        SIGNATURE_ALGORITHM.get(),
-        signature,
-        maybePublicKey,
-        hash,
-        "delegation"
-      );
+        SIGNATURE_ALGORITHM.get(), signature, maybePublicKey, hash, "delegation");
   }
 
   private Optional<PublicKey> computeFlexibleSignerPublicKey(final Bytes32 hash) {
@@ -337,22 +325,21 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
         signature,
         maybePublicKey,
         hash,
-        "delegation"
-    );
+        "delegation");
   }
 
   @Override
-  public Bytes32 getOrComputeSenderRecoveryHash(){
-    if(hashNoSignature == null){
+  public Bytes32 getOrComputeSenderRecoveryHash() {
+    if (hashNoSignature == null) {
       hashNoSignature = computeSenderRecoveryHash();
     }
 
     return hashNoSignature;
   }
 
-  private Bytes32 computeSenderRecoveryHash(){
+  private Bytes32 computeSenderRecoveryHash() {
     BytesValueRLPOutput rlpOutput = new BytesValueRLPOutput();
-    
+
     CodeDelegationEncoder.encodeWithoutSignature(this, rlpOutput);
 
     final Hash hash = Hash.hash(Bytes.concatenate(MAGIC, rlpOutput.encoded()));
@@ -382,10 +369,9 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
     private Signature signature;
 
     /** Create a new builder. */
-    protected Builder() {
-    }
+    protected Builder() {}
 
-    public Builder type(final CodeDelegationType authorizationType){
+    public Builder type(final CodeDelegationType authorizationType) {
       this.authorizationType = authorizationType;
       return this;
     }
@@ -519,13 +505,13 @@ public class CodeDelegation implements org.hyperledger.besu.datatypes.CodeDelega
       }
 
       return new CodeDelegation(
-        authorizationType, 
-        Optional.ofNullable(dsaType), 
-        chainId, 
-        address, 
-        nonce, 
-        Optional.ofNullable(publicKey), 
-        signature);
+          authorizationType,
+          Optional.ofNullable(dsaType),
+          chainId,
+          address,
+          nonce,
+          Optional.ofNullable(publicKey),
+          signature);
     }
   }
 

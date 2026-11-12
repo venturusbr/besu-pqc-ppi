@@ -117,12 +117,15 @@ class CSVWriterTest {
     try (Stream<Path> files = Files.list(dir)) {
       final List<Path> setAside =
           files.filter(p -> !p.equals(file.toPath())).collect(Collectors.toList());
-      assertThat(setAside).singleElement().satisfies(
-          p -> {
-            assertThat(p.getFileName().toString()).startsWith("sign-metrics-").endsWith(".csv");
-            assertThat(read(p.toFile()))
-                .containsExactly("time,size,object,algorithm,finality", "1,2,block,SECP256K1,seal");
-          });
+      assertThat(setAside)
+          .singleElement()
+          .satisfies(
+              p -> {
+                assertThat(p.getFileName().toString()).startsWith("sign-metrics-").endsWith(".csv");
+                assertThat(read(p.toFile()))
+                    .containsExactly(
+                        "time,size,object,algorithm,finality", "1,2,block,SECP256K1,seal");
+              });
     }
   }
 

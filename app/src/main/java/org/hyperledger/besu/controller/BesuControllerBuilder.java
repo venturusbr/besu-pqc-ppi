@@ -16,7 +16,6 @@ package org.hyperledger.besu.controller;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.chainimport.BlockHeadersCachePreload;
 import org.hyperledger.besu.components.BesuComponent;
 import org.hyperledger.besu.config.CheckpointConfigOptions;
@@ -128,6 +127,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
+import org.apache.tuweni.bytes.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

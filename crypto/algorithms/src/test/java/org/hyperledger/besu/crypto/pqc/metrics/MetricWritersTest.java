@@ -118,8 +118,7 @@ class MetricWritersTest {
 
   @Test
   void aVerifiedSingleAlgorithmIsNamedAsItIs() {
-    assertThat(MetricWriters.verifiedAlgorithm(dsa(DSAParametersSet.MLDSA44)))
-        .isEqualTo("MLDSA44");
+    assertThat(MetricWriters.verifiedAlgorithm(dsa(DSAParametersSet.MLDSA44))).isEqualTo("MLDSA44");
     assertThat(MetricWriters.verifiedAlgorithm(dsa(DSAParametersSet.FALCON512)))
         .isEqualTo("FALCON512");
   }
@@ -131,22 +130,21 @@ class MetricWritersTest {
                 DSAParametersSet.SECP256K1MLDSA44, DSAParametersSet.SECP256K1))
         .isEqualTo("(SECP256K1)-MLDSA44");
     assertThat(
-            MetricWriters.recoveredAlgorithm(DSAParametersSet.SECP256K1, DSAParametersSet.SECP256K1))
+            MetricWriters.recoveredAlgorithm(
+                DSAParametersSet.SECP256K1, DSAParametersSet.SECP256K1))
         .isEqualTo("SECP256K1");
   }
 
   @Test
   void everyFileEndsWithTheAlgorithmAndTheContext() {
-    assertThat(MetricWriters.buildSignHeader())
-        .isEqualTo("DSASigningTime(ns),Algorithm,Context\n");
+    assertThat(MetricWriters.buildSignHeader()).isEqualTo("DSASigningTime(ns),Algorithm,Context\n");
     assertThat(MetricWriters.buildVerifyHeader())
         .isEqualTo("DSAVerificationTime(ns),isSignatureValid,Algorithm,Context\n");
     assertThat(MetricWriters.buildPkrHeader())
         .isEqualTo("PKRTime(ns),isRecovered,Algorithm,Context\n");
   }
 
-  private static DigitalSignatureAlgorithm dsa(
-      final DSAParametersSet params) {
+  private static DigitalSignatureAlgorithm dsa(final DSAParametersSet params) {
     return ALGORITHMS.getDSAByName(params.getName()).get();
   }
 }

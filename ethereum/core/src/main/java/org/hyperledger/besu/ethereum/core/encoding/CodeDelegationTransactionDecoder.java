@@ -14,12 +14,10 @@
  */
 package org.hyperledger.besu.ethereum.core.encoding;
 
-import org.hyperledger.besu.crypto.SECPSignature;
 import org.hyperledger.besu.crypto.SignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
 import org.hyperledger.besu.datatypes.AccessListEntry;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.CodeDelegation;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.TransactionType;
 import org.hyperledger.besu.datatypes.Wei;
@@ -68,7 +66,10 @@ public class CodeDelegationTransactionDecoder {
                       accessListEntryRLPInput.leaveList();
                       return accessListEntry;
                     }))
-            .codeDelegations(txRlp.readList(authorizationRLPInput -> CodeDelegationDecoder.decodeRLP(authorizationRLPInput)))
+            .codeDelegations(
+                txRlp.readList(
+                    authorizationRLPInput ->
+                        CodeDelegationDecoder.decodeRLP(authorizationRLPInput)))
             .sizeForBlockInclusion(input.size())
             .sizeForAnnouncement(input.size())
             .hash(Hash.hash(input));

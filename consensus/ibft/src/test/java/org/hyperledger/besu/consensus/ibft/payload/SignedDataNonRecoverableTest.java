@@ -104,9 +104,7 @@ public class SignedDataNonRecoverableTest {
         mldsa.sign(Bytes.fromHexStringLenient("0xdeadbeef"), keyPair.getPrivateKey());
 
     assertThatThrownBy(
-            () ->
-                SignedData.create(
-                    payload, wrongSignature, Optional.of(keyPair.getPublicKey())))
+            () -> SignedData.create(payload, wrongSignature, Optional.of(keyPair.getPublicKey())))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Signature verification failed");
   }

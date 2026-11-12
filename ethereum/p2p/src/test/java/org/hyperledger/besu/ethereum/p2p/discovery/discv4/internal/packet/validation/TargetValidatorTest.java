@@ -44,7 +44,6 @@ public class TargetValidatorTest {
   public void testValidateWithInvalidTargetSize() {
     Assertions.assertThrows(
         IllegalArgumentException.class,
-        () ->
-            validator.validate(Bytes.repeat((byte) 0x00, EnodeURLImpl.nodeIdSize() + 1)));
+        () -> validator.validate(Bytes.repeat((byte) 0x00, EnodeURLImpl.nodeIdSize() + 1)));
   }
 }

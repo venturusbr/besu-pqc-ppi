@@ -1,6 +1,18 @@
+/*
+ * Copyright contributors to Besu.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 package org.hyperledger.besu.crypto.providers;
-
-import com.google.common.annotations.VisibleForTesting;
 
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.SignatureAlgorithmFactory;
@@ -9,15 +21,17 @@ import org.hyperledger.besu.crypto.config.DigitalSignatureAlgorithmConfiguration
 import org.hyperledger.besu.crypto.config.DsaNotEnabledException;
 import org.hyperledger.besu.crypto.config.KeyConfiguration;
 
+import com.google.common.annotations.VisibleForTesting;
+
 public class DSAProviderFactory {
   private static final VerifierProvider UNCONFIGURED_VERIFIER = new UnconfiguredVerifierProvider();
   private static DigitalSignatureAlgorithmProvider nodeDsaProvider;
 
-  public static NodeKeyProvider getNodeKeyProvider(){
+  public static NodeKeyProvider getNodeKeyProvider() {
     return nodeDsaProvider;
   }
 
-  public static KeyManagementProvider getKeyManagementProvider(){
+  public static KeyManagementProvider getKeyManagementProvider() {
     return nodeDsaProvider;
   }
 
@@ -27,11 +41,12 @@ public class DSAProviderFactory {
    *
    * @return the verifier provider
    */
-  public static VerifierProvider getVerifierProvider(){
+  public static VerifierProvider getVerifierProvider() {
     return nodeDsaProvider != null ? nodeDsaProvider : UNCONFIGURED_VERIFIER;
   }
 
-  public static void setDsaProvider(final DigitalSignatureAlgorithmConfiguration dsaConfig, final KeyConfiguration keyConfig) {
+  public static void setDsaProvider(
+      final DigitalSignatureAlgorithmConfiguration dsaConfig, final KeyConfiguration keyConfig) {
     nodeDsaProvider = new DigitalSignatureAlgorithmProvider(dsaConfig, keyConfig);
   }
 
@@ -52,10 +67,10 @@ public class DSAProviderFactory {
   }
 
   /**
-   * Clears the configured DSA provider, restoring the unconfigured state in which
-   * {@link #getActiveDSA()} and {@link #getActiveDsaParametersSet()} fall back to the default
-   * signature algorithm. Required because the provider is static process-wide state: a test that
-   * installs one would otherwise leak it into every subsequent test sharing the JVM.
+   * Clears the configured DSA provider, restoring the unconfigured state in which {@link
+   * #getActiveDSA()} and {@link #getActiveDsaParametersSet()} fall back to the default signature
+   * algorithm. Required because the provider is static process-wide state: a test that installs one
+   * would otherwise leak it into every subsequent test sharing the JVM.
    */
   @VisibleForTesting
   public static void resetDsaProvider() {
@@ -63,10 +78,10 @@ public class DSAProviderFactory {
   }
 
   /**
-   * Returns the node's configured active {@link DigitalSignatureAlgorithm}, falling back to
-   * {@link SignatureAlgorithmFactory#getInstance()} when no DSA provider has been configured
-   * (e.g. in unit tests, which never call {@link #setDsaProvider}) or when a provider is present
-   * but has no active DSA set. Never returns null.
+   * Returns the node's configured active {@link DigitalSignatureAlgorithm}, falling back to {@link
+   * SignatureAlgorithmFactory#getInstance()} when no DSA provider has been configured (e.g. in unit
+   * tests, which never call {@link #setDsaProvider}) or when a provider is present but has no
+   * active DSA set. Never returns null.
    *
    * @return the active digital signature algorithm to use for consensus/node-key operations
    */

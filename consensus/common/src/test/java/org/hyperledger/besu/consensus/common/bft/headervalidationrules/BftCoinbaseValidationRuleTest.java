@@ -63,8 +63,7 @@ public class BftCoinbaseValidationRuleTest {
     final NodeKey proposerNodeKey = NodeKeyUtils.generate();
 
     final NodeKey otherValidatorNodeKey = NodeKeyUtils.generate();
-    final Address otherValidatorNodeAddress =
-        Address.extract(otherValidatorNodeKey.getPublicKey());
+    final Address otherValidatorNodeAddress = Address.extract(otherValidatorNodeKey.getPublicKey());
 
     final List<Address> validators = Lists.newArrayList(otherValidatorNodeAddress);
 

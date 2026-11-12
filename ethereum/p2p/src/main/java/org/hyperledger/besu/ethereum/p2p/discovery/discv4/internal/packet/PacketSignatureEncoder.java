@@ -30,9 +30,9 @@ public class PacketSignatureEncoder {
   /**
    * The signature as it travels on the wire.
    *
-   * <p>Each algorithm already knows its own encoding, so this defers to it rather than assuming
-   * the 65-byte {@code r || s || v} of ECDSA: a hybrid signature is the concatenation of a
-   * classical one and an ML-DSA-44 one, and truncating it would drop the half that matters.
+   * <p>Each algorithm already knows its own encoding, so this defers to it rather than assuming the
+   * 65-byte {@code r || s || v} of ECDSA: a hybrid signature is the concatenation of a classical
+   * one and an ML-DSA-44 one, and truncating it would drop the half that matters.
    *
    * @param signature the signature to encode
    * @return its encoded bytes

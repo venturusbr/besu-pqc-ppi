@@ -15,9 +15,9 @@
 package org.hyperledger.besu.crypto.key;
 
 import org.hyperledger.besu.crypto.KeyPair;
+import org.hyperledger.besu.crypto.SECPCurves;
 import org.hyperledger.besu.crypto.SECPPrivateKey;
 import org.hyperledger.besu.crypto.SECPPublicKey;
-import org.hyperledger.besu.crypto.SECPCurves;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.types.CompositePrivateKey;
 import org.hyperledger.besu.crypto.key.types.CompositePublicKey;
@@ -54,9 +54,9 @@ public class KeyFactory {
       case MLDSA87:
         sk = MLDSAPrivateKey.create(privateKeyBytes, paramsSet);
         break;
-            case FALCON512:
-                sk = FalconPrivateKey.create(privateKeyBytes, paramsSet);
-                break;
+      case FALCON512:
+        sk = FalconPrivateKey.create(privateKeyBytes, paramsSet);
+        break;
       case SECP256K1MLDSA44:
         // Both halves have a fixed length, so the whole key has one too. Checked up front, as
         // for SECP256K1-FALCON512, instead of failing on an out-of-bounds slice below.
@@ -87,35 +87,36 @@ public class KeyFactory {
             createPrivateKey(
                 mldsaSk44Bytes, DSAParametersSet.MLDSA44, PrivateKeyRepresentation.EXPANDED, null);
 
-                sk = CompositePrivateKey.create(secpSk, mldsaSk44);
-                break;
-            case SECP256K1FALCON512: {
-                // Both halves are fixed-length: SECP256K1 || Falcon-512 (f || g || F || h).
-                final int secpSkLength = DSAParametersSet.SECP256K1.getPrivateKeyLength();
-                final int falconSkLength = DSAParametersSet.FALCON512.getPrivateKeyLength();
-                if (privateKeyBytes.size() != secpSkLength + falconSkLength) {
-                    throw new IllegalArgumentException(
-                        "SECP256K1-FALCON512 private key must be "
-                            + (secpSkLength + falconSkLength)
-                            + " bytes, got "
-                            + privateKeyBytes.size());
-                }
-                sk =
-                    CompositePrivateKey.create(
-                        createPrivateKey(
-                            privateKeyBytes.slice(0, secpSkLength),
-                            DSAParametersSet.SECP256K1,
-                            PrivateKeyRepresentation.EXPANDED,
-                            null),
-                        FalconPrivateKey.create(
-                            privateKeyBytes.slice(secpSkLength), DSAParametersSet.FALCON512));
-                break;
-            }
-            default:
-                throw new IllegalArgumentException("Unsupported algorithm: " + paramsSet.getName());
+        sk = CompositePrivateKey.create(secpSk, mldsaSk44);
+        break;
+      case SECP256K1FALCON512:
+        {
+          // Both halves are fixed-length: SECP256K1 || Falcon-512 (f || g || F || h).
+          final int secpSkLength = DSAParametersSet.SECP256K1.getPrivateKeyLength();
+          final int falconSkLength = DSAParametersSet.FALCON512.getPrivateKeyLength();
+          if (privateKeyBytes.size() != secpSkLength + falconSkLength) {
+            throw new IllegalArgumentException(
+                "SECP256K1-FALCON512 private key must be "
+                    + (secpSkLength + falconSkLength)
+                    + " bytes, got "
+                    + privateKeyBytes.size());
+          }
+          sk =
+              CompositePrivateKey.create(
+                  createPrivateKey(
+                      privateKeyBytes.slice(0, secpSkLength),
+                      DSAParametersSet.SECP256K1,
+                      PrivateKeyRepresentation.EXPANDED,
+                      null),
+                  FalconPrivateKey.create(
+                      privateKeyBytes.slice(secpSkLength), DSAParametersSet.FALCON512));
+          break;
         }
-        return sk;
+      default:
+        throw new IllegalArgumentException("Unsupported algorithm: " + paramsSet.getName());
     }
+    return sk;
+  }
 
   public static PublicKey createPublicKey(
       final PrivateKey privateKey, final DSAParametersSet paramsSet) {
@@ -131,9 +132,9 @@ public class KeyFactory {
       case MLDSA87:
         pk = MLDSAPublicKey.create(privateKey, paramsSet);
         break;
-        case FALCON512:
-                pk = FalconPublicKey.create(privateKey);
-                break;
+      case FALCON512:
+        pk = FalconPublicKey.create(privateKey);
+        break;
       case SECP256K1MLDSA44:
         CompositePrivateKey compositeSk = (CompositePrivateKey) privateKey;
 
@@ -143,21 +144,22 @@ public class KeyFactory {
         PublicKey secpFirstPk = createPublicKey(secpFirstSk, DSAParametersSet.SECP256K1);
         PublicKey mldsaSecondPk = createPublicKey(mldsaSecondSk, DSAParametersSet.MLDSA44);
 
-                pk = CompositePublicKey.create(secpFirstPk, mldsaSecondPk);
-                break;
-            case SECP256K1FALCON512: {
-                final CompositePrivateKey hybridSk = (CompositePrivateKey) privateKey;
-                pk =
-                    CompositePublicKey.create(
-                        createPublicKey(hybridSk.getFirstKey(), DSAParametersSet.SECP256K1),
-                        createPublicKey(hybridSk.getSecondKey(), DSAParametersSet.FALCON512));
-                break;
-            }
-            default:
-                throw new IllegalArgumentException("Unsupported algorithm: " + paramsSet.getName());
+        pk = CompositePublicKey.create(secpFirstPk, mldsaSecondPk);
+        break;
+      case SECP256K1FALCON512:
+        {
+          final CompositePrivateKey hybridSk = (CompositePrivateKey) privateKey;
+          pk =
+              CompositePublicKey.create(
+                  createPublicKey(hybridSk.getFirstKey(), DSAParametersSet.SECP256K1),
+                  createPublicKey(hybridSk.getSecondKey(), DSAParametersSet.FALCON512));
+          break;
         }
-        return pk;
+      default:
+        throw new IllegalArgumentException("Unsupported algorithm: " + paramsSet.getName());
     }
+    return pk;
+  }
 
   public static Optional<PublicKey> createPublicKey(
       final Bytes publicKeyBytes, final DSAParametersSet paramsSet) {
@@ -172,9 +174,9 @@ public class KeyFactory {
       case MLDSA87:
         pk = MLDSAPublicKey.create(publicKeyBytes, paramsSet);
         break;
-        case FALCON512:
-            pk = FalconPublicKey.create(publicKeyBytes, paramsSet);
-            break;
+      case FALCON512:
+        pk = FalconPublicKey.create(publicKeyBytes, paramsSet);
+        break;
       case SECP256K1MLDSA44:
         int expectedFullLength = DSAParametersSet.SECP256K1MLDSA44.getPublicKeyLength();
 
@@ -194,37 +196,37 @@ public class KeyFactory {
 
           Optional<PublicKey> mldsaPk = createPublicKey(mldsaPkBytes, DSAParametersSet.MLDSA44);
 
-                    return Optional.of(CompositePublicKey.create(secpPk.get(), mldsaPk.get()));
-                }
-                if(publicKeyBytes.size() == DSAParametersSet.MLDSA44.getPublicKeyLength()){
-                    return Optional.of(MLDSAPublicKey.create(publicKeyBytes, DSAParametersSet.MLDSA44));
-                }
-                throw new IllegalArgumentException("Wrong public key size for: " + paramsSet.getName());
-            case SECP256K1FALCON512: {
-                final int secpPkLength = DSAParametersSet.SECP256K1.getPublicKeyLength();
-                final int falconPkLength = DSAParametersSet.FALCON512.getPublicKeyLength();
-                if (publicKeyBytes.size() == secpPkLength + falconPkLength) {
-                    return Optional.of(
-                        CompositePublicKey.create(
-                            SECPPublicKey.create(
-                                publicKeyBytes.slice(0, secpPkLength),
-                                DSAParametersSet.SECP256K1.getName()),
-                            FalconPublicKey.create(
-                                publicKeyBytes.slice(secpPkLength), DSAParametersSet.FALCON512)));
-                }
-                // Transactions carry only the Falcon half: SECP256K1's is recovered from its signature.
-                if (publicKeyBytes.size() == falconPkLength) {
-                    return Optional.of(
-                        FalconPublicKey.create(publicKeyBytes, DSAParametersSet.FALCON512));
-                }
-                throw new IllegalArgumentException(
-                    "Wrong public key size for " + paramsSet.getName() + ": " + publicKeyBytes.size());
-            }
-            default:
-                throw new IllegalArgumentException("Unsupported algorithm: " + paramsSet.getName());
+          return Optional.of(CompositePublicKey.create(secpPk.get(), mldsaPk.get()));
         }
-        return Optional.ofNullable(pk);
+        if (publicKeyBytes.size() == DSAParametersSet.MLDSA44.getPublicKeyLength()) {
+          return Optional.of(MLDSAPublicKey.create(publicKeyBytes, DSAParametersSet.MLDSA44));
+        }
+        throw new IllegalArgumentException("Wrong public key size for: " + paramsSet.getName());
+      case SECP256K1FALCON512:
+        {
+          final int secpPkLength = DSAParametersSet.SECP256K1.getPublicKeyLength();
+          final int falconPkLength = DSAParametersSet.FALCON512.getPublicKeyLength();
+          if (publicKeyBytes.size() == secpPkLength + falconPkLength) {
+            return Optional.of(
+                CompositePublicKey.create(
+                    SECPPublicKey.create(
+                        publicKeyBytes.slice(0, secpPkLength),
+                        DSAParametersSet.SECP256K1.getName()),
+                    FalconPublicKey.create(
+                        publicKeyBytes.slice(secpPkLength), DSAParametersSet.FALCON512)));
+          }
+          // Transactions carry only the Falcon half: SECP256K1's is recovered from its signature.
+          if (publicKeyBytes.size() == falconPkLength) {
+            return Optional.of(FalconPublicKey.create(publicKeyBytes, DSAParametersSet.FALCON512));
+          }
+          throw new IllegalArgumentException(
+              "Wrong public key size for " + paramsSet.getName() + ": " + publicKeyBytes.size());
+        }
+      default:
+        throw new IllegalArgumentException("Unsupported algorithm: " + paramsSet.getName());
     }
+    return Optional.ofNullable(pk);
+  }
 
   public static PublicKey createCompositePublicKey(
       final PublicKey firstPk, final PublicKey secondPk) {

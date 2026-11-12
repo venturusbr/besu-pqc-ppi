@@ -63,7 +63,6 @@ public class PoaQueryServiceImpl implements PoaQueryService {
     return blockchain;
   }
 
-
   @Override
   public Address getLocalSignerAddress() {
     return org.hyperledger.besu.datatypes.Address.extract(nodeKey.getPublicKey());

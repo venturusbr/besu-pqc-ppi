@@ -38,8 +38,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * A code delegation built from JSON follows the same rule as one decoded from RLP: only the half
- * of a hybrid key that cannot be recovered may be provided.
+ * A code delegation built from JSON follows the same rule as one decoded from RLP: only the half of
+ * a hybrid key that cannot be recovered may be provided.
  */
 class CodeDelegationProvidedKeyTest {
 
@@ -68,7 +68,8 @@ class CodeDelegationProvidedKeyTest {
     final Bytes mlDsaHalf =
         Bytes.wrap(((CompositePublicKey) keyPair.getPublicKey()).getSecondKey().getEncoded());
 
-    final CodeDelegation codeDelegation = (CodeDelegation) fromJson(mlDsaHalf, signatureBy(keyPair));
+    final CodeDelegation codeDelegation =
+        (CodeDelegation) fromJson(mlDsaHalf, signatureBy(keyPair));
 
     assertThat(codeDelegation.maybePublicKey()).isPresent();
     assertThat(codeDelegation.maybePublicKey().get().getEncoded()).isEqualTo(mlDsaHalf.toArray());

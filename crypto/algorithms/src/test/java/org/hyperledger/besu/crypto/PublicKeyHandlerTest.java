@@ -194,7 +194,9 @@ class PublicKeyHandlerTest {
     final Signature signature = signer.sign(HASH, signer.generateNodeKeyPair().getPrivateKey());
 
     assertThatThrownBy(
-            () -> PublicKeyHandler.resolvePublicKey(noSigner, signature, Optional.empty(), HASH, "test"))
+            () ->
+                PublicKeyHandler.resolvePublicKey(
+                    noSigner, signature, Optional.empty(), HASH, "test"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Cannot recover public key");
   }
@@ -206,7 +208,8 @@ class PublicKeyHandlerTest {
     final Signature signature = mlDsa.sign(HASH, mlDsa.generateNodeKeyPair().getPrivateKey());
 
     assertThatThrownBy(
-            () -> PublicKeyHandler.resolvePublicKey(mlDsa, signature, Optional.empty(), HASH, "test"))
+            () ->
+                PublicKeyHandler.resolvePublicKey(mlDsa, signature, Optional.empty(), HASH, "test"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("Public key must be provided when algorithm does not support PKR");
   }
