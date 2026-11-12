@@ -359,8 +359,9 @@ public class MiningOptionsTest extends AbstractCLIOptionsTest<MiningConfiguratio
   @Test
   public void extraDataDefaultValueIsBesuVersion() {
     // Detect also a string with null at the end (case in which metadata are missing because the
-    // JAR is not generated)
-    final var expectedRegex = "besu (\\d+\\.\\d+(\\.\\d+|\\-develop\\-\\p{XDigit}+)|null)";
+    // JAR is not generated). A release may carry a suffix, such as 26.1.0-pqc.
+    final var expectedRegex =
+        "besu (\\d+\\.\\d+(\\.\\d+(\\-[0-9A-Za-z.]+)?|\\-develop\\-\\p{XDigit}+)|null)";
     internalTestSuccess(
         this::runtimeConfiguration,
         miningParams -> {

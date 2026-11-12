@@ -19,6 +19,7 @@ import static org.hyperledger.besu.ethereum.core.InMemoryKeyValueStorageProvider
 import static org.mockito.Mockito.mock;
 
 import org.hyperledger.besu.config.StubGenesisConfigOptions;
+import org.hyperledger.besu.crypto.providers.DSAProviderFactory;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.ethereum.ProtocolContext;
 import org.hyperledger.besu.ethereum.api.ImmutableApiConfiguration;
@@ -231,6 +232,7 @@ public class JsonRpcTestMethodsFactory {
             BalConfiguration.DEFAULT,
             Optional.empty(),
             transactionSimulator,
-            new DeterministicEthScheduler());
+            new DeterministicEthScheduler(),
+            DSAProviderFactory.getVerifierProvider());
   }
 }
