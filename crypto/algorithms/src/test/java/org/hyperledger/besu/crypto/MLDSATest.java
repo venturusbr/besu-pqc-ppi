@@ -21,9 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.hyperledger.besu.crypto.algorithms.Falcon;
 import org.hyperledger.besu.crypto.algorithms.MLDSA;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.KeyFactory;
+import org.hyperledger.besu.crypto.key.types.MLDSAPrivateKey;
 import org.hyperledger.besu.crypto.key.types.MLDSAPublicKey;
 import org.hyperledger.besu.crypto.signature.Signature;
 
@@ -129,6 +131,52 @@ public class MLDSATest {
     assertTrue(refused.getMessage().contains(String.valueOf(params.getPublicKeyLength())));
     assertThrows(
         IllegalArgumentException.class, () -> KeyFactory.createPublicKey(shortKey, params));
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = DSAParametersSet.class,
+      names = {"MLDSA44", "MLDSA65", "MLDSA87"})
+  void testSignRefusesPrivateKeyOfAnotherParameterSet(final DSAParametersSet params) {
+    DSAParametersSet other =
+        params == DSAParametersSet.MLDSA44 ? DSAParametersSet.MLDSA65 : DSAParametersSet.MLDSA44;
+    PrivateKey otherSk = new MLDSA(other).generateNodeKeyPair().getPrivateKey();
+
+    assertSignRefused(params, otherSk);
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = DSAParametersSet.class,
+      names = {"MLDSA44", "MLDSA65", "MLDSA87"})
+  void testSignRefusesPrivateKeyOfWrongLength(final DSAParametersSet params) {
+    // Neither the seed length (expanded by MLDSAPrivateKey.create) nor the expanded length, so the
+    // bytes are kept as they are and used to reach BouncyCastle's key constructor.
+    PrivateKey shortSk = MLDSAPrivateKey.create(Bytes.wrap(new byte[100]), params);
+
+    assertSignRefused(params, shortSk);
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = DSAParametersSet.class,
+      names = {"MLDSA44", "MLDSA65", "MLDSA87"})
+  void testSignRefusesKeyOfAnotherTypeAndNull(final DSAParametersSet params) {
+    PrivateKey falconSk =
+        new Falcon(DSAParametersSet.FALCON512).generateNodeKeyPair().getPrivateKey();
+
+    assertSignRefused(params, falconSk);
+    assertSignRefused(params, null);
+  }
+
+  private static void assertSignRefused(final DSAParametersSet params, final PrivateKey sk) {
+    Bytes message = Bytes.wrap("test message".getBytes(UTF_8));
+
+    IllegalArgumentException refused =
+        assertThrows(IllegalArgumentException.class, () -> new MLDSA(params).sign(message, sk));
+    assertTrue(
+        refused.getMessage().startsWith("Expected a " + params.getName() + " private key of "),
+        refused.getMessage());
   }
 
   private static PublicKey keyOfLength(final int length, final DSAParametersSet params) {

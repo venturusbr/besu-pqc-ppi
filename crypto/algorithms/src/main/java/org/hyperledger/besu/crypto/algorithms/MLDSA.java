@@ -14,11 +14,14 @@
  */
 package org.hyperledger.besu.crypto.algorithms;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SecureRandomProvider;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.KeyFactory;
+import org.hyperledger.besu.crypto.key.types.MLDSAPrivateKey;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.SignatureFactory;
 
@@ -63,15 +66,34 @@ public class MLDSA implements DigitalSignatureAlgorithm {
 
   /**
    * Signs the data. A failure inside BouncyCastle's signer is rethrown as an {@link
-   * IllegalStateException} that carries it as the cause: logging it and going on left the
-   * signature null, so the caller failed with a NullPointerException that hid the real error.
+   * IllegalStateException} that carries it as the cause: logging it and going on left the signature
+   * null, so the caller failed with a NullPointerException that hid the real error.
    *
+   * <p>The key is checked up front, as {@link Falcon#sign} does, so a key of another type or
+   * parameter set, or of the wrong length, is refused with a clear message instead of failing
+   * inside BouncyCastle's key constructor.
+   *
+   * @throws IllegalArgumentException if {@code sk} is not an ML-DSA private key of this parameter
+   *     set and length
    * @throws IllegalStateException if BouncyCastle cannot produce the signature
    */
   @Override
   public Signature sign(final Bytes data, final PrivateKey sk) {
+    final byte[] skBytes = sk == null ? null : sk.getEncoded();
+    checkArgument(
+        sk instanceof MLDSAPrivateKey
+            && mldsaParameters.getName().equals(sk.getAlgorithm())
+            && skBytes != null
+            && skBytes.length == mldsaParameters.getPrivateKeyLength(),
+        "Expected a %s private key of %s bytes, got %s",
+        mldsaParameters.getName(),
+        mldsaParameters.getPrivateKeyLength(),
+        sk == null
+            ? null
+            : sk.getAlgorithm() + " key of " + (skBytes == null ? 0 : skBytes.length) + " bytes");
+
     MLDSAPrivateKeyParameters skParams =
-        new MLDSAPrivateKeyParameters(selectedBCParameter, sk.getEncoded());
+        new MLDSAPrivateKeyParameters(selectedBCParameter, skBytes);
     // A signer per call: MLDSASigner accumulates the message in an internal SHAKE state
     // between init and generateSignature, so one instance shared by the node's threads
     // corrupts that state when two of them sign or verify at once.

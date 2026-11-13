@@ -74,6 +74,7 @@ Implemented by `crypto/algorithms/.../algorithms/MLDSA.java`. Three parameter se
 | Private key | Stored in the **expanded** form (`rho ‖ K ‖ tr ‖ s1 ‖ s2 ‖ t0`). A 32-byte input is treated as a **seed** and expanded when loaded |
 | Public key | Always derived from the private key when a key is loaded. A key built from bytes (`MLDSAPublicKey.create`, which `KeyFactory.createPublicKey` and, through it, the transaction, code delegation and consensus decoders use) must have the exact length of its parameter set, 1312, 1952 or 2592 bytes; any other length is refused with `Expected a MLDSA44 public key of 1312 bytes, got 100` |
 | Verification | Returns `false`, rather than throwing, for a key of the wrong length or any input Bouncy Castle rejects, as Falcon does. A transaction does not get this far with a wrong-length key: the decoder refuses it first |
+| Signing key | `MLDSA.sign` checks the key up front, as `Falcon.sign` does: it must be an ML-DSA private key of the same parameter set with the expanded length, 2560, 4032 or 4896 bytes. Anything else, including `null`, is refused with `Expected a MLDSA44 private key of 2560 bytes, got MLDSA44 key of 100 bytes` instead of failing inside Bouncy Castle |
 | Signing errors | A failure inside Bouncy Castle's signer is rethrown as an `IllegalStateException` with the original exception as its cause, instead of being logged and lost |
 | Key generation | Bouncy Castle `MLDSAKeyPairGenerator` with Besu's `SecureRandom` |
 
