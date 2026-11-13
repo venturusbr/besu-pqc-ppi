@@ -14,6 +14,8 @@
  */
 package org.hyperledger.besu.crypto.key.types;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import org.hyperledger.besu.crypto.algorithms.MLDSA;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 
@@ -49,8 +51,23 @@ public class MLDSAPrivateKey implements PrivateKey {
     return encoded.toArrayUnsafe();
   }
 
+  /**
+   * Creates a key from either the 32-byte seed (FIPS 204 xi), which is expanded, or the expanded
+   * private key itself. Any other length is refused here, as {@link FalconPrivateKey#create} does,
+   * instead of failing later inside BouncyCastle when the public key is derived or data is signed.
+   *
+   * @throws IllegalArgumentException if {@code skBytes} is neither the seed nor the expanded length
+   */
   public static MLDSAPrivateKey create(
       final Bytes skBytes, final DSAParametersSet dsaParametersSet) {
+    checkArgument(
+        skBytes.size() == dsaParametersSet.getSeedLength()
+            || skBytes.size() == dsaParametersSet.getPrivateKeyLength(),
+        "%s private key must be %s bytes, or a %s-byte seed, got %s",
+        dsaParametersSet.getName(),
+        dsaParametersSet.getPrivateKeyLength(),
+        dsaParametersSet.getSeedLength(),
+        skBytes.size());
     if (skBytes.size() == dsaParametersSet.getSeedLength()) {
       return createFromSeed(skBytes.toArrayUnsafe(), dsaParametersSet);
     }
