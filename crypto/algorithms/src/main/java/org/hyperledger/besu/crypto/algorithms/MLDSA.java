@@ -14,11 +14,14 @@
  */
 package org.hyperledger.besu.crypto.algorithms;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import org.hyperledger.besu.crypto.DigitalSignatureAlgorithm;
 import org.hyperledger.besu.crypto.KeyPair;
 import org.hyperledger.besu.crypto.SecureRandomProvider;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 import org.hyperledger.besu.crypto.key.KeyFactory;
+import org.hyperledger.besu.crypto.key.types.MLDSAPrivateKey;
 import org.hyperledger.besu.crypto.signature.Signature;
 import org.hyperledger.besu.crypto.signature.SignatureFactory;
 
@@ -66,10 +69,23 @@ public class MLDSA implements DigitalSignatureAlgorithm {
    * IllegalStateException} that carries it as the cause: logging it and going on left the signature
    * null, so the caller failed with a NullPointerException that hid the real error.
    *
+   * <p>The key is checked up front, as {@link Falcon#sign} does, so a key of another type or
+   * parameter set is refused with a clear message instead of failing inside BouncyCastle's key
+   * constructor. Its length needs no check here: {@link MLDSAPrivateKey#create} already refuses any
+   * length other than the seed or the expanded key.
+   *
+   * @throws IllegalArgumentException if {@code sk} is not an ML-DSA private key of this parameter
+   *     set
    * @throws IllegalStateException if BouncyCastle cannot produce the signature
    */
   @Override
   public Signature sign(final Bytes data, final PrivateKey sk) {
+    checkArgument(
+        sk instanceof MLDSAPrivateKey mldsaSk && mldsaSk.getParametersSet() == mldsaParameters,
+        "Expected a %s private key, got %s",
+        mldsaParameters.getName(),
+        sk == null ? null : sk.getAlgorithm());
+
     MLDSAPrivateKeyParameters skParams =
         new MLDSAPrivateKeyParameters(selectedBCParameter, sk.getEncoded());
     // A signer per call: MLDSASigner accumulates the message in an internal SHAKE state

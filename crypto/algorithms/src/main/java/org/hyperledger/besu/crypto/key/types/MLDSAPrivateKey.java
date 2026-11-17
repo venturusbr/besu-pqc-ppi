@@ -14,6 +14,8 @@
  */
 package org.hyperledger.besu.crypto.key.types;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import org.hyperledger.besu.crypto.algorithms.MLDSA;
 import org.hyperledger.besu.crypto.algorithms.parameters.DSAParametersSet;
 
@@ -24,19 +26,29 @@ import org.bouncycastle.pqc.crypto.mldsa.MLDSAParameters;
 import org.bouncycastle.pqc.crypto.mldsa.MLDSAPrivateKeyParameters;
 
 public class MLDSAPrivateKey implements PrivateKey {
-  private final String algorithmName;
+  private final DSAParametersSet parametersSet;
   private final Bytes encoded;
   private final String format;
 
-  private MLDSAPrivateKey(final String algorithmName, final Bytes encoded, final String format) {
-    this.algorithmName = algorithmName;
+  private MLDSAPrivateKey(
+      final DSAParametersSet parametersSet, final Bytes encoded, final String format) {
+    this.parametersSet = parametersSet;
     this.format = format;
     this.encoded = encoded;
   }
 
+  /**
+   * Gets the parameter set this key belongs to.
+   *
+   * @return the parameter set
+   */
+  public DSAParametersSet getParametersSet() {
+    return parametersSet;
+  }
+
   @Override
   public String getAlgorithm() {
-    return algorithmName;
+    return parametersSet.getName();
   }
 
   @Override
@@ -49,12 +61,27 @@ public class MLDSAPrivateKey implements PrivateKey {
     return encoded.toArrayUnsafe();
   }
 
+  /**
+   * Creates a key from either the 32-byte seed (FIPS 204 xi), which is expanded, or the expanded
+   * private key itself. Any other length is refused here, as {@link FalconPrivateKey#create} does,
+   * instead of failing later inside BouncyCastle when the public key is derived or data is signed.
+   *
+   * @throws IllegalArgumentException if {@code skBytes} is neither the seed nor the expanded length
+   */
   public static MLDSAPrivateKey create(
       final Bytes skBytes, final DSAParametersSet dsaParametersSet) {
+    checkArgument(
+        skBytes.size() == dsaParametersSet.getSeedLength()
+            || skBytes.size() == dsaParametersSet.getPrivateKeyLength(),
+        "%s private key must be %s bytes, or a %s-byte seed, got %s",
+        dsaParametersSet.getName(),
+        dsaParametersSet.getPrivateKeyLength(),
+        dsaParametersSet.getSeedLength(),
+        skBytes.size());
     if (skBytes.size() == dsaParametersSet.getSeedLength()) {
       return createFromSeed(skBytes.toArrayUnsafe(), dsaParametersSet);
     }
-    return new MLDSAPrivateKey(dsaParametersSet.getName(), skBytes, "RAW");
+    return new MLDSAPrivateKey(dsaParametersSet, skBytes, "RAW");
   }
 
   private static MLDSAPrivateKey createFromSeed(
@@ -62,7 +89,6 @@ public class MLDSAPrivateKey implements PrivateKey {
     MLDSAParameters mldsaParams =
         MLDSA.getBCMLDSAParametersByDSAParameterName(dsaParametersSet.getName());
     MLDSAPrivateKeyParameters skParams = new MLDSAPrivateKeyParameters(mldsaParams, seed);
-    return new MLDSAPrivateKey(
-        dsaParametersSet.getName(), Bytes.wrap(skParams.getEncoded()), "RAW");
+    return new MLDSAPrivateKey(dsaParametersSet, Bytes.wrap(skParams.getEncoded()), "RAW");
   }
 }

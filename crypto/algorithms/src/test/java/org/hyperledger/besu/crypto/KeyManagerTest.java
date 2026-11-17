@@ -71,7 +71,12 @@ class KeyManagerTest {
 
     assertThatThrownBy(() -> keyManager.loadPrivateKeyFromFile(HYBRID))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("SECP256K1-MLDSA44 private key must be 2592 bytes, got 32");
+        .hasMessage(
+            "Node private key file "
+                + classicalKey
+                + " is not a valid SECP256K1-MLDSA44 key:"
+                + " SECP256K1-MLDSA44 private key must be 2592 bytes, got 32")
+        .hasCauseInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
@@ -84,6 +89,28 @@ class KeyManagerTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining(twoLines.toString())
         .hasMessageContaining("expected a single line");
+  }
+
+  @Test
+  void aTruncatedMldsaKeyFileIsRefusedWhenTheKeyIsCreated(@TempDir final Path dir)
+      throws IOException {
+    // Neither the 32-byte seed nor the 2560-byte expanded key. It used to be accepted as an
+    // "MLDSA44" key and fail later inside BouncyCastle, when the public key was derived from it.
+    final Path truncatedKey = dir.resolve("key");
+    Files.writeString(truncatedKey, "0x" + "11".repeat(100), UTF_8);
+    final KeyManager keyManager =
+        new KeyManager(
+            KeyConfiguration.createSingleKeyConfig(
+                truncatedKey.toFile(), PrivateKeyRepresentation.EXPANDED));
+
+    assertThatThrownBy(() -> keyManager.loadPrivateKeyFromFile(DSAParametersSet.MLDSA44))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "Node private key file "
+                + truncatedKey
+                + " is not a valid MLDSA44 key:"
+                + " MLDSA44 private key must be 2560 bytes, or a 32-byte seed, got 100")
+        .hasCauseInstanceOf(IllegalArgumentException.class);
   }
 
   private static KeyConfiguration hybridConfig(final File keyFile) {

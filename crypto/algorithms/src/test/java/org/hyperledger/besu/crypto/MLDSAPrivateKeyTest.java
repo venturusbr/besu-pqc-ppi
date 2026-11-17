@@ -14,10 +14,10 @@
  */
 package org.hyperledger.besu.crypto;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -80,6 +80,7 @@ class MLDSAPrivateKeyTest {
 
     assertNotNull(privateKey);
     assertEquals(params.getName(), privateKey.getAlgorithm());
+    assertEquals(params, privateKey.getParametersSet());
     assertEquals("RAW", privateKey.getFormat());
     assertTrue(privateKey.getEncoded().length > 0);
 
@@ -140,7 +141,8 @@ class MLDSAPrivateKeyTest {
       value = DSAParametersSet.class,
       names = {"MLDSA44", "MLDSA65", "MLDSA87"})
   void MLDSAPrivateKeyAttributes(final DSAParametersSet params) {
-    byte[] originalBytes = "encoded data".getBytes(UTF_8);
+    byte[] originalBytes = new byte[params.getPrivateKeyLength()];
+    originalBytes[0] = 1;
     Bytes bytesWrapped = Bytes.wrap(originalBytes);
 
     PrivateKey privateKey = MLDSAPrivateKey.create(bytesWrapped, params);
@@ -152,5 +154,25 @@ class MLDSAPrivateKeyTest {
     byte[] encodedBytes = privateKey.getEncoded();
     assertNotNull(encodedBytes);
     assertArrayEquals(originalBytes, encodedBytes);
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = DSAParametersSet.class,
+      names = {"MLDSA44", "MLDSA65", "MLDSA87"})
+  void privateKeyOfNeitherTheSeedNorTheExpandedLengthIsRefused(final DSAParametersSet params) {
+    for (int length : new int[] {0, 31, 33, 100, params.getPrivateKeyLength() - 1}) {
+      IllegalArgumentException refused =
+          assertThrows(
+              IllegalArgumentException.class,
+              () -> MLDSAPrivateKey.create(Bytes.wrap(new byte[length]), params));
+      assertEquals(
+          params.getName()
+              + " private key must be "
+              + params.getPrivateKeyLength()
+              + " bytes, or a 32-byte seed, got "
+              + length,
+          refused.getMessage());
+    }
   }
 }

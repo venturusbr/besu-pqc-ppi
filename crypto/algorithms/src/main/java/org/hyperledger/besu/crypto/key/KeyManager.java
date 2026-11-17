@@ -51,13 +51,9 @@ public class KeyManager {
       throw new IllegalArgumentException(
           "No node private key file was given. " + notGeneratedHint(parametersSet));
     }
+    final String hexKey;
     try {
-      String hexKey = readHexKey(skFile);
-      return KeyFactory.createPrivateKey(
-          Bytes.fromHexString(hexKey),
-          parametersSet,
-          keyConfig.getFirstKeyRepresentation(),
-          keyConfig.getSecondKeyRepresentation());
+      hexKey = readHexKey(skFile);
     } catch (IOException ex) {
       // The cause is kept: a missing file and an unreadable one are different problems.
       throw new IllegalArgumentException(
@@ -67,6 +63,23 @@ public class KeyManager {
               + ex.getClass().getSimpleName()
               + "). "
               + notGeneratedHint(parametersSet),
+          ex);
+    }
+    try {
+      return KeyFactory.createPrivateKey(
+          Bytes.fromHexString(hexKey),
+          parametersSet,
+          keyConfig.getFirstKeyRepresentation(),
+          keyConfig.getSecondKeyRepresentation());
+    } catch (IllegalArgumentException ex) {
+      // Named like the other errors here: the key decoders do not know which file it came from.
+      throw new IllegalArgumentException(
+          "Node private key file "
+              + skFile
+              + " is not a valid "
+              + parametersSet.getName()
+              + " key: "
+              + ex.getMessage(),
           ex);
     }
   }
