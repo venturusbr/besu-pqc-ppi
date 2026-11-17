@@ -80,6 +80,7 @@ class MLDSAPrivateKeyTest {
 
     assertNotNull(privateKey);
     assertEquals(params.getName(), privateKey.getAlgorithm());
+    assertEquals(params, privateKey.getParametersSet());
     assertEquals("RAW", privateKey.getFormat());
     assertTrue(privateKey.getEncoded().length > 0);
 

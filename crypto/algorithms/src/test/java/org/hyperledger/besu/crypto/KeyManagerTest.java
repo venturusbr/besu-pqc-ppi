@@ -71,7 +71,12 @@ class KeyManagerTest {
 
     assertThatThrownBy(() -> keyManager.loadPrivateKeyFromFile(HYBRID))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("SECP256K1-MLDSA44 private key must be 2592 bytes, got 32");
+        .hasMessage(
+            "Node private key file "
+                + classicalKey
+                + " is not a valid SECP256K1-MLDSA44 key:"
+                + " SECP256K1-MLDSA44 private key must be 2592 bytes, got 32")
+        .hasCauseInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
@@ -100,7 +105,12 @@ class KeyManagerTest {
 
     assertThatThrownBy(() -> keyManager.loadPrivateKeyFromFile(DSAParametersSet.MLDSA44))
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessage("MLDSA44 private key must be 2560 bytes, or a 32-byte seed, got 100");
+        .hasMessage(
+            "Node private key file "
+                + truncatedKey
+                + " is not a valid MLDSA44 key:"
+                + " MLDSA44 private key must be 2560 bytes, or a 32-byte seed, got 100")
+        .hasCauseInstanceOf(IllegalArgumentException.class);
   }
 
   private static KeyConfiguration hybridConfig(final File keyFile) {

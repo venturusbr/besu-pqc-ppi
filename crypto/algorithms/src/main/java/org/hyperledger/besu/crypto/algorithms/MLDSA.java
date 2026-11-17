@@ -81,7 +81,7 @@ public class MLDSA implements DigitalSignatureAlgorithm {
   @Override
   public Signature sign(final Bytes data, final PrivateKey sk) {
     checkArgument(
-        sk instanceof MLDSAPrivateKey && mldsaParameters.getName().equals(sk.getAlgorithm()),
+        sk instanceof MLDSAPrivateKey mldsaSk && mldsaSk.getParametersSet() == mldsaParameters,
         "Expected a %s private key, got %s",
         mldsaParameters.getName(),
         sk == null ? null : sk.getAlgorithm());

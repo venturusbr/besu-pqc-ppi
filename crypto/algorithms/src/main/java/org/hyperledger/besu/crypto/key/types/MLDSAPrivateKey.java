@@ -26,19 +26,29 @@ import org.bouncycastle.pqc.crypto.mldsa.MLDSAParameters;
 import org.bouncycastle.pqc.crypto.mldsa.MLDSAPrivateKeyParameters;
 
 public class MLDSAPrivateKey implements PrivateKey {
-  private final String algorithmName;
+  private final DSAParametersSet parametersSet;
   private final Bytes encoded;
   private final String format;
 
-  private MLDSAPrivateKey(final String algorithmName, final Bytes encoded, final String format) {
-    this.algorithmName = algorithmName;
+  private MLDSAPrivateKey(
+      final DSAParametersSet parametersSet, final Bytes encoded, final String format) {
+    this.parametersSet = parametersSet;
     this.format = format;
     this.encoded = encoded;
   }
 
+  /**
+   * Gets the parameter set this key belongs to.
+   *
+   * @return the parameter set
+   */
+  public DSAParametersSet getParametersSet() {
+    return parametersSet;
+  }
+
   @Override
   public String getAlgorithm() {
-    return algorithmName;
+    return parametersSet.getName();
   }
 
   @Override
@@ -71,7 +81,7 @@ public class MLDSAPrivateKey implements PrivateKey {
     if (skBytes.size() == dsaParametersSet.getSeedLength()) {
       return createFromSeed(skBytes.toArrayUnsafe(), dsaParametersSet);
     }
-    return new MLDSAPrivateKey(dsaParametersSet.getName(), skBytes, "RAW");
+    return new MLDSAPrivateKey(dsaParametersSet, skBytes, "RAW");
   }
 
   private static MLDSAPrivateKey createFromSeed(
@@ -79,7 +89,6 @@ public class MLDSAPrivateKey implements PrivateKey {
     MLDSAParameters mldsaParams =
         MLDSA.getBCMLDSAParametersByDSAParameterName(dsaParametersSet.getName());
     MLDSAPrivateKeyParameters skParams = new MLDSAPrivateKeyParameters(mldsaParams, seed);
-    return new MLDSAPrivateKey(
-        dsaParametersSet.getName(), Bytes.wrap(skParams.getEncoded()), "RAW");
+    return new MLDSAPrivateKey(dsaParametersSet, Bytes.wrap(skParams.getEncoded()), "RAW");
   }
 }
